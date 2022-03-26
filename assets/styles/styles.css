@@ -1,0 +1,86 @@
+@import "reset.css";
+
+body {
+    font-family: sans-serif;
+}
+
+.container {
+    margin: 0 auto;
+    padding: 0 20px;
+    max-width: 1300px;
+}
+
+.container.body {
+    padding-top: 20px;
+}
+
+header {
+    height: 60px;
+    line-height: 60px;
+}
+
+h1 {
+    font-size: 30px;
+}
+
+.main-nav {
+    background: #eeeeee;
+    line-height: 50px;
+}
+
+.main-nav a,
+.onpage-nav a {
+    margin-right: 15px;
+    display: inline-block;
+    text-decoration: none;
+}
+
+.main-nav a:hover,
+.onpage-nav a:hover {
+    text-decoration: underline;
+}
+
+.onpage-nav {
+    padding: 0 0 20px;
+}
+
+.onpage-nav a {
+    text-decoration: underline;
+}
+
+.search-box {
+    padding: 0 0 20px 0;
+}
+
+.search-box input {
+    padding: 8px 10px;
+    width: 100%;
+    max-width: 400px;
+    border:  1px solid #dddddd;
+    border-radius: 0;
+}
+
+table {
+    width: 100%;
+}
+
+table td, table th {
+  border: 1px solid #ddd;
+  padding: 10px;
+}
+
+table tr:nth-child(even){
+    background-color: #f2f2f2;
+}
+
+table tr:hover {
+    background-color: #ddd;
+}
+
+table th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    background-color: #398ad7;
+    color: #ffffff;
+    text-align: left;
+}
