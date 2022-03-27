@@ -19,18 +19,33 @@ header {
     line-height: 60px;
 }
 
+.flex-nav {
+    padding: 0 0 10px 0;
+    margin: 0 0 20px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #eeeeee;
+}
+
 h1 {
     font-size: 30px;
+}
+
+h2 {
+    font-size: 24px;
 }
 
 .main-nav {
     background: #eeeeee;
     line-height: 50px;
+    border-top: 1px solid #dddddd;
+    border-bottom: 1px solid #dddddd;
 }
 
 .main-nav a,
 .onpage-nav a {
-    margin-right: 15px;
+    margin: 0 15px 0 0;
     display: inline-block;
     text-decoration: none;
 }
@@ -40,11 +55,8 @@ h1 {
     text-decoration: underline;
 }
 
-.onpage-nav {
-    padding: 0 0 20px;
-}
-
 .onpage-nav a {
+    margin: 0 0 0 15px;
     text-decoration: underline;
 }
 
@@ -83,4 +95,24 @@ table th {
     background-color: #398ad7;
     color: #ffffff;
     text-align: left;
+}
+
+form p {
+    margin: 0 0 20px 0;
+}
+
+form label {
+    display: block;
+}
+
+.form-message {
+    margin: 0 0 20px 0;
+}
+
+.form-error {
+    color: red;
+}
+
+.form-success {
+    color: green;
 }

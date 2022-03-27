@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 5.5.5-10.6.4-MariaDB)
 # Database: workshop-inventory-1
-# Generation Time: 2022-03-26 20:31:08 +0000
+# Generation Time: 2022-03-27 19:15:07 +0000
 # ************************************************************
 
 
@@ -30,8 +30,21 @@ CREATE TABLE `categories_items` (
   `item_id` int(11) NOT NULL,
   KEY `cat_id` (`cat_id`),
   KEY `item_id` (`item_id`),
-  CONSTRAINT `categories_items_ibfk_1` FOREIGN KEY (`cat_id`) REFERENCES `inv_categories` (`cat_id`),
-  CONSTRAINT `categories_items_ibfk_2` FOREIGN KEY (`item_id`) REFERENCES `inv_items` (`item_id`)
+  CONSTRAINT `categories_items_ibfk_1` FOREIGN KEY (`cat_id`) REFERENCES `inv_categories` (`cat_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `categories_items_ibfk_2` FOREIGN KEY (`item_id`) REFERENCES `inv_items` (`item_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+
+# Dump of table inv_brands
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `inv_brands`;
+
+CREATE TABLE `inv_brands` (
+  `brand_id` int(11) NOT NULL AUTO_INCREMENT,
+  `brand_name` text NOT NULL,
+  PRIMARY KEY (`brand_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
@@ -46,7 +59,7 @@ CREATE TABLE `inv_categories` (
   `cat_name` text NOT NULL,
   `cat_slug` text NOT NULL,
   PRIMARY KEY (`cat_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -58,12 +71,13 @@ DROP TABLE IF EXISTS `inv_items`;
 CREATE TABLE `inv_items` (
   `item_id` int(11) NOT NULL AUTO_INCREMENT,
   `item_loc_id` int(11) NOT NULL,
+  `item_brand_id` int(11) NOT NULL,
   `item_status` int(11) NOT NULL,
   `item_name` text NOT NULL,
   PRIMARY KEY (`item_id`),
   KEY `item_loc_id` (`item_loc_id`),
-  CONSTRAINT `inv_items_ibfk_1` FOREIGN KEY (`item_loc_id`) REFERENCES `inv_locations` (`loc_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4;
+  KEY `item_brand_id` (`item_brand_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -76,7 +90,7 @@ CREATE TABLE `inv_locations` (
   `loc_id` int(11) NOT NULL AUTO_INCREMENT,
   `loc_name` text NOT NULL,
   PRIMARY KEY (`loc_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -86,10 +100,10 @@ CREATE TABLE `inv_locations` (
 DROP TABLE IF EXISTS `inv_statuses`;
 
 CREATE TABLE `inv_statuses` (
-  `status_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `status_id` int(11) NOT NULL AUTO_INCREMENT,
   `status_name` text NOT NULL,
   PRIMARY KEY (`status_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
