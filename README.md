@@ -6,6 +6,10 @@ Very much work in progress. Designed for an average sized home workshop and almo
 
 *Note:* there is no authentication or login process for users so this should only be used on a secure private home network.
 
+## Screenshot
+
+![Inventory Tracker](/assets/screenshot.png?raw=true "Inventory Tracker")
+
 ## Features
 
 ### Current features
@@ -13,8 +17,6 @@ Very much work in progress. Designed for an average sized home workshop and almo
 * Add tools, materials etc and categorise them by type and brand
 * Give these items a location in your workshop where they are stored
 * Give these items a status (stored, broken, deployed etc)
-
-![Inventory Tracker](/assets/screenshot.png?raw=true "Inventory Tracker")
 
 ### Todo
 
