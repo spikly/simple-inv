@@ -27,10 +27,12 @@ $allCategories = $stmt->fetchAll();
 <table id="searchableTable">
     <tr>
         <th>Name</th>
+        <th>Edit</th>
     </tr>
     <?php foreach($allCategories as $category): ?>
         <tr>
-            <td><a href="index.php?page=edit-cat&cat_id=<?php echo $category['cat_id']; ?>"><?php echo escapeHtml($category['cat_name']); ?></a></td>
+            <td><a href="index.php?page=items&category_id=<?php echo $category['cat_id']; ?>"><?php echo escapeHtml($category['cat_name']); ?></a></td>
+            <td><a href="index.php?page=edit-cat&category_id=<?php echo $category['cat_id']; ?>">Edit</a></td>
         </tr>
     <?php endforeach; ?>
 </table>

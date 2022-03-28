@@ -27,10 +27,12 @@ $allLocations = $stmt->fetchAll();
 <table id="searchableTable">
     <tr>
         <th>Name</th>
+        <th>Edit</th>
     </tr>
     <?php foreach($allLocations as $location): ?>
         <tr>
-            <td><a href="index.php?page=edit-loc&loc_id=<?php echo $location['loc_id']; ?>"><?php echo escapeHtml($location['loc_name']); ?></a></td>
+            <td><a href="index.php?page=items&location_id=<?php echo $location['loc_id']; ?>"><?php echo escapeHtml($location['loc_name']); ?></a></td>
+            <td><a href="index.php?page=edit-loc&location_id=<?php echo $location['loc_id']; ?>">Edit</a></td>
         </tr>
     <?php endforeach; ?>
 </table>

@@ -27,10 +27,12 @@ $allStatuses = $stmt->fetchAll();
 <table id="searchableTable">
     <tr>
         <th>Name</th>
+        <th>Edit</th>
     </tr>
     <?php foreach($allStatuses as $status): ?>
         <tr>
-            <td><a href="index.php?page=edit-status&status_id=<?php echo $status['status_id']; ?>"><?php echo escapeHtml($status['status_name']); ?></a></td>
+            <td><a href="index.php?page=items&status_id=<?php echo $status['status_id']; ?>"><?php echo escapeHtml($status['status_name']); ?></a></td>
+            <td><a href="index.php?page=edit-status&status_id=<?php echo $status['status_id']; ?>">Edit</a></td>
         </tr>
     <?php endforeach; ?>
 </table>

@@ -27,10 +27,12 @@ $allBrands = $stmt->fetchAll();
 <table id="searchableTable">
     <tr>
         <th>Name</th>
+        <th>Edit</th>
     </tr>
     <?php foreach($allBrands as $brand): ?>
         <tr>
-            <td><a href="index.php?page=edit-brand&brand_id=<?php echo $brand['brand_id']; ?>"><?php echo escapeHtml($brand['brand_name']); ?></a></td>
+            <td><a href="index.php?page=items&brand_id=<?php echo $brand['brand_id']; ?>"><?php echo escapeHtml($brand['brand_name']); ?></a></td>
+            <td><a href="index.php?page=edit-brand&brand_id=<?php echo $brand['brand_id']; ?>">Edit</a></td>
         </tr>
     <?php endforeach; ?>
 </table>
