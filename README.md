@@ -1,8 +1,10 @@
 # simple-inv
 
-A very simple workshop inventory tracker. Very much work in progress.
+A very simple workshop inventory/asset tracker. Keep track of which shelf, box, drawer or bin that oddly specific tool you need right now but haven't seen for months is kept in.
 
-There is no authentication or login process for users so this should only be used on a secure private home network.
+Very much work in progress. Designed for an average sized home workshop and almost definitely not scaleable to 10,000s or more items.
+
+*Note:* there is no authentication or login process for users so this should only be used on a secure private home network.
 
 ## Features
 
@@ -11,6 +13,8 @@ There is no authentication or login process for users so this should only be use
 * Add tools, materials etc and categorise them by type and brand
 * Give these items a location in your workshop where they are stored
 * Give these items a status (stored, broken, deployed etc)
+
+![Inventory Tracker](/assets/screenshot.png?raw=true "Inventory Tracker")
 
 ### Todo
 
@@ -30,12 +34,12 @@ Older/newer versions may also and probably will work fine but are untested.
 
 ## To install
 
-1) create the database structure using `database-structure.sql`
+1) Create a new database and import the tables found in `database-structure.sql`
 
-2) copy the files from this repository into a folder on your webserver
+2) Copy the files from this repository into a folder on your webserver
 
-3) duplicate `config/sample.config.php` and rename this new config file to `user.config.php`
+3) Duplicate `config/sample.config.php` and rename this new config file to `user.config.php`
 
-4) enter your database details into the newly created `user.config.php`
+4) Enter your database details into the newly created `user.config.php`
 
-5) visit http://yourserver/folder-where-you-copied-the-files to start using it
+5) Visit http://yourserver/folder-where-you-copied-the-files to start using it
