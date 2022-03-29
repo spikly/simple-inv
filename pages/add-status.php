@@ -33,9 +33,19 @@ if(isset($_POST['status_name'])) {
 
 ?>
 
+<div class="flex-nav">
+    <h2>
+        Add Status
+    </h2>
+</div>
+
 <form method="post">
     <?php echo ($formMessage) ? '<p class="form-message form-' . $formMessage['status'] . '">' . $formMessage['message'] . '</p>' : ''; ?>
-    <label for="status_name">Status Name</label>
-    <input type="text" name="status_name" />
-    <input type="submit" name="new_status_submit" value="Save">
+    <p>
+        <label for="status_name">Status Name</label>
+        <input type="text" name="status_name" />
+    </p>
+    <p>
+        <input type="submit" name="new_status_submit" value="Save">
+    </p>
 </form>

@@ -34,9 +34,19 @@ if(isset($_POST['cat_name'])) {
 
 ?>
 
+<div class="flex-nav">
+    <h2>
+        Add Category
+    </h2>
+</div>
+
 <form method="post">
     <?php echo ($formMessage) ? '<p class="form-message form-' . $formMessage['status'] . '">' . $formMessage['message'] . '</p>' : ''; ?>
-    <label for="cat_name">Category Name</label>
-    <input type="text" name="cat_name" />
-    <input type="submit" name="new_cat_submit" value="Save">
+    <p>
+        <label for="cat_name">Category Name</label>
+        <input type="text" name="cat_name" />
+    </p>
+    <p>
+        <input type="submit" name="new_cat_submit" value="Save">
+    </p>
 </form>

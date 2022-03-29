@@ -33,9 +33,19 @@ if(isset($_POST['brand_name'])) {
 
 ?>
 
+<div class="flex-nav">
+    <h2>
+        Add Brand
+    </h2>
+</div>
+
 <form method="post">
     <?php echo ($formMessage) ? '<p class="form-message form-' . $formMessage['status'] . '">' . $formMessage['message'] . '</p>' : ''; ?>
-    <label for="brand_name">Brand Name</label>
-    <input type="text" name="brand_name" />
-    <input type="submit" name="new_brand_submit" value="Save">
+    <p>
+        <label for="brand_name">Brand Name</label>
+        <input type="text" name="brand_name" />
+    </p>
+    <p>
+        <input type="submit" name="new_brand_submit" value="Save">
+    </p>
 </form>

@@ -73,12 +73,16 @@ h2 {
     border-radius: 0;
 }
 
+.search-box input:focus {
+    border-color: #398ad7;
+}
+
 table {
     width: 100%;
 }
 
 table td, table th {
-  border: 1px solid #ddd;
+  border: 1px solid #dddddd;
   padding: 10px;
 }
 
@@ -103,7 +107,48 @@ form p {
 }
 
 form label {
+    margin: 0 0 5px 0;
     display: block;
+}
+
+input,
+select {
+    border-radius: 0;
+    outline: 0;
+    background: #ffffff;
+}
+
+form input[type="text"] {
+    padding: 8px 10px;
+    width: 100%;
+    max-width: 400px;
+    border:  1px solid #dddddd;
+    border-radius: 0;
+}
+
+form input[type="text"]:focus,
+form select:focus {
+    border-color: #398ad7;
+}
+
+form select {
+    padding: 10px 5px;
+    width: 100%;
+    max-width: 400px;
+    border:  1px solid #dddddd;
+    border-radius: 0;
+}
+
+form input[type="submit"] {
+    padding: 7px 15px;
+    border: 0;
+    background: #38A550;
+    color: #ffffff;
+}
+
+form input[type="submit"]:hover {
+    cursor: pointer;
+    background: #51BE69;
 }
 
 .form-message {

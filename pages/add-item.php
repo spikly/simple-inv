@@ -87,6 +87,12 @@ $statuses = $stmt->fetchAll();
 
 ?>
 
+<div class="flex-nav">
+    <h2>
+        Add Item
+    </h2>
+</div>
+
 <form method="post">
     <?php echo ($formMessage) ? '<p class="form-message form-' . $formMessage['status'] . '">' . $formMessage['message'] . '</p>' : ''; ?>
     <p>

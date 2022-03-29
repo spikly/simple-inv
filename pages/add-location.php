@@ -41,7 +41,11 @@ if(isset($_POST['loc_name'])) {
 
 <form method="post">
     <?php echo ($formMessage) ? '<p class="form-message form-' . $formMessage['status'] . '">' . $formMessage['message'] . '</p>' : ''; ?>
-    <label for="loc_name">Location Name</label>
-    <input type="text" name="loc_name" />
-    <input type="submit" name="new_loc_submit" value="Save">
+    <p>
+        <label for="loc_name">Location Name</label>
+        <input type="text" name="loc_name" />
+    </p>
+    <p>
+        <input type="submit" name="new_loc_submit" value="Save">
+    </p>
 </form>
