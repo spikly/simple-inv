@@ -15,15 +15,12 @@ Very much work in progress. Designed for an average sized home workshop and almo
 ### Current features
 
 * Add tools, materials etc and categorise them by type and brand
-* Give these items a location in your workshop where they are stored
+* Give these items a location in your workshop where they are stored or deployed
 * Give these items a status (stored, broken, deployed etc)
 
 ### Todo
 
-* Add a deployed location field
 * Improve filtering and search capabilites
-* Add ability to edit items/categories/brands etc
-* Add ability to delete items/categories/brands etc
 
 ## Requirements
 
