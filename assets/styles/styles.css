@@ -106,6 +106,10 @@ table th {
     text-align: left;
 }
 
+table td i {
+    color: red;
+}
+
 form p {
     margin: 0 0 20px 0;
 }
