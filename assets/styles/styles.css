@@ -29,6 +29,10 @@ header {
     border-bottom: 1px solid #eeeeee;
 }
 
+.flex-nav.extra-padding {
+    padding: 40px 0 10px 0;
+}
+
 h1 {
     font-size: 30px;
 }
@@ -146,9 +150,17 @@ form input[type="submit"] {
     color: #ffffff;
 }
 
+form input[type="submit"].delete {
+    background: #D54646;
+}
+
 form input[type="submit"]:hover {
     cursor: pointer;
     background: #51BE69;
+}
+
+form input[type="submit"].delete:hover {
+    background: #F04D4D;
 }
 
 .form-message {

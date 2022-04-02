@@ -3,7 +3,7 @@
 $formData = [];
 $formMessage = false;
 
-if(isset($_POST['status_name'])) {
+if(isset($_POST['add_status_submit'])) {
     if(!empty($_POST['status_name'])) {
 
         $formData = [
@@ -46,6 +46,6 @@ if(isset($_POST['status_name'])) {
         <input type="text" name="status_name" />
     </p>
     <p>
-        <input type="submit" name="new_status_submit" value="Save">
+        <input type="submit" name="add_status_submit" value="Save">
     </p>
 </form>

@@ -3,7 +3,7 @@
 $formData = [];
 $formMessage = false;
 
-if(isset($_POST['item_name'])) {
+if(isset($_POST['add_item_submit'])) {
     if(empty($_POST['item_name'])) {
         $formMessage = [
             'status' => 'error',
@@ -35,10 +35,11 @@ if(isset($_POST['item_name'])) {
             'item_brand' => $_POST['item_brand'],
             'item_location' => $_POST['item_location'],
             'item_status' => slugify($_POST['item_status']),
+            'item_deployed_loc' => $_POST['item_deployed_loc'],
         ];
 
         try {
-            $sql = 'INSERT INTO inv_items (item_name, item_brand_id, item_loc_id, item_status) VALUES (:item_name, :item_brand, :item_location, :item_status)';
+            $sql = 'INSERT INTO inv_items (item_name, item_brand_id, item_loc_id, item_status, item_deployed_loc) VALUES (:item_name, :item_brand, :item_location, :item_status, :item_deployed_loc)';
             $stmt = $db->prepare($sql);
             $stmt->execute($formData);
             $lastId = $db->lastInsertId();
@@ -135,5 +136,11 @@ $statuses = $stmt->fetchAll();
             <?php endforeach ?>
         </select>
     </p>
-    <input type="submit" name="new_item_submit" value="Save">
+    <p>
+        <label for="item_deployed_loc">Deployed Location (optional)</label>
+        <input type="text" name="item_deployed_loc" />
+    </p>
+    <p>
+        <input type="submit" name="add_item_submit" value="Save">
+    </p>
 </form>

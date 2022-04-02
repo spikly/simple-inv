@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 5.5.5-10.6.4-MariaDB)
 # Database: workshop-inventory-1
-# Generation Time: 2022-03-27 19:15:07 +0000
+# Generation Time: 2022-04-02 14:12:10 +0000
 # ************************************************************
 
 
@@ -59,7 +59,7 @@ CREATE TABLE `inv_categories` (
   `cat_name` text NOT NULL,
   `cat_slug` text NOT NULL,
   PRIMARY KEY (`cat_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 
@@ -74,10 +74,11 @@ CREATE TABLE `inv_items` (
   `item_brand_id` int(11) NOT NULL,
   `item_status` int(11) NOT NULL,
   `item_name` text NOT NULL,
+  `item_deployed_loc` text DEFAULT NULL,
   PRIMARY KEY (`item_id`),
   KEY `item_loc_id` (`item_loc_id`),
   KEY `item_brand_id` (`item_brand_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
 

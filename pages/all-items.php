@@ -4,7 +4,7 @@ $allItems = [];
 $params = [];
 $clauses = [];
 
-$sql = 'SELECT i.item_id, i.item_name, b.brand_name, c.cat_name, l.loc_name, s.status_name
+$sql = 'SELECT i.item_id, i.item_name, i.item_deployed_loc, b.brand_name, c.cat_name, l.loc_name, s.status_name
 FROM inv_items i
 INNER JOIN inv_brands b ON b.brand_id = i.item_brand_id
 INNER JOIN inv_locations l ON l.loc_id = i.item_loc_id
@@ -64,6 +64,7 @@ $allItems = $stmt->fetchAll();
         <th>Category</th>
         <th>Location</th>
         <th>Status</th>
+        <th>Deployed Location</th>
         <th>Edit</th>
     </tr>
     <?php foreach($allItems as $item): ?>
@@ -73,6 +74,7 @@ $allItems = $stmt->fetchAll();
             <td><?php echo escapeHtml($item['cat_name']); ?></td>
             <td><?php echo escapeHtml($item['loc_name']); ?></td>
             <td><?php echo escapeHtml($item['status_name']); ?></td>
+            <td><?php echo (isset($item['item_deployed_loc']) && strlen($item['item_deployed_loc']) > 0) ? escapeHtml($item['item_deployed_loc']) : '-'; ?></td>
             <td><a href="index.php?page=edit-item&item_id=<?php echo $item['item_id']; ?>">Edit</a></td>
         </tr>
     <?php endforeach; ?>

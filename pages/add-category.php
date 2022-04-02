@@ -3,7 +3,7 @@
 $formData = [];
 $formMessage = false;
 
-if(isset($_POST['cat_name'])) {
+if(isset($_POST['add_cat_submit'])) {
     if(!empty($_POST['cat_name'])) {
 
         $formData = [
@@ -47,6 +47,6 @@ if(isset($_POST['cat_name'])) {
         <input type="text" name="cat_name" />
     </p>
     <p>
-        <input type="submit" name="new_cat_submit" value="Save">
+        <input type="submit" name="add_cat_submit" value="Save">
     </p>
 </form>

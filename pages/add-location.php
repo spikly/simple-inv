@@ -3,7 +3,7 @@
 $formData = [];
 $formMessage = false;
 
-if(isset($_POST['loc_name'])) {
+if(isset($_POST['add_loc_submit'])) {
     if(!empty($_POST['loc_name'])) {
 
         $formData = [
@@ -46,6 +46,6 @@ if(isset($_POST['loc_name'])) {
         <input type="text" name="loc_name" />
     </p>
     <p>
-        <input type="submit" name="new_loc_submit" value="Save">
+        <input type="submit" name="add_loc_submit" value="Save">
     </p>
 </form>

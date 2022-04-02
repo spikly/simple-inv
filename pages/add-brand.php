@@ -3,7 +3,7 @@
 $formData = [];
 $formMessage = false;
 
-if(isset($_POST['brand_name'])) {
+if(isset($_POST['add_brand_submit'])) {
     if(!empty($_POST['brand_name'])) {
 
         $formData = [
@@ -46,6 +46,6 @@ if(isset($_POST['brand_name'])) {
         <input type="text" name="brand_name" />
     </p>
     <p>
-        <input type="submit" name="new_brand_submit" value="Save">
+        <input type="submit" name="add_brand_submit" value="Save">
     </p>
 </form>
