@@ -75,6 +75,7 @@ CREATE TABLE `inv_items` (
   `item_status` int(11) NOT NULL,
   `item_name` text NOT NULL,
   `item_deployed_loc` text DEFAULT NULL,
+  `item_notes` text DEFAULT NULL,
   PRIMARY KEY (`item_id`),
   KEY `item_loc_id` (`item_loc_id`),
   KEY `item_brand_id` (`item_brand_id`)
