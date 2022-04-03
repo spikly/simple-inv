@@ -69,7 +69,7 @@ $allItems = $stmt->fetchAll();
     </tr>
     <?php foreach($allItems as $item): ?>
         <tr>
-            <td><?php echo escapeHtml($item['item_name']); ?></td>
+            <td><a href="index.php?page=view-item&item_id=<?php echo $item['item_id']; ?>"><?php echo escapeHtml($item['item_name']); ?></a></td>
             <td><?php echo (isset($item['brand_name'])) ? escapeHtml($item['brand_name']) : '<i>Deleted</i>'; ?></td>
             <td><?php echo (isset($item['cat_name'])) ? escapeHtml($item['cat_name']) : '<i>Deleted</i>'; ?></td>
             <td><?php echo (isset($item['loc_name'])) ? escapeHtml($item['loc_name']) : '<i>Deleted</i>'; ?></td>

@@ -40,10 +40,11 @@ if(isset($_POST['edit_item_submit'])) {
             'item_location' => $_POST['item_location'],
             'item_status' => slugify($_POST['item_status']),
             'item_deployed_loc' => (isset($_POST['item_deployed_loc']) && strlen($_POST['item_deployed_loc']) > 0) ? $_POST['item_deployed_loc'] : null,
+            'item_notes' => (isset($_POST['item_notes']) && strlen($_POST['item_notes']) > 0) ? trim($_POST['item_notes']) : null,
         ];
 
         try {
-            $sql = 'UPDATE inv_items SET item_name = :item_name, item_brand_id = :item_brand, item_loc_id = :item_location, item_status = :item_status, item_deployed_loc = :item_deployed_loc WHERE item_id = :edit_id';
+            $sql = 'UPDATE inv_items SET item_name = :item_name, item_brand_id = :item_brand, item_loc_id = :item_location, item_status = :item_status, item_deployed_loc = :item_deployed_loc, item_notes = :item_notes WHERE item_id = :edit_id';
             $stmt = $db->prepare($sql);
             $stmt->execute($formData);
             $lastId = $db->lastInsertId();
@@ -88,7 +89,7 @@ if(isset($_POST['edit_item_submit'])) {
 }
 
 try {
-    $sql = 'SELECT i.item_id, i.item_name, i.item_brand_id, i.item_loc_id, i.item_status, i.item_deployed_loc, ci.cat_id FROM inv_items i INNER JOIN categories_items ci ON i.item_id = ci.item_id WHERE i.item_id = :edit_id';
+    $sql = 'SELECT i.item_id, i.item_name, i.item_brand_id, i.item_loc_id, i.item_status, i.item_deployed_loc, i.item_notes, ci.cat_id FROM inv_items i INNER JOIN categories_items ci ON i.item_id = ci.item_id WHERE i.item_id = :edit_id';
     $stmt = $db->prepare($sql);
     $stmt->execute([
         'edit_id' => $edit_id
@@ -178,6 +179,12 @@ $statuses = $stmt->fetchAll();
     <p>
         <label for="item_deployed_loc">Deployed Location (optional)</label>
         <input type="text" name="item_deployed_loc" value="<?php echo escapeHtml($item['item_deployed_loc']); ?>" />
+    </p>
+    <p>
+        <label for="item_notes">Notes (optional)</label>
+        <textarea name="item_notes">
+<?php echo escapeHtml(trim($item['item_notes'])); ?>
+        </textarea>
     </p>
     <p>
         <input type="submit" name="edit_item_submit" value="Save">

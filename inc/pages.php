@@ -4,6 +4,7 @@ return [
     'items' => 'all-items',
     'add-item' => 'add-item',
     'edit-item' => 'edit-item',
+    'view-item' => 'view-item',
     'categories' => 'all-categories',
     'add-cat' => 'add-category',
     'edit-cat' => 'edit-category',
