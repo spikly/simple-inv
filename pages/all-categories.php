@@ -8,11 +8,12 @@ $stmt = $db->prepare($sql);
 $stmt->execute();
 
 $allCategories = $stmt->fetchAll();
+$categoryCount = count($allCategories);
 ?>
 
 <div class="flex-nav">
     <h2>
-        Categories
+        Categories <span>(<?php echo $categoryCount; ?> total)</span>
     </h2>
     <nav class="onpage-nav">
         <a href="index.php?page=add-cat">Add New Category</a>

@@ -41,18 +41,19 @@ $stmt = $db->prepare($sql);
 $stmt->execute($params);
 
 $allItems = $stmt->fetchAll();
+$itemCount = count($allItems);
 ?>
 
 <div class="flex-nav">
     <h2>
-        Items
+        Items <span>(<?php echo $itemCount; ?> total)</span>
     </h2>
     <nav class="onpage-nav">
         <a href="index.php?page=add-item">Add New Item</a>
     </nav>
 </div>
 
-<?php if(count($allItems) > 0): ?>
+<?php if($itemCount > 0): ?>
 <div class="search-box">
     <input type="text" id="tableSearchInput" onkeyup="searchTable()" placeholder="Search for items..">
 </div>

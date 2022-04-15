@@ -4,6 +4,15 @@ body {
     font-family: sans-serif;
 }
 
+a,
+a:visited {
+    color: #000000;
+}
+
+a:hover {
+    color: #666666;
+}
+
 .container {
     margin: 0 auto;
     padding: 0 20px;
@@ -44,6 +53,14 @@ h2 {
 h3 {
     margin: 30px 0 5px 0;
     font-size: 18px;
+}
+
+h1 a {
+    text-decoration: none;
+}
+
+h2 span {
+    font-size: 16px;
 }
 
 .main-nav {

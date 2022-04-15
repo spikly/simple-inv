@@ -8,11 +8,12 @@ $stmt = $db->prepare($sql);
 $stmt->execute();
 
 $allBrands = $stmt->fetchAll();
+$brandCount = count($allBrands);
 ?>
 
 <div class="flex-nav">
     <h2>
-        Brands
+        Brands <span>(<?php echo $brandCount; ?> total)</span>
     </h2>
     <nav class="onpage-nav">
         <a href="index.php?page=add-brand">Add New Brand</a>

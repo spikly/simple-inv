@@ -28,6 +28,11 @@ try {
     <h2>
         Item Info
     </h2>
+    <?php if($item_id && $item): ?>
+        <nav class="onpage-nav">
+            <a href="index.php?page=edit-item&item_id=<?php echo $item['item_id']; ?>">Edit Item</a>
+        </nav>
+    <?php endif; ?>
 </div>
 
 <?php if($item_id && $item): ?>

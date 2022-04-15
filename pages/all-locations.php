@@ -8,11 +8,12 @@ $stmt = $db->prepare($sql);
 $stmt->execute();
 
 $allLocations = $stmt->fetchAll();
+$locationCount = count($allLocations);
 ?>
 
 <div class="flex-nav">
     <h2>
-        Locations
+        Locations <span>(<?php echo $locationCount; ?> total)</span>
     </h2>
     <nav class="onpage-nav">
         <a href="index.php?page=add-loc">Add New Location</a>

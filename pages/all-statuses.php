@@ -8,11 +8,12 @@ $stmt = $db->prepare($sql);
 $stmt->execute();
 
 $allStatuses = $stmt->fetchAll();
+$statusCount = count($allStatuses);
 ?>
 
 <div class="flex-nav">
     <h2>
-        Statuses
+        Statuses <span>(<?php echo $statusCount; ?> total)</span>
     </h2>
     <nav class="onpage-nav">
         <a href="index.php?page=add-status">Add New Status</a>

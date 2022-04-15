@@ -182,9 +182,7 @@ $statuses = $stmt->fetchAll();
     </p>
     <p>
         <label for="item_notes">Notes (optional)</label>
-        <textarea name="item_notes">
-<?php echo escapeHtml(trim($item['item_notes'])); ?>
-        </textarea>
+        <textarea name="item_notes"><?php echo escapeHtml(trim($item['item_notes'])); ?></textarea>
     </p>
     <p>
         <input type="submit" name="edit_item_submit" value="Save">

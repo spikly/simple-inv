@@ -33,7 +33,7 @@ if(isset($_GET['page'])) {
         <header>
             <div class="container">
                 <h1>
-                    Inventory Tracker
+                    <a href="index.php">Inventory Tracker</a>
                 </h1>
             </div>
         </header>
