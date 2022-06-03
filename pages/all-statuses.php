@@ -13,7 +13,7 @@ $statusCount = count($allStatuses);
 
 <div class="flex-nav">
     <h2>
-        Statuses <span>(<?php echo $statusCount; ?> total)</span>
+        Statuses <span><span><?php echo $statusCount; ?></span></span>
     </h2>
     <nav class="onpage-nav">
         <a href="index.php?page=add-status">Add New Status</a>

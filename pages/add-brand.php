@@ -7,7 +7,7 @@ if(isset($_POST['add_brand_submit'])) {
     if(!empty($_POST['brand_name'])) {
 
         $formData = [
-            'brand_name' => $_POST['brand_name'],
+            'brand_name' => trim($_POST['brand_name']),
         ];
 
         try {

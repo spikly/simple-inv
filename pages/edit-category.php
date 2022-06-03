@@ -11,7 +11,7 @@ if(isset($_POST['edit_cat_submit'])) {
 
         $formData = [
             'edit_id' => $edit_id,
-            'cat_name' => $_POST['cat_name'],
+            'cat_name' => trim($_POST['cat_name']),
             'cat_slug' => slugify($_POST['cat_name']),
         ];
 

@@ -42,11 +42,35 @@ $stmt->execute($params);
 
 $allItems = $stmt->fetchAll();
 $itemCount = count($allItems);
+
+$filtersApplied = [];
+if($itemCount > 0) {
+    if(count($clauses) > 0) {
+        foreach($params as $index => $value) {
+            switch ($index) {
+                case 'brand_id':
+                    $filtersApplied[] = '<span>Brand: ' . $allItems[0]['brand_name'] . '</span>';
+                    break;
+                case 'category_id':
+                    $filtersApplied[] = '<span>Category: ' . $allItems[0]['cat_name'] . '</span>';
+                    break;
+                case 'location_id':
+                    $filtersApplied[] = '<span>Location: ' . $allItems[0]['loc_name'] . '</span>';
+                    break;
+                case 'status_id':
+                    $filtersApplied[] = '<span>Status: ' . $allItems[0]['status_name'] . '</span>';
+                    break;                
+                default:
+                    break;
+            }
+        }
+    }
+}
 ?>
 
 <div class="flex-nav">
     <h2>
-        Items <span>(<?php echo $itemCount; ?> total)</span>
+        Items <span> <span><?php echo $itemCount; ?></span> <?php echo ($filtersApplied > 0) ? implode(' ', $filtersApplied) : ' none'; ?></span>
     </h2>
     <nav class="onpage-nav">
         <a href="index.php?page=add-item">Add New Item</a>

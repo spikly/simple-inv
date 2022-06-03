@@ -7,7 +7,7 @@ if(isset($_POST['add_cat_submit'])) {
     if(!empty($_POST['cat_name'])) {
 
         $formData = [
-            'cat_name' => $_POST['cat_name'],
+            'cat_name' => trim($_POST['cat_name']),
             'cat_slug' => slugify($_POST['cat_name']),
         ];
 

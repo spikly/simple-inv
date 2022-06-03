@@ -13,7 +13,7 @@ $locationCount = count($allLocations);
 
 <div class="flex-nav">
     <h2>
-        Locations <span>(<?php echo $locationCount; ?> total)</span>
+        Locations <span><span><?php echo $locationCount; ?></span></span>
     </h2>
     <nav class="onpage-nav">
         <a href="index.php?page=add-loc">Add New Location</a>

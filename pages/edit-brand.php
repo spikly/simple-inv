@@ -11,7 +11,7 @@ if(isset($_POST['edit_brand_submit'])) {
 
         $formData = [
             'edit_id' => $edit_id,
-            'brand_name' => $_POST['brand_name'],
+            'brand_name' => trim($_POST['brand_name']),
         ];
 
         try {

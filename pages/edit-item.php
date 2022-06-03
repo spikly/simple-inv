@@ -35,11 +35,11 @@ if(isset($_POST['edit_item_submit'])) {
     }else{
         $formData = [
             'edit_id' => $edit_id,
-            'item_name' => $_POST['item_name'],
+            'item_name' => trim($_POST['item_name']),
             'item_brand' => $_POST['item_brand'],
             'item_location' => $_POST['item_location'],
             'item_status' => slugify($_POST['item_status']),
-            'item_deployed_loc' => (isset($_POST['item_deployed_loc']) && strlen($_POST['item_deployed_loc']) > 0) ? $_POST['item_deployed_loc'] : null,
+            'item_deployed_loc' => (isset($_POST['item_deployed_loc']) && strlen($_POST['item_deployed_loc']) > 0) ? trim($_POST['item_deployed_loc']) : null,
             'item_notes' => (isset($_POST['item_notes']) && strlen($_POST['item_notes']) > 0) ? trim($_POST['item_notes']) : null,
         ];
 

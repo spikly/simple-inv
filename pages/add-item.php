@@ -31,12 +31,12 @@ if(isset($_POST['add_item_submit'])) {
         ];
     }else{
         $formData = [
-            'item_name' => $_POST['item_name'],
+            'item_name' => trim($_POST['item_name']),
             'item_brand' => $_POST['item_brand'],
             'item_location' => $_POST['item_location'],
             'item_status' => slugify($_POST['item_status']),
-            'item_deployed_loc' => $_POST['item_deployed_loc'],
-            'item_notes' => $_POST['item_notes'],
+            'item_deployed_loc' => trim($_POST['item_deployed_loc']),
+            'item_notes' => trim($_POST['item_notes']),
         ];
 
         try {

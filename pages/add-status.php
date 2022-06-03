@@ -7,7 +7,7 @@ if(isset($_POST['add_status_submit'])) {
     if(!empty($_POST['status_name'])) {
 
         $formData = [
-            'status_name' => $_POST['status_name'],
+            'status_name' => trim($_POST['status_name']),
         ];
 
         try {

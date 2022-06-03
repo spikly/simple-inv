@@ -13,7 +13,7 @@ $categoryCount = count($allCategories);
 
 <div class="flex-nav">
     <h2>
-        Categories <span>(<?php echo $categoryCount; ?> total)</span>
+        Categories <span><span><?php echo $categoryCount; ?></span></span>
     </h2>
     <nav class="onpage-nav">
         <a href="index.php?page=add-cat">Add New Category</a>

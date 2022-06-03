@@ -11,7 +11,7 @@ if(isset($_POST['edit_status_submit'])) {
 
         $formData = [
             'edit_id' => $edit_id,
-            'status_name' => $_POST['status_name'],
+            'status_name' => trim($_POST['status_name']),
         ];
 
         try {

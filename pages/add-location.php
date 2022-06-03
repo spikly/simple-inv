@@ -7,7 +7,7 @@ if(isset($_POST['add_loc_submit'])) {
     if(!empty($_POST['loc_name'])) {
 
         $formData = [
-            'loc_name' => $_POST['loc_name'],
+            'loc_name' => trim($_POST['loc_name']),
         ];
 
         try {

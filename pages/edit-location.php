@@ -11,7 +11,7 @@ if(isset($_POST['edit_loc_submit'])) {
 
         $formData = [
             'edit_id' => $edit_id,
-            'loc_name' => $_POST['loc_name'],
+            'loc_name' => trim($_POST['loc_name']),
         ];
 
         try {
