@@ -22,21 +22,23 @@ $brandCount = count($allBrands);
 
 <?php if(count($allBrands) > 0): ?>
 <div class="search-box">
-    <input type="text" id="tableSearchInput" onkeyup="searchTable()" placeholder="Search for items..">
+    <input type="search" id="tableSearchInput" onkeyup="searchTable()" placeholder="Search for items...">
 </div>
 
-<table id="searchableTable">
-    <tr>
-        <th>Name</th>
-        <th>Edit</th>
-    </tr>
-    <?php foreach($allBrands as $brand): ?>
+<div class="table-container">
+    <table id="searchableTable">
         <tr>
-            <td><a href="index.php?page=items&brand_id=<?php echo $brand['brand_id']; ?>"><?php echo escapeHtml($brand['brand_name']); ?></a></td>
-            <td><a href="index.php?page=edit-brand&brand_id=<?php echo $brand['brand_id']; ?>">Edit</a></td>
+            <th>Name</th>
+            <th>Edit</th>
         </tr>
-    <?php endforeach; ?>
-</table>
+        <?php foreach($allBrands as $brand): ?>
+            <tr>
+                <td><a href="index.php?page=items&brand_id=<?php echo $brand['brand_id']; ?>"><?php echo escapeHtml($brand['brand_name']); ?></a></td>
+                <td><a href="index.php?page=edit-brand&brand_id=<?php echo $brand['brand_id']; ?>">Edit</a></td>
+            </tr>
+        <?php endforeach; ?>
+    </table>
+</div>
 <?php else: ?>
 No items
 <?php endif; ?>

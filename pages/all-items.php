@@ -79,31 +79,33 @@ if($itemCount > 0) {
 
 <?php if($itemCount > 0): ?>
 <div class="search-box">
-    <input type="text" id="tableSearchInput" onkeyup="searchTable()" placeholder="Search for items..">
+    <input type="search" id="tableSearchInput" onkeyup="searchTable()" placeholder="Search for items..." >
 </div>
 
-<table id="searchableTable">
-    <tr>
-        <th>Name</th>
-        <th>Brand</th>
-        <th>Category</th>
-        <th>Location</th>
-        <th>Status</th>
-        <th>Deployed Location</th>
-        <th>Edit</th>
-    </tr>
-    <?php foreach($allItems as $item): ?>
+<div class="table-container">
+    <table id="searchableTable">
         <tr>
-            <td><a href="index.php?page=view-item&item_id=<?php echo $item['item_id']; ?>"><?php echo escapeHtml($item['item_name']); ?></a></td>
-            <td><?php echo (isset($item['brand_name'])) ? escapeHtml($item['brand_name']) : '<i>Deleted</i>'; ?></td>
-            <td><?php echo (isset($item['cat_name'])) ? escapeHtml($item['cat_name']) : '<i>Deleted</i>'; ?></td>
-            <td><?php echo (isset($item['loc_name'])) ? escapeHtml($item['loc_name']) : '<i>Deleted</i>'; ?></td>
-            <td><?php echo (isset($item['status_name'])) ? escapeHtml($item['status_name']) : '<i>Deleted</i>'; ?></td>
-            <td><?php echo (isset($item['item_deployed_loc']) && strlen($item['item_deployed_loc']) > 0) ? escapeHtml($item['item_deployed_loc']) : '-'; ?></td>
-            <td><a href="index.php?page=edit-item&item_id=<?php echo $item['item_id']; ?>">Edit</a></td>
+            <th>Name</th>
+            <th>Brand</th>
+            <th>Category</th>
+            <th>Location</th>
+            <th>Status</th>
+            <th>Deployed Location</th>
+            <th>Edit</th>
         </tr>
-    <?php endforeach; ?>
-</table>
+        <?php foreach($allItems as $item): ?>
+            <tr>
+                <td><a href="index.php?page=view-item&item_id=<?php echo $item['item_id']; ?>"><?php echo escapeHtml($item['item_name']); ?></a></td>
+                <td><?php echo (isset($item['brand_name'])) ? escapeHtml($item['brand_name']) : '<i>Deleted</i>'; ?></td>
+                <td><?php echo (isset($item['cat_name'])) ? escapeHtml($item['cat_name']) : '<i>Deleted</i>'; ?></td>
+                <td><?php echo (isset($item['loc_name'])) ? escapeHtml($item['loc_name']) : '<i>Deleted</i>'; ?></td>
+                <td><?php echo (isset($item['status_name'])) ? escapeHtml($item['status_name']) : '<i>Deleted</i>'; ?></td>
+                <td><?php echo (isset($item['item_deployed_loc']) && strlen($item['item_deployed_loc']) > 0) ? escapeHtml($item['item_deployed_loc']) : '-'; ?></td>
+                <td><a href="index.php?page=edit-item&item_id=<?php echo $item['item_id']; ?>">Edit</a></td>
+            </tr>
+        <?php endforeach; ?>
+    </table>
+</div>
 <?php else: ?>
 No items
 <?php endif; ?>

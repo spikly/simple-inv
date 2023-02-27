@@ -22,21 +22,23 @@ $statusCount = count($allStatuses);
 
 <?php if(count($allStatuses) > 0): ?>
 <div class="search-box">
-    <input type="text" id="tableSearchInput" onkeyup="searchTable()" placeholder="Search for items..">
+    <input type="search" id="tableSearchInput" onkeyup="searchTable()" placeholder="Search for items...">
 </div>
 
-<table id="searchableTable">
-    <tr>
-        <th>Name</th>
-        <th>Edit</th>
-    </tr>
-    <?php foreach($allStatuses as $status): ?>
+<div class="table-container">
+    <table id="searchableTable">
         <tr>
-            <td><a href="index.php?page=items&status_id=<?php echo $status['status_id']; ?>"><?php echo escapeHtml($status['status_name']); ?></a></td>
-            <td><a href="index.php?page=edit-status&status_id=<?php echo $status['status_id']; ?>">Edit</a></td>
+            <th>Name</th>
+            <th>Edit</th>
         </tr>
-    <?php endforeach; ?>
-</table>
+        <?php foreach($allStatuses as $status): ?>
+            <tr>
+                <td><a href="index.php?page=items&status_id=<?php echo $status['status_id']; ?>"><?php echo escapeHtml($status['status_name']); ?></a></td>
+                <td><a href="index.php?page=edit-status&status_id=<?php echo $status['status_id']; ?>">Edit</a></td>
+            </tr>
+        <?php endforeach; ?>
+    </table>
+</div>
 <?php else: ?>
 No items
 <?php endif; ?>

@@ -26,6 +26,8 @@ if(isset($_GET['page'])) {
 <!doctype html>
 <html lang="en">
     <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
         <title>Inventory Tracker</title>
         <link href="assets/styles/styles.css?<?php echo filemtime(__DIR__ . '/assets/styles/styles.css'); ?>" rel="stylesheet">
     </head>
