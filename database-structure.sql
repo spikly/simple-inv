@@ -1,13 +1,13 @@
 # ************************************************************
 # Sequel Ace SQL dump
-# Version 20052
+# Version 20056
 #
 # https://sequel-ace.com/
 # https://github.com/Sequel-Ace/Sequel-Ace
 #
 # Host: 127.0.0.1 (MySQL 5.5.5-10.6.4-MariaDB)
 # Database: workshop-inventory-1
-# Generation Time: 2023-10-20 15:02:17 +0000
+# Generation Time: 2023-10-20 20:52:54 +0000
 # ************************************************************
 
 
@@ -59,6 +59,22 @@ CREATE TABLE `inv_categories` (
   `cat_name` text NOT NULL,
   `cat_slug` text NOT NULL,
   PRIMARY KEY (`cat_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+
+# Dump of table inv_deployments
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `inv_deployments`;
+
+CREATE TABLE `inv_deployments` (
+  `dep_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `dep_item_id` int(11) NOT NULL,
+  `dep_quantity` int(11) NOT NULL DEFAULT 1,
+  `dep_description` text NOT NULL,
+  `dep_timestamp` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`dep_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
