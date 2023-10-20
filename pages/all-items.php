@@ -11,7 +11,7 @@ LEFT JOIN inv_locations l ON l.loc_id = i.item_loc_id
 LEFT JOIN inv_statuses s ON s.status_id  = i.item_status
 LEFT JOIN categories_items ci ON i.item_id = ci.item_id
 LEFT JOIN inv_categories c ON ci.cat_id = c.cat_id
-LEFT JOIN (select dep_item_id, sum(dep_quantity) as item_deployed_count from inv_deployments group by dep_item_id) d on i.item_id = d.dep_item_id';
+LEFT JOIN (select dep_item_id, sum(dep_quantity) as item_deployed_count from inv_deployments group by dep_item_id) d on i.item_id = d.dep_item_id ';
 
 if(isset($_GET['brand_id'])) {
     $clauses[] = 'i.item_brand_id = :brand_id';
