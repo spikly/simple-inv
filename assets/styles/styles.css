@@ -26,7 +26,7 @@ a:hover {
 
 header {
     height: 60px;
-    line-height: 60px;
+    line-height: 6.0rem;
 }
 
 .flex-nav {
@@ -43,16 +43,16 @@ header {
 }
 
 h1 {
-    font-size: 30px;
+    font-size: 3.0rem;
 }
 
 h2 {
-    font-size: 24px;
+    font-size: 2.4rem;
 }
 
 h3 {
     margin: 30px 0 5px 0;
-    font-size: 18px;
+    font-size: 1.8rem;
 }
 
 h1 a {
@@ -65,7 +65,7 @@ h2 {
 }
 
 h2 span {
-    font-size: 14px;
+    font-size: 1.4rem;
     display: flex;
 }
 
@@ -82,10 +82,10 @@ h2 span span:first-child {
 
 .main-nav {
     background: #eeeeee;
-    line-height: 50px;
+    line-height: 5.0rem;
     border-top: 2px solid #dddddd;
     border-bottom: 2px solid #dddddd;
-    font-size: 13px;
+    font-size: 1.3rem;
 }
 
 @media (min-width: 450px) {
