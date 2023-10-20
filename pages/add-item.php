@@ -41,12 +41,11 @@ if(isset($_POST['add_item_submit'])) {
             'item_brand' => $_POST['item_brand'],
             'item_location' => $_POST['item_location'],
             'item_status' => slugify($_POST['item_status']),
-            'item_deployed_loc' => trim($_POST['item_deployed_loc']),
             'item_notes' => trim($_POST['item_notes']),
         ];
 
         try {
-            $sql = 'INSERT INTO inv_items (item_name, item_quantity, item_brand_id, item_loc_id, item_status, item_deployed_loc, item_notes) VALUES (:item_name, :item_quantity, :item_brand, :item_location, :item_status, :item_deployed_loc, :item_notes)';
+            $sql = 'INSERT INTO inv_items (item_name, item_quantity, item_brand_id, item_loc_id, item_status, item_notes) VALUES (:item_name, :item_quantity, :item_brand, :item_location, :item_status, :item_notes)';
             $stmt = $db->prepare($sql);
             $stmt->execute($formData);
             $lastId = $db->lastInsertId();
@@ -146,10 +145,6 @@ $statuses = $stmt->fetchAll();
                 <option value="<?php echo $status['status_id']; ?>"><?php echo $status['status_name']; ?></option>
             <?php endforeach ?>
         </select>
-    </p>
-    <p>
-        <label for="item_deployed_loc">Deployed Location (optional)</label>
-        <input type="text" name="item_deployed_loc" />
     </p>
     <p>
         <label for="item_notes">Notes (optional)</label>

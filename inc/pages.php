@@ -17,5 +17,7 @@ return [
     'statuses' => 'all-statuses',
     'add-status' => 'add-status',
     'edit-status' => 'edit-status',
+    'add-deployment' => 'add-deployment',
+    'edit-deployment' => 'edit-deployment',
     'export-items' => 'export-items',
 ];

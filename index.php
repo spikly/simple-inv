@@ -12,6 +12,7 @@ require __DIR__ . '/inc/utils.php';
 $config = require __DIR__ . '/config/user.config.php';
 $db = require __DIR__ . '/inc/db.php';
 $pages = require __DIR__ . '/inc/pages.php';
+require __DIR__ . '/inc/queries.php';
 
 $currentPage = 'all-items';
 if(isset($_GET['page'])) {

@@ -4,13 +4,14 @@ $allItems = [];
 $params = [];
 $clauses = [];
 
-$sql = 'SELECT i.item_id, i.item_name, i.item_deployed_loc, b.brand_name, c.cat_name, l.loc_name, s.status_name
+$sql = 'SELECT i.item_id, i.item_name, i.item_quantity, b.brand_name, c.cat_name, l.loc_name, s.status_name, d.item_deployed_count
 FROM inv_items i
 LEFT JOIN inv_brands b ON b.brand_id = i.item_brand_id
 LEFT JOIN inv_locations l ON l.loc_id = i.item_loc_id
 LEFT JOIN inv_statuses s ON s.status_id  = i.item_status
 LEFT JOIN categories_items ci ON i.item_id = ci.item_id
-LEFT JOIN inv_categories c ON ci.cat_id = c.cat_id ';
+LEFT JOIN inv_categories c ON ci.cat_id = c.cat_id
+LEFT JOIN (select dep_item_id, sum(dep_quantity) as item_deployed_count from inv_deployments group by dep_item_id) d on i.item_id = d.dep_item_id';
 
 if(isset($_GET['brand_id'])) {
     $clauses[] = 'i.item_brand_id = :brand_id';
@@ -98,7 +99,8 @@ if($itemCount > 0) {
             <th>Category</th>
             <th>Location</th>
             <th>Status</th>
-            <th>Deployed Location</th>
+            <th>Quantity</th>
+            <th>Deployed</th>
             <th>Edit</th>
         </tr>
         <?php foreach($allItems as $item): ?>
@@ -108,7 +110,8 @@ if($itemCount > 0) {
                 <td><?php echo (isset($item['cat_name'])) ? escapeHtml($item['cat_name']) : '<i>Deleted</i>'; ?></td>
                 <td><?php echo (isset($item['loc_name'])) ? escapeHtml($item['loc_name']) : '<i>Deleted</i>'; ?></td>
                 <td><?php echo (isset($item['status_name'])) ? escapeHtml($item['status_name']) : '<i>Deleted</i>'; ?></td>
-                <td><?php echo (isset($item['item_deployed_loc']) && strlen($item['item_deployed_loc']) > 0) ? escapeHtml($item['item_deployed_loc']) : '-'; ?></td>
+                <td><?php echo escapeHtml($item['item_quantity']); ?></td>
+                <td><?php echo (isset($item['item_deployed_count'])) ? escapeHtml($item['item_deployed_count']) : '0'; ?></td>
                 <td><a href="index.php?page=edit-item&item_id=<?php echo $item['item_id']; ?>">Edit</a></td>
             </tr>
         <?php endforeach; ?>
