@@ -22,6 +22,11 @@ if(isset($_GET['page'])) {
     }
 }
 
+if($currentPage == 'export-items') {
+    include __DIR__ . '/pages/' . $currentPage . '.php';
+    exit();
+}
+
 ?>
 <!doctype html>
 <html lang="en">

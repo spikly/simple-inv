@@ -17,4 +17,5 @@ return [
     'statuses' => 'all-statuses',
     'add-status' => 'add-status',
     'edit-status' => 'edit-status',
+    'export-items' => 'export-items',
 ];

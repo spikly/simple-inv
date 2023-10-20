@@ -44,21 +44,26 @@ $allItems = $stmt->fetchAll();
 $itemCount = count($allItems);
 
 $filtersApplied = [];
+$exportUrl = '';
 if($itemCount > 0) {
     if(count($clauses) > 0) {
         foreach($params as $index => $value) {
             switch ($index) {
                 case 'brand_id':
                     $filtersApplied[] = '<span>Brand: ' . $allItems[0]['brand_name'] . '</span>';
+                    $exportUrl = '&amp;' . $index . '=' . $value;
                     break;
                 case 'category_id':
                     $filtersApplied[] = '<span>Category: ' . $allItems[0]['cat_name'] . '</span>';
+                    $exportUrl = '&amp;' . $index . '=' . $value;
                     break;
                 case 'location_id':
                     $filtersApplied[] = '<span>Location: ' . $allItems[0]['loc_name'] . '</span>';
+                    $exportUrl = '&amp;' . $index . '=' . $value;
                     break;
                 case 'status_id':
                     $filtersApplied[] = '<span>Status: ' . $allItems[0]['status_name'] . '</span>';
+                    $exportUrl = '&amp;' . $index . '=' . $value;
                     break;                
                 default:
                     break;
@@ -73,6 +78,9 @@ if($itemCount > 0) {
         Items <span> <span><?php echo $itemCount; ?></span> <?php echo ($filtersApplied > 0) ? implode(' ', $filtersApplied) : ' none'; ?></span>
     </h2>
     <nav class="onpage-nav">
+        <?php if($itemCount > 0): ?>
+            <a href="index.php?page=export-items<?php echo $exportUrl; ?>">Export</a>
+        <?php endif; ?>
         <a href="index.php?page=add-item">Add New Item</a>
     </nav>
 </div>
