@@ -188,6 +188,10 @@ form textarea {
     border-radius: 0;
 }
 
+form input[type="number"] {
+    max-width: 100px;
+}
+
 form input[type="text"]:focus,
 form input[type="number"]:focus,
 form select:focus,
