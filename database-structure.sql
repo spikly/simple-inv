@@ -1,13 +1,13 @@
 # ************************************************************
 # Sequel Ace SQL dump
-# Version 20033
+# Version 20052
 #
 # https://sequel-ace.com/
 # https://github.com/Sequel-Ace/Sequel-Ace
 #
 # Host: 127.0.0.1 (MySQL 5.5.5-10.6.4-MariaDB)
 # Database: workshop-inventory-1
-# Generation Time: 2022-04-02 14:12:10 +0000
+# Generation Time: 2023-10-20 15:02:17 +0000
 # ************************************************************
 
 
@@ -74,6 +74,7 @@ CREATE TABLE `inv_items` (
   `item_brand_id` int(11) NOT NULL,
   `item_status` int(11) NOT NULL,
   `item_name` text NOT NULL,
+  `item_quantity` int(11) NOT NULL DEFAULT 1,
   `item_deployed_loc` text DEFAULT NULL,
   `item_notes` text DEFAULT NULL,
   PRIMARY KEY (`item_id`),
