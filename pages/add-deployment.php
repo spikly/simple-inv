@@ -56,7 +56,7 @@ if(isset($_POST['add_deployment_submit'])) {
 <?php if($item): ?>
 <form method="post">
     <p>
-        <strong>Item:</strong> <?php echo $item['item_name']; ?>
+        <strong>Item:</strong> <?php echo escapeHtml($item['item_name']); ?>
     </p>
     <?php echo ($formMessage) ? '<p class="form-message form-' . $formMessage['status'] . '">' . $formMessage['message'] . '</p>' : ''; ?>
     <p>
