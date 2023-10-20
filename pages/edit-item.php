@@ -36,6 +36,7 @@ if(isset($_POST['edit_item_submit'])) {
         $formData = [
             'edit_id' => $edit_id,
             'item_name' => trim($_POST['item_name']),
+            'item_quantity' => trim($_POST['item_quantity']),
             'item_brand' => $_POST['item_brand'],
             'item_location' => $_POST['item_location'],
             'item_status' => slugify($_POST['item_status']),
@@ -44,7 +45,7 @@ if(isset($_POST['edit_item_submit'])) {
         ];
 
         try {
-            $sql = 'UPDATE inv_items SET item_name = :item_name, item_brand_id = :item_brand, item_loc_id = :item_location, item_status = :item_status, item_deployed_loc = :item_deployed_loc, item_notes = :item_notes WHERE item_id = :edit_id';
+            $sql = 'UPDATE inv_items SET item_name = :item_name, item_quantity = :item_quantity, item_brand_id = :item_brand, item_loc_id = :item_location, item_status = :item_status, item_deployed_loc = :item_deployed_loc, item_notes = :item_notes WHERE item_id = :edit_id';
             $stmt = $db->prepare($sql);
             $stmt->execute($formData);
             $lastId = $db->lastInsertId();
@@ -89,7 +90,7 @@ if(isset($_POST['edit_item_submit'])) {
 }
 
 try {
-    $sql = 'SELECT i.item_id, i.item_name, i.item_brand_id, i.item_loc_id, i.item_status, i.item_deployed_loc, i.item_notes, ci.cat_id FROM inv_items i INNER JOIN categories_items ci ON i.item_id = ci.item_id WHERE i.item_id = :edit_id';
+    $sql = 'SELECT i.item_id, i.item_name, i.item_quantity, i.item_brand_id, i.item_loc_id, i.item_status, i.item_deployed_loc, i.item_notes, ci.cat_id FROM inv_items i INNER JOIN categories_items ci ON i.item_id = ci.item_id WHERE i.item_id = :edit_id';
     $stmt = $db->prepare($sql);
     $stmt->execute([
         'edit_id' => $edit_id
@@ -139,6 +140,10 @@ $statuses = $stmt->fetchAll();
     <p>
         <label for="item_name">Item Name</label>
         <input type="text" name="item_name" value="<?php echo escapeHtml($item['item_name']); ?>" />
+    </p>
+    <p>
+        <label for="item_quantity">Item Quantity</label>
+        <input type="number" name="item_quantity" value="<?php echo escapeHtml($item['item_quantity']); ?>" />
     </p>
     <p>
         <label for="item_brand">Brand</label>

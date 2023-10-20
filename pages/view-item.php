@@ -3,7 +3,7 @@
 $item_id = (isset($_GET['item_id'])) ? $_GET['item_id'] : false;
 
 try {
-    $sql = 'SELECT i.item_id, i.item_name, i.item_deployed_loc, i.item_notes, b.brand_name, c.cat_name, l.loc_name, s.status_name
+    $sql = 'SELECT i.item_id, i.item_name, i.item_quantity, i.item_deployed_loc, i.item_notes, b.brand_name, c.cat_name, l.loc_name, s.status_name
             FROM inv_items i
             LEFT JOIN inv_brands b ON b.brand_id = i.item_brand_id
             LEFT JOIN inv_locations l ON l.loc_id = i.item_loc_id
@@ -30,6 +30,7 @@ try {
     </h2>
     <?php if($item_id && $item): ?>
         <nav class="onpage-nav">
+            <a href="index.php?page=checkout-item&item_id=<?php echo $item['item_id']; ?>">Checkout Item</a>
             <a href="index.php?page=edit-item&item_id=<?php echo $item['item_id']; ?>">Edit Item</a>
         </nav>
     <?php endif; ?>
@@ -40,6 +41,10 @@ try {
 <h3>Name</h3>
 <p>
     <?php echo escapeHtml($item['item_name']); ?>
+</p>
+<h3>Quantity</h3>
+<p>
+    <?php echo escapeHtml($item['item_quantity']); ?>
 </p>
 <h3>Brand</h3>
 <p>

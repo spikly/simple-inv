@@ -9,6 +9,11 @@ if(isset($_POST['add_item_submit'])) {
             'status' => 'error',
             'message' => 'Item name cannot be empty',
         ];
+    }elseif(empty($_POST['item_quantity'])) {
+        $formMessage = [
+            'status' => 'error',
+            'message' => 'Item quantity cannot be empty',
+        ];
     }elseif($_POST['item_brand'] < 1) {
         $formMessage = [
             'status' => 'error',
@@ -32,6 +37,7 @@ if(isset($_POST['add_item_submit'])) {
     }else{
         $formData = [
             'item_name' => trim($_POST['item_name']),
+            'item_quantity' => trim($_POST['item_quantity']),
             'item_brand' => $_POST['item_brand'],
             'item_location' => $_POST['item_location'],
             'item_status' => slugify($_POST['item_status']),
@@ -40,7 +46,7 @@ if(isset($_POST['add_item_submit'])) {
         ];
 
         try {
-            $sql = 'INSERT INTO inv_items (item_name, item_brand_id, item_loc_id, item_status, item_deployed_loc, item_notes) VALUES (:item_name, :item_brand, :item_location, :item_status, :item_deployed_loc, :item_notes)';
+            $sql = 'INSERT INTO inv_items (item_name, item_quantity, item_brand_id, item_loc_id, item_status, item_deployed_loc, item_notes) VALUES (:item_name, :item_quantity, :item_brand, :item_location, :item_status, :item_deployed_loc, :item_notes)';
             $stmt = $db->prepare($sql);
             $stmt->execute($formData);
             $lastId = $db->lastInsertId();
@@ -100,6 +106,10 @@ $statuses = $stmt->fetchAll();
     <p>
         <label for="item_name">Item Name</label>
         <input type="text" name="item_name" />
+    </p>
+    <p>
+        <label for="item_quantity">Item Quantity</label>
+        <input type="number" name="item_quantity" value="1" />
     </p>
     <p>
         <label for="item_brand">Brand</label>
