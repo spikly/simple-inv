@@ -60,7 +60,7 @@ if(isset($_POST['add_deployment_submit'])) {
     </p>
     <?php echo ($formMessage) ? '<p class="form-message form-' . $formMessage['status'] . '">' . $formMessage['message'] . '</p>' : ''; ?>
     <p>
-        <label for="dep_description">Deployment Name</label>
+        <label for="dep_description">Deployment Description</label>
         <input type="text" name="dep_description" />
     </p>
     <p>

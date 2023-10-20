@@ -11,7 +11,7 @@ if(isset($_POST['edit_deployment_submit'])) {
     if(empty($_POST['dep_description'])) {
     	$formMessage = [
             'status' => 'error',
-            'message' => 'Deployment name cannot be empty',
+            'message' => 'Deployment description cannot be empty',
         ];
     }elseif($_POST['dep_quantity'] < 0 || $_POST['dep_quantity'] > 99999999999) {
         $formMessage = [
