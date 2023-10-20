@@ -30,7 +30,6 @@ try {
     </h2>
     <?php if($item_id && $item): ?>
         <nav class="onpage-nav">
-            <a href="index.php?page=checkout-item&item_id=<?php echo $item['item_id']; ?>">Checkout Item</a>
             <a href="index.php?page=edit-item&item_id=<?php echo $item['item_id']; ?>">Edit Item</a>
         </nav>
     <?php endif; ?>
