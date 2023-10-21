@@ -248,7 +248,6 @@ form input[type="submit"].delete:hover {
 div.notes-box {
     padding: 15px;
     background: #f9f9f9;
-    max-width: 600px;
 }
 
 div.notes-box p {
@@ -264,18 +263,32 @@ p.item-name {
     font-size: 1.8rem;
 }
 
-.item-property-container {
-    margin: 0 -10px;
-    display: flex;
-    flex-wrap: wrap;
+@media (min-width: 700px) {
+    .item-property-container {
+        margin: 0 -10px;
+        display: flex;
+        flex-wrap: wrap;
+    }
 }
 
 .item-property {
-    margin: 10px;
+    margin: 10px 0;
     padding: 20px;
     width: 100%;
-    max-width: calc(33.3333332% - 20px);
     border: 1px solid #eeeeee;
+}
+
+@media (min-width: 700px) {
+    .item-property {
+        margin: 10px;
+        max-width: calc(50% - 20px);
+    }
+}
+
+@media (min-width: 960px) {
+    .item-property {
+        max-width: calc(33.3333332% - 20px);
+    }
 }
 
 .item-property h3 {

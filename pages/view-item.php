@@ -64,7 +64,7 @@ $utilisationPercentage = calculatePercentage($item['item_quantity'], $deployment
         </div>
         <div class="item-property <?php echo utilisationBg($utilisationPercentage); ?>">
             <h3>Utilisation</h3>
-            <?php echo $utilisationPercentage; ?>%
+            <?php echo $utilisationPercentage; ?>&percnt;
         </div>
         <div class="item-property">
             <h3>Brand</h3>
@@ -99,13 +99,18 @@ $utilisationPercentage = calculatePercentage($item['item_quantity'], $deployment
             </p>
         </div>
     </div>
-    <h3>Current Deployments</h3>
+    <div class="flex-nav extra-padding">
+        <h2>
+            Current Deployments
+        </h2>
+    </div>
     <?php if(count($deployments) > 0): ?>
     <div class="table-container">
         <table>
             <tr>
                 <th>Description</th>
                 <th>Quantity</th>
+                <th>Utilisation</th>
                 <th>Date</th>
                 <th>Edit</th>
             </tr>
@@ -113,6 +118,7 @@ $utilisationPercentage = calculatePercentage($item['item_quantity'], $deployment
             <tr>
                 <td><?php echo escapeHtml($deployment['dep_description']); ?></td>
                 <td><?php echo escapeHtml($deployment['dep_quantity']); ?></td>
+                <td><?php echo calculatePercentage($item['item_quantity'], $deployment['dep_quantity']); ?>&percnt;</td>
                 <td><?php echo escapeHtml($deployment['dep_timestamp']); ?></td>
                 <td><a href="index.php?page=edit-deployment&deployment_id=<?php echo $deployment['dep_id']; ?>&item_id=<?php echo $deployment['dep_item_id']; ?>">Edit</a></td>
             </tr>
@@ -124,7 +130,11 @@ $utilisationPercentage = calculatePercentage($item['item_quantity'], $deployment
         No current deployments
     </p>
     <?php endif; ?>
-    <h3>Other Notes</h3>
+    <div class="flex-nav extra-padding">
+        <h2>
+            Notes
+        </h2>
+    </div>
     <div class="notes-box">
         <?php echo nl2p(text2link((isset($item['item_notes']) && strlen($item['item_notes']) > 0) ? escapeHtml($item['item_notes']) : '-')); ?>
     </div>

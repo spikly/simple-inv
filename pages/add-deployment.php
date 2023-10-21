@@ -76,13 +76,18 @@ if(isset($_POST['add_deployment_submit'])) {
         <input type="submit" name="add_deployment_submit" value="Save">
     </p>
 </form>
-<h3>Current Deployments</h3>
+<div class="flex-nav extra-padding">
+    <h2>
+        Current Deployments
+    </h2>
+</div>
 <?php if(count($deployments) > 0): ?>
 <div class="table-container">
     <table>
         <tr>
             <th>Description</th>
             <th>Quantity</th>
+            <th>Utilisation</th>
             <th>Date</th>
             <th>Edit</th>
         </tr>
@@ -90,6 +95,7 @@ if(isset($_POST['add_deployment_submit'])) {
         <tr>
             <td><?php echo escapeHtml($deployment['dep_description']); ?></td>
             <td><?php echo escapeHtml($deployment['dep_quantity']); ?></td>
+            <td><?php echo calculatePercentage($item['item_quantity'], $deployment['dep_quantity']); ?>&percnt;</td>
             <td><?php echo escapeHtml($deployment['dep_timestamp']); ?></td>
             <td><a href="index.php?page=edit-deployment&deployment_id=<?php echo $deployment['dep_id']; ?>&item_id=<?php echo $deployment['dep_item_id']; ?>">Edit</a></td>
         </tr>
