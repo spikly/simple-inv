@@ -51,7 +51,7 @@ h2 {
 }
 
 h3 {
-    margin: 30px 0 5px 0;
+    margin: 30px 0 20px 0;
     font-size: 1.8rem;
 }
 
@@ -168,6 +168,7 @@ form p {
 form label {
     margin: 0 0 5px 0;
     display: block;
+    font-weight: 600;
 }
 
 input,
@@ -256,4 +257,42 @@ div.notes-box p {
 
 div.notes-box p:last-child {
     margin: 0;
+}
+
+p.item-name {
+    padding: 0 0 30px 0;
+    font-size: 1.8rem;
+}
+
+.item-property-container {
+    margin: 0 -10px;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.item-property {
+    margin: 10px;
+    padding: 20px;
+    width: 100%;
+    max-width: calc(33.3333332% - 20px);
+    border: 1px solid #eeeeee;
+}
+
+.item-property h3 {
+    margin: 0 0 5px 0;
+}
+
+.item-property.red {
+    background: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.item-property.amber {
+    background: #fff3cd;
+    border-color: #ffeeba;
+}
+
+.item-property.green {
+    background: #d4edda;
+    border-color: #c3e6cb;
 }

@@ -2,9 +2,14 @@
 
 $formData = [];
 $formMessage = false;
+$deployments = [];
 
 $item_id = (isset($_GET['item_id'])) ? $_GET['item_id'] : false;
 $item = fetchSingleItem($item_id);
+
+if($item) {
+    $deployments = fetchItemDeployments($item_id);
+}
 
 if(isset($_POST['add_deployment_submit'])) {
     if(empty($_POST['dep_description'])) {
@@ -71,6 +76,31 @@ if(isset($_POST['add_deployment_submit'])) {
         <input type="submit" name="add_deployment_submit" value="Save">
     </p>
 </form>
+<h3>Current Deployments</h3>
+<?php if(count($deployments) > 0): ?>
+<div class="table-container">
+    <table>
+        <tr>
+            <th>Description</th>
+            <th>Quantity</th>
+            <th>Date</th>
+            <th>Edit</th>
+        </tr>
+        <?php foreach($deployments as $deployment): ?>
+        <tr>
+            <td><?php echo escapeHtml($deployment['dep_description']); ?></td>
+            <td><?php echo escapeHtml($deployment['dep_quantity']); ?></td>
+            <td><?php echo escapeHtml($deployment['dep_timestamp']); ?></td>
+            <td><a href="index.php?page=edit-deployment&deployment_id=<?php echo $deployment['dep_id']; ?>&item_id=<?php echo $deployment['dep_item_id']; ?>">Edit</a></td>
+        </tr>
+        <?php endforeach; ?>
+    </table>
+</div>
+<?php else: ?>
+<p>
+    No current deployments
+</p>
+<?php endif; ?>
 <?php else: ?>
     <p>
         Invalid item ID
