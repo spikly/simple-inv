@@ -53,7 +53,7 @@ if(isset($_POST['add_deployment_submit'])) {
     </h2>
     <?php if($item): ?>
         <nav class="onpage-nav">
-            <a href="index.php?page=view-item&item_id=<?php echo $item['item_id']; ?>">Back to Item</a>
+            <a href="index.php?page=view-item&item_id=<?php echo $item['item_id']; ?>">View Item</a>
         </nav>
     <?php endif; ?>
 </div>

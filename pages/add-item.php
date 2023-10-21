@@ -39,13 +39,14 @@ if(isset($_POST['add_item_submit'])) {
             'item_name' => trim($_POST['item_name']),
             'item_quantity' => trim($_POST['item_quantity']),
             'item_brand' => $_POST['item_brand'],
+            'item_supplier' => ($_POST['item_supplier'] >= 1) ? $_POST['item_supplier'] : null,
             'item_location' => $_POST['item_location'],
             'item_status' => slugify($_POST['item_status']),
             'item_notes' => trim($_POST['item_notes']),
         ];
 
         try {
-            $sql = 'INSERT INTO inv_items (item_name, item_quantity, item_brand_id, item_loc_id, item_status, item_notes) VALUES (:item_name, :item_quantity, :item_brand, :item_location, :item_status, :item_notes)';
+            $sql = 'INSERT INTO inv_items (item_name, item_quantity, item_brand_id, item_sup_id, item_loc_id, item_status, item_notes) VALUES (:item_name, :item_quantity, :item_brand, :item_supplier, :item_location, :item_status, :item_notes)';
             $stmt = $db->prepare($sql);
             $stmt->execute($formData);
             $lastId = $db->lastInsertId();
@@ -76,6 +77,11 @@ $sql = 'SELECT brand_id, brand_name FROM inv_brands ORDER BY brand_name asc';
 $stmt = $db->prepare($sql);
 $stmt->execute();
 $brands = $stmt->fetchAll();
+
+$sql = 'SELECT sup_id, sup_name FROM inv_suppliers ORDER BY sup_name asc';
+$stmt = $db->prepare($sql);
+$stmt->execute();
+$suppliers = $stmt->fetchAll();
 
 $sql = 'SELECT cat_id, cat_name FROM inv_categories ORDER BY cat_name asc';
 $stmt = $db->prepare($sql);
@@ -116,6 +122,15 @@ $statuses = $stmt->fetchAll();
             <option value="0">Select</option>
             <?php foreach($brands as $brand): ?>
                 <option value="<?php echo $brand['brand_id']; ?>"><?php echo $brand['brand_name']; ?></option>
+            <?php endforeach ?>
+        </select>
+    </p>
+    <p>
+        <label for="item_supplier">Supplier</label>
+        <select name="item_supplier">
+            <option value="0">Select</option>
+            <?php foreach($suppliers as $supplier): ?>
+                <option value="<?php echo $supplier['sup_id']; ?>"><?php echo $supplier['sup_name']; ?></option>
             <?php endforeach ?>
         </select>
     </p>

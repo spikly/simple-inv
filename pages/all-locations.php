@@ -22,7 +22,7 @@ $locationCount = count($allLocations);
 
 <?php if(count($allLocations) > 0): ?>
 <div class="search-box">
-    <input type="search" id="tableSearchInput" onkeyup="searchTable()" placeholder="Search for items...">
+    <input type="search" id="tableSearchInput" onkeyup="searchTable()" placeholder="Search for locations...">
 </div>
 
 <div class="table-container">

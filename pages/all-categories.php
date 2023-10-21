@@ -22,7 +22,7 @@ $categoryCount = count($allCategories);
 
 <?php if(count($allCategories) > 0): ?>
 <div class="search-box">
-    <input type="search" id="tableSearchInput" onkeyup="searchTable()" placeholder="Search for items...">
+    <input type="search" id="tableSearchInput" onkeyup="searchTable()" placeholder="Search for categories...">
 </div>
 
 <div class="table-container">

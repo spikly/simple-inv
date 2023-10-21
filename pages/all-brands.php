@@ -22,7 +22,7 @@ $brandCount = count($allBrands);
 
 <?php if(count($allBrands) > 0): ?>
 <div class="search-box">
-    <input type="search" id="tableSearchInput" onkeyup="searchTable()" placeholder="Search for items...">
+    <input type="search" id="tableSearchInput" onkeyup="searchTable()" placeholder="Search for brands...">
 </div>
 
 <div class="table-container">

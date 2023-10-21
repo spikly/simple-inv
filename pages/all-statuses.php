@@ -22,7 +22,7 @@ $statusCount = count($allStatuses);
 
 <?php if(count($allStatuses) > 0): ?>
 <div class="search-box">
-    <input type="search" id="tableSearchInput" onkeyup="searchTable()" placeholder="Search for items...">
+    <input type="search" id="tableSearchInput" onkeyup="searchTable()" placeholder="Search for statuses...">
 </div>
 
 <div class="table-container">

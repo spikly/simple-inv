@@ -181,6 +181,7 @@ textarea {
 
 form input[type="text"],
 form input[type="number"],
+form input[type="url"],
 form textarea {
     padding: 8px 10px;
     width: 100%;
@@ -195,6 +196,7 @@ form input[type="number"] {
 
 form input[type="text"]:focus,
 form input[type="number"]:focus,
+form input[type="url"]:focus,
 form select:focus,
 form textarea:focus {
     border-color: #398ad7;

@@ -4,9 +4,10 @@ $allItems = [];
 $params = [];
 $clauses = [];
 
-$sql = 'SELECT i.item_id, i.item_name, i.item_quantity, b.brand_name, c.cat_name, l.loc_name, s.status_name, d.item_deployed_count
+$sql = 'SELECT i.item_id, i.item_name, i.item_quantity, b.brand_name, sp.sup_name, c.cat_name, l.loc_name, s.status_name, d.item_deployed_count
 FROM inv_items i
 LEFT JOIN inv_brands b ON b.brand_id = i.item_brand_id
+LEFT JOIN inv_suppliers sp ON sp.sup_id = i.item_sup_id
 LEFT JOIN inv_locations l ON l.loc_id = i.item_loc_id
 LEFT JOIN inv_statuses s ON s.status_id  = i.item_status
 LEFT JOIN categories_items ci ON i.item_id = ci.item_id
@@ -16,6 +17,11 @@ LEFT JOIN (select dep_item_id, sum(dep_quantity) as item_deployed_count from inv
 if(isset($_GET['brand_id'])) {
     $clauses[] = 'i.item_brand_id = :brand_id';
     $params['brand_id'] = $_GET['brand_id'];
+}
+
+if(isset($_GET['supplier_id'])) {
+    $clauses[] = 'i.item_sup_id = :supplier_id';
+    $params['supplier_id'] = $_GET['supplier_id'];
 }
 
 if(isset($_GET['category_id'])) {
@@ -52,6 +58,10 @@ if($itemCount > 0) {
             switch ($index) {
                 case 'brand_id':
                     $filtersApplied[] = '<span>Brand: ' . $allItems[0]['brand_name'] . '</span>';
+                    $exportUrl = '&amp;' . $index . '=' . $value;
+                    break;
+                case 'supplier_id':
+                    $filtersApplied[] = '<span>Supplier: ' . $allItems[0]['sup_name'] . '</span>';
                     $exportUrl = '&amp;' . $index . '=' . $value;
                     break;
                 case 'category_id':

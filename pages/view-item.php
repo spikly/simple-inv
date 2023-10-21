@@ -4,9 +4,10 @@ $item_id = (isset($_GET['item_id'])) ? $_GET['item_id'] : false;
 $deployments = [];
 
 try {
-    $sql = 'SELECT i.item_id, i.item_name, i.item_quantity, i.item_notes, b.brand_id, b.brand_name, c.cat_id, c.cat_name, l.loc_id, l.loc_name, s.status_id, s.status_name
+    $sql = 'SELECT i.item_id, i.item_name, i.item_quantity, i.item_notes, b.brand_id, b.brand_name, sp.sup_id, sp.sup_name, sp.sup_website, c.cat_id, c.cat_name, l.loc_id, l.loc_name, s.status_id, s.status_name
             FROM inv_items i
             LEFT JOIN inv_brands b ON b.brand_id = i.item_brand_id
+            LEFT JOIN inv_suppliers sp ON sp.sup_id = i.item_sup_id
             LEFT JOIN inv_locations l ON l.loc_id = i.item_loc_id
             LEFT JOIN inv_statuses s ON s.status_id  = i.item_status
             LEFT JOIN categories_items ci ON i.item_id = ci.item_id
@@ -69,33 +70,34 @@ $utilisationPercentage = calculatePercentage($item['item_quantity'], $deployment
         <div class="item-property">
             <h3>Brand</h3>
             <p>
-                <a href="index.php?page=items&brand_id=<?php echo $item['brand_id']; ?>">
-                    <?php echo escapeHtml($item['brand_name']); ?>
-                </a>
+                <a href="index.php?page=items&brand_id=<?php echo $item['brand_id']; ?>"><?php echo escapeHtml($item['brand_name']); ?></a>
             </p>
         </div>
+        <?php if(isset($item['sup_id'])): ?>
+            <div class="item-property">
+                <h3>Supplier</h3>
+                <p>
+                    <a href="index.php?page=items&supplier_id=<?php echo $item['sup_id']; ?>"><?php echo escapeHtml($item['sup_name']); ?></a> |
+                    <a href="<?php echo $item['sup_website']; ?>" target="_blank">Website</a>
+                </p>
+            </div>
+        <?php endif; ?>
         <div class="item-property">
             <h3>Category</h3>
             <p>
-                <a href="index.php?page=items&category_id=<?php echo $item['cat_id']; ?>">
-                    <?php echo escapeHtml($item['cat_name']); ?>
-                </a>
+                <a href="index.php?page=items&category_id=<?php echo $item['cat_id']; ?>"><?php echo escapeHtml($item['cat_name']); ?></a>
             </p>
         </div>
         <div class="item-property">
             <h3>Storage Location</h3>
             <p>
-                <a href="index.php?page=items&location_id=<?php echo $item['loc_id']; ?>">
-                    <?php echo escapeHtml($item['loc_name']); ?>
-                </a>
+                <a href="index.php?page=items&location_id=<?php echo $item['loc_id']; ?>"><?php echo escapeHtml($item['loc_name']); ?></a>
             </p>
         </div>
         <div class="item-property">
             <h3>Status</h3>
             <p>
-                <a href="index.php?page=items&status_id=<?php echo $item['status_id']; ?>">
-                    <?php echo escapeHtml($item['status_name']); ?>
-                </a>
+                <a href="index.php?page=items&status_id=<?php echo $item['status_id']; ?>"><?php echo escapeHtml($item['status_name']); ?></a>
             </p>
         </div>
     </div>

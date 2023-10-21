@@ -50,6 +50,7 @@ if($currentPage == 'export-items') {
                 <a href="index.php?page=items">Items</a>
                 <a href="index.php?page=categories">Categories</a>
                 <a href="index.php?page=brands">Brands</a>
+                <a href="index.php?page=suppliers">Suppliers</a>
                 <a href="index.php?page=locations">Locations</a>
                 <a href="index.php?page=statuses">Statuses</a>
             </div>

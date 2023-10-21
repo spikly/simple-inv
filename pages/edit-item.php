@@ -38,13 +38,14 @@ if(isset($_POST['edit_item_submit'])) {
             'item_name' => trim($_POST['item_name']),
             'item_quantity' => trim($_POST['item_quantity']),
             'item_brand' => $_POST['item_brand'],
+            'item_supplier' => ($_POST['item_supplier'] >= 1) ? $_POST['item_supplier'] : null,
             'item_location' => $_POST['item_location'],
             'item_status' => slugify($_POST['item_status']),
             'item_notes' => (isset($_POST['item_notes']) && strlen($_POST['item_notes']) > 0) ? trim($_POST['item_notes']) : null,
         ];
 
         try {
-            $sql = 'UPDATE inv_items SET item_name = :item_name, item_quantity = :item_quantity, item_brand_id = :item_brand, item_loc_id = :item_location, item_status = :item_status, item_notes = :item_notes WHERE item_id = :edit_id';
+            $sql = 'UPDATE inv_items SET item_name = :item_name, item_quantity = :item_quantity, item_brand_id = :item_brand, item_sup_id = :item_supplier, item_loc_id = :item_location, item_status = :item_status, item_notes = :item_notes WHERE item_id = :edit_id';
             $stmt = $db->prepare($sql);
             $stmt->execute($formData);
             $lastId = $db->lastInsertId();
@@ -100,6 +101,11 @@ $stmt = $db->prepare($sql);
 $stmt->execute();
 $brands = $stmt->fetchAll();
 
+$sql = 'SELECT sup_id, sup_name FROM inv_suppliers ORDER BY sup_name asc';
+$stmt = $db->prepare($sql);
+$stmt->execute();
+$suppliers = $stmt->fetchAll();
+
 $sql = 'SELECT cat_id, cat_name FROM inv_categories ORDER BY cat_name asc';
 $stmt = $db->prepare($sql);
 $stmt->execute();
@@ -123,7 +129,7 @@ $statuses = $stmt->fetchAll();
     </h2>
     <?php if($item): ?>
         <nav class="onpage-nav">
-            <a href="index.php?page=view-item&item_id=<?php echo $item['item_id']; ?>">Back to Item</a>
+            <a href="index.php?page=view-item&item_id=<?php echo $item['item_id']; ?>">View Item</a>
         </nav>
     <?php endif; ?>
 </div>
@@ -145,6 +151,15 @@ $statuses = $stmt->fetchAll();
             <option value="0">Select</option>
             <?php foreach($brands as $brand): ?>
                 <option value="<?php echo $brand['brand_id']; ?>"<?php echo ($item['item_brand_id'] == $brand['brand_id']) ? ' selected' : ''; ?>><?php echo $brand['brand_name']; ?></option>
+            <?php endforeach ?>
+        </select>
+    </p>
+    <p>
+        <label for="item_supplier">Supplier</label>
+        <select name="item_supplier">
+            <option value="0">Select</option>
+            <?php foreach($suppliers as $supplier): ?>
+                <option value="<?php echo $supplier['sup_id']; ?>"<?php echo ($item['item_sup_id'] == $supplier['sup_id']) ? ' selected' : ''; ?>><?php echo $supplier['sup_name']; ?></option>
             <?php endforeach ?>
         </select>
     </p>

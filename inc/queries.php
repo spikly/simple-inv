@@ -56,7 +56,7 @@ function fetchSingleItem($item_id)
 
     try {
         $sql = '
-            SELECT i.item_id, i.item_name, i.item_quantity, i.item_brand_id, i.item_loc_id, i.item_status, i.item_notes, ci.cat_id 
+            SELECT i.*, ci.cat_id 
             FROM inv_items i 
             INNER JOIN categories_items ci 
             ON i.item_id = ci.item_id 
