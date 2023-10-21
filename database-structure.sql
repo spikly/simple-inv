@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 5.5.5-10.6.4-MariaDB)
 # Database: workshop-inventory-1
-# Generation Time: 2023-10-20 20:52:54 +0000
+# Generation Time: 2023-10-21 17:23:16 +0000
 # ************************************************************
 
 
@@ -23,8 +23,6 @@ SET NAMES utf8mb4;
 # Dump of table categories_items
 # ------------------------------------------------------------
 
-DROP TABLE IF EXISTS `categories_items`;
-
 CREATE TABLE `categories_items` (
   `cat_id` int(11) NOT NULL,
   `item_id` int(11) NOT NULL,
@@ -39,8 +37,6 @@ CREATE TABLE `categories_items` (
 # Dump of table inv_brands
 # ------------------------------------------------------------
 
-DROP TABLE IF EXISTS `inv_brands`;
-
 CREATE TABLE `inv_brands` (
   `brand_id` int(11) NOT NULL AUTO_INCREMENT,
   `brand_name` text NOT NULL,
@@ -51,8 +47,6 @@ CREATE TABLE `inv_brands` (
 
 # Dump of table inv_categories
 # ------------------------------------------------------------
-
-DROP TABLE IF EXISTS `inv_categories`;
 
 CREATE TABLE `inv_categories` (
   `cat_id` int(11) NOT NULL AUTO_INCREMENT,
@@ -65,8 +59,6 @@ CREATE TABLE `inv_categories` (
 
 # Dump of table inv_deployments
 # ------------------------------------------------------------
-
-DROP TABLE IF EXISTS `inv_deployments`;
 
 CREATE TABLE `inv_deployments` (
   `dep_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
@@ -82,12 +74,11 @@ CREATE TABLE `inv_deployments` (
 # Dump of table inv_items
 # ------------------------------------------------------------
 
-DROP TABLE IF EXISTS `inv_items`;
-
 CREATE TABLE `inv_items` (
   `item_id` int(11) NOT NULL AUTO_INCREMENT,
   `item_loc_id` int(11) NOT NULL,
   `item_brand_id` int(11) NOT NULL,
+  `item_sup_id` int(11) DEFAULT NULL,
   `item_status` int(11) NOT NULL,
   `item_name` text NOT NULL,
   `item_quantity` int(11) NOT NULL DEFAULT 1,
@@ -103,8 +94,6 @@ CREATE TABLE `inv_items` (
 # Dump of table inv_locations
 # ------------------------------------------------------------
 
-DROP TABLE IF EXISTS `inv_locations`;
-
 CREATE TABLE `inv_locations` (
   `loc_id` int(11) NOT NULL AUTO_INCREMENT,
   `loc_name` text NOT NULL,
@@ -116,12 +105,22 @@ CREATE TABLE `inv_locations` (
 # Dump of table inv_statuses
 # ------------------------------------------------------------
 
-DROP TABLE IF EXISTS `inv_statuses`;
-
 CREATE TABLE `inv_statuses` (
   `status_id` int(11) NOT NULL AUTO_INCREMENT,
   `status_name` text NOT NULL,
   PRIMARY KEY (`status_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+
+# Dump of table inv_suppliers
+# ------------------------------------------------------------
+
+CREATE TABLE `inv_suppliers` (
+  `sup_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `sup_name` text NOT NULL,
+  `sup_website` text DEFAULT NULL,
+  PRIMARY KEY (`sup_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
