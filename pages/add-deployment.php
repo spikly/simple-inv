@@ -94,7 +94,7 @@ if(isset($_POST['add_deployment_submit'])) {
         <?php foreach($deployments as $deployment): ?>
         <tr>
             <td><?php echo escapeHtml($deployment['dep_description']); ?></td>
-            <td><?php echo escapeHtml($deployment['dep_quantity']); ?></td>
+            <td><?php echo escapeHtml($deployment['dep_quantity']); ?><?php echo escapeHtml($item['unit_symbol']); ?></td>
             <td><?php echo calculatePercentage($item['item_quantity'], $deployment['dep_quantity']); ?>&percnt;</td>
             <td><?php echo escapeHtml($deployment['dep_timestamp']); ?></td>
             <td><a href="index.php?page=edit-deployment&deployment_id=<?php echo $deployment['dep_id']; ?>&item_id=<?php echo $deployment['dep_item_id']; ?>">Edit</a></td>

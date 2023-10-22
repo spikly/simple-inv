@@ -12,6 +12,11 @@ if(isset($_POST['edit_item_submit'])) {
             'status' => 'error',
             'message' => 'Item name cannot be empty',
         ];
+    }elseif($_POST['item_measurement_unit'] < 1) {
+        $formMessage = [
+            'status' => 'error',
+            'message' => 'You must select a measurement unit',
+        ];
     }elseif($_POST['item_brand'] < 1) {
         $formMessage = [
             'status' => 'error',
@@ -37,6 +42,7 @@ if(isset($_POST['edit_item_submit'])) {
             'edit_id' => $edit_id,
             'item_name' => trim($_POST['item_name']),
             'item_quantity' => trim($_POST['item_quantity']),
+            'item_measurement_unit' => trim($_POST['item_measurement_unit']),
             'item_brand' => $_POST['item_brand'],
             'item_supplier' => ($_POST['item_supplier'] >= 1) ? $_POST['item_supplier'] : null,
             'item_location' => $_POST['item_location'],
@@ -45,7 +51,7 @@ if(isset($_POST['edit_item_submit'])) {
         ];
 
         try {
-            $sql = 'UPDATE inv_items SET item_name = :item_name, item_quantity = :item_quantity, item_brand_id = :item_brand, item_sup_id = :item_supplier, item_loc_id = :item_location, item_status = :item_status, item_notes = :item_notes WHERE item_id = :edit_id';
+            $sql = 'UPDATE inv_items SET item_name = :item_name, item_quantity = :item_quantity, item_measurement_unit = :item_measurement_unit, item_brand_id = :item_brand, item_sup_id = :item_supplier, item_loc_id = :item_location, item_status = :item_status, item_notes = :item_notes WHERE item_id = :edit_id';
             $stmt = $db->prepare($sql);
             $stmt->execute($formData);
             $lastId = $db->lastInsertId();
@@ -91,10 +97,17 @@ if(isset($_POST['edit_item_submit'])) {
 
 $item = fetchSingleItem($edit_id);
 
+$munits = [];
 $brands = [];
+$suppliers = [];
 $categories = [];
 $locations = [];
 $statuses = [];
+
+$sql = 'SELECT unit_id, unit_label, unit_symbol FROM inv_measurement_units ORDER BY unit_id asc';
+$stmt = $db->prepare($sql);
+$stmt->execute();
+$munits = $stmt->fetchAll();
 
 $sql = 'SELECT brand_id, brand_name FROM inv_brands ORDER BY brand_name asc';
 $stmt = $db->prepare($sql);
@@ -146,11 +159,20 @@ $statuses = $stmt->fetchAll();
         <input type="number" name="item_quantity" value="<?php echo escapeHtml($item['item_quantity']); ?>" />
     </p>
     <p>
+        <label for="item_measurement_unit">Measurement Unit</label>
+        <select name="item_measurement_unit">
+            <option value="0">Select</option>
+            <?php foreach($munits as $munit): ?>
+                <option value="<?php echo $munit['unit_id']; ?>"<?php echo ($item['item_measurement_unit'] == $munit['unit_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($munit['unit_label']); ?> (<?php echo escapeHtml($munit['unit_symbol']); ?>)</option>
+            <?php endforeach ?>
+        </select>
+    </p>
+    <p>
         <label for="item_brand">Brand</label>
         <select name="item_brand">
             <option value="0">Select</option>
             <?php foreach($brands as $brand): ?>
-                <option value="<?php echo $brand['brand_id']; ?>"<?php echo ($item['item_brand_id'] == $brand['brand_id']) ? ' selected' : ''; ?>><?php echo $brand['brand_name']; ?></option>
+                <option value="<?php echo $brand['brand_id']; ?>"<?php echo ($item['item_brand_id'] == $brand['brand_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($brand['brand_name']); ?></option>
             <?php endforeach ?>
         </select>
     </p>
@@ -159,7 +181,7 @@ $statuses = $stmt->fetchAll();
         <select name="item_supplier">
             <option value="0">Select</option>
             <?php foreach($suppliers as $supplier): ?>
-                <option value="<?php echo $supplier['sup_id']; ?>"<?php echo ($item['item_sup_id'] == $supplier['sup_id']) ? ' selected' : ''; ?>><?php echo $supplier['sup_name']; ?></option>
+                <option value="<?php echo $supplier['sup_id']; ?>"<?php echo ($item['item_sup_id'] == $supplier['sup_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($supplier['sup_name']); ?></option>
             <?php endforeach ?>
         </select>
     </p>
@@ -168,7 +190,7 @@ $statuses = $stmt->fetchAll();
         <select name="item_category">
             <option value="0">Select</option>
             <?php foreach($categories as $category): ?>
-                <option value="<?php echo $category['cat_id']; ?>"<?php echo ($item['cat_id'] == $category['cat_id']) ? ' selected' : ''; ?>><?php echo $category['cat_name']; ?></option>
+                <option value="<?php echo $category['cat_id']; ?>"<?php echo ($item['cat_id'] == $category['cat_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($category['cat_name']); ?></option>
             <?php endforeach ?>
         </select>
     </p>
@@ -177,7 +199,7 @@ $statuses = $stmt->fetchAll();
         <select name="item_location">
             <option value="0">Select</option>
             <?php foreach($locations as $location): ?>
-                <option value="<?php echo $location['loc_id']; ?>"<?php echo ($item['item_loc_id'] == $location['loc_id']) ? ' selected' : ''; ?>><?php echo $location['loc_name']; ?></option>
+                <option value="<?php echo $location['loc_id']; ?>"<?php echo ($item['item_loc_id'] == $location['loc_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($location['loc_name']); ?></option>
             <?php endforeach ?>
         </select>
     </p>
@@ -186,7 +208,7 @@ $statuses = $stmt->fetchAll();
         <select name="item_status">
             <option value="0">Select</option>
             <?php foreach($statuses as $status): ?>
-                <option value="<?php echo $status['status_id']; ?>"<?php echo ($item['item_status'] == $status['status_id']) ? ' selected' : ''; ?>><?php echo $status['status_name']; ?></option>
+                <option value="<?php echo $status['status_id']; ?>"<?php echo ($item['item_status'] == $status['status_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($status['status_name']); ?></option>
             <?php endforeach ?>
         </select>
     </p>
