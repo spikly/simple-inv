@@ -9,11 +9,6 @@ if(isset($_POST['add_item_submit'])) {
             'status' => 'error',
             'message' => 'Item name cannot be empty',
         ];
-    }elseif(empty($_POST['item_quantity'])) {
-        $formMessage = [
-            'status' => 'error',
-            'message' => 'Item quantity cannot be empty',
-        ];
     }elseif($_POST['item_measurement_unit'] < 1) {
         $formMessage = [
             'status' => 'error',
