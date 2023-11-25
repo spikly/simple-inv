@@ -61,7 +61,7 @@ if(isset($_POST['add_item_submit'])) {
 
             $formMessage = [
                 'status' => 'success',
-                'message' => 'Item added!',
+                'message' => 'Item added! <a href="index.php?page=view-item&item_id=' . $lastId . '">View Item</a>',
             ];
         } catch (\PDOException $e) {
             throw new \PDOException($e->getMessage(), (int)$e->getCode());
