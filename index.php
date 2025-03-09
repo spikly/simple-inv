@@ -83,5 +83,6 @@ if($currentPage == 'export-items') {
                 }
             }
         </script>
+        <script src="assets/js/app.js?<?php echo filemtime(__DIR__ . '/assets/js/app.js'); ?>"></script>
     </body>
 </html>

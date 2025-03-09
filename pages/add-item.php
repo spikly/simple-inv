@@ -135,48 +135,53 @@ $statuses = $stmt->fetchAll();
     </p>
     <p>
         <label for="item_brand">Brand</label>
-        <select name="item_brand">
+        <select name="item_brand" id="item_brand">
             <option value="0">Select</option>
             <?php foreach($brands as $brand): ?>
                 <option value="<?php echo $brand['brand_id']; ?>"><?php echo escapeHtml($brand['brand_name']); ?></option>
             <?php endforeach ?>
         </select>
+        <button class="add-new-attribute-value" id="add_new_brand" title="Add new Brand">+</button>
     </p>
     <p>
         <label for="item_supplier">Supplier</label>
-        <select name="item_supplier">
+        <select name="item_supplier" id="item_supplier">
             <option value="0">Select</option>
             <?php foreach($suppliers as $supplier): ?>
                 <option value="<?php echo $supplier['sup_id']; ?>"><?php echo escapeHtml($supplier['sup_name']); ?></option>
             <?php endforeach ?>
         </select>
+        <button class="add-new-attribute-value" id="add_new_supplier" title="Add new Supplier">+</button>
     </p>
     <p>
         <label for="item_category">Category</label>
-        <select name="item_category">
+        <select name="item_category" id="item_category">
             <option value="0">Select</option>
             <?php foreach($categories as $category): ?>
                 <option value="<?php echo $category['cat_id']; ?>"><?php echo escapeHtml($category['cat_name']); ?></option>
             <?php endforeach ?>
         </select>
+        <button class="add-new-attribute-value" id="add_new_category" title="Add new Category">+</button>
     </p>
     <p>
         <label for="item_location">Location</label>
-        <select name="item_location">
+        <select name="item_location" id="item_location">
             <option value="0">Select</option>
             <?php foreach($locations as $location): ?>
                 <option value="<?php echo $location['loc_id']; ?>"><?php echo escapeHtml($location['loc_name']); ?></option>
             <?php endforeach ?>
         </select>
+        <button class="add-new-attribute-value" id="add_new_location" title="Add new Location">+</button>
     </p>
     <p>
         <label for="item_status">Status</label>
-        <select name="item_status">
+        <select name="item_status" id="item_status">
             <option value="0">Select</option>
             <?php foreach($statuses as $status): ?>
                 <option value="<?php echo $status['status_id']; ?>"><?php echo escapeHtml($status['status_name']); ?></option>
             <?php endforeach ?>
         </select>
+        <button class="add-new-attribute-value" id="add_new_status" title="Add new Status">+</button>
     </p>
     <p>
         <label for="item_notes">Notes (optional)</label>

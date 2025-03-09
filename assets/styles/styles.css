@@ -247,6 +247,20 @@ form input[type="submit"].delete:hover {
     color: green;
 }
 
+button {
+    padding: 7px 15px;
+    border: 0;
+    background: #007bff;
+    color: #ffffff;
+    -webkit-appearance: none;
+    height: 42px;
+}
+
+button:hover {
+    cursor: pointer;
+    background: #229dff;
+}
+
 div.notes-box {
     padding: 15px;
     background: #f9f9f9;
@@ -310,4 +324,49 @@ p.item-name {
 .item-property.green {
     background: #d4edda;
     border-color: #c3e6cb;
+}
+
+#custom-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    width: 400px; /* Adjust width as needed */
+    max-width: 90%;
+    position: relative;
+}
+
+.modal-content h2 {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eeeeee;
+}
+
+.close-modal {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+}
+.modal-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
 }
