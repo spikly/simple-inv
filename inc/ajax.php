@@ -101,7 +101,8 @@ if($requestData['requestType'] == 'get-downdown-options') {
     $selectOptions = $stmt->fetchAll();
 
     foreach ($selectOptions as $option) {
-        $optionsHtml .= '<option value="' . $option['option_id'] . '">' . $option['option_name'] . '</option>';
+        $selected = ($requestData['newId'] == $option['option_id']) ? ' selected' : '';
+        $optionsHtml .= '<option value="' . $option['option_id'] . '"' . $selected . '>' . $option['option_name'] . '</option>';
     }
 
 

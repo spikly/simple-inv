@@ -94,7 +94,7 @@ function attachFormSubmitHandler(dropdownId)
             (data) => {
                 if (data.success) {
                     closeModal();
-                    refreshDropdown(dropdownId);
+                    refreshDropdown(dropdownId, data.newId);
                 } else {
                     showModalError(data.error || "An unknown error occurred.");
                 }
@@ -130,11 +130,12 @@ function showModalError(message)
     errorContainer.innerHTML = message;
 }
 
-function refreshDropdown(dropdownId)
+function refreshDropdown(dropdownId, newId)
 {
     let requestData = { 
         requestType: 'get-downdown-options',
-        dropdownId: dropdownId
+        dropdownId: dropdownId,
+        newId: newId
     };
 
     const select = document.getElementById(dropdownId);

@@ -14,7 +14,8 @@ function addNewBrand($db, $postData)
             $stmt->execute($formData);
 
             return [
-                'success' => true
+                'success' => true,
+                'newId' => $db->lastInsertId(),
             ];
         } catch (\PDOException $e) {
             return [
@@ -46,7 +47,8 @@ function addNewSupplier($db, $postData)
             $stmt->execute($formData);
 
             return [
-                'success' => true
+                'success' => true,
+                'newId' => $db->lastInsertId(),
             ];
         } catch (\PDOException $e) {
             return [
@@ -78,7 +80,8 @@ function addNewCategory($db, $postData)
             $stmt->execute($formData);
 
             return [
-                'success' => true
+                'success' => true,
+                'newId' => $db->lastInsertId(),
             ];
         } catch (\PDOException $e) {
             return [
@@ -109,7 +112,8 @@ function addNewLocation($db, $postData)
             $stmt->execute($formData);
 
             return [
-                'success' => true
+                'success' => true,
+                'newId' => $db->lastInsertId(),
             ];
         } catch (\PDOException $e) {
             return [
@@ -140,7 +144,8 @@ function addNewStatus($db, $postData)
             $stmt->execute($formData);
 
             return [
-                'success' => true
+                'success' => true,
+                'newId' => $db->lastInsertId(),
             ];
         } catch (\PDOException $e) {
             return [

@@ -41,6 +41,7 @@ if(isset($_POST['edit_item_submit'])) {
         $formData = [
             'edit_id' => $edit_id,
             'item_name' => trim($_POST['item_name']),
+            'item_part_no' => (!empty($_POST['item_part_no'])) ? trim($_POST['item_part_no']) : null,
             'item_quantity' => trim($_POST['item_quantity']),
             'item_measurement_unit' => trim($_POST['item_measurement_unit']),
             'item_brand' => $_POST['item_brand'],
@@ -51,7 +52,7 @@ if(isset($_POST['edit_item_submit'])) {
         ];
 
         try {
-            $sql = 'UPDATE inv_items SET item_name = :item_name, item_quantity = :item_quantity, item_measurement_unit = :item_measurement_unit, item_brand_id = :item_brand, item_sup_id = :item_supplier, item_loc_id = :item_location, item_status = :item_status, item_notes = :item_notes WHERE item_id = :edit_id';
+            $sql = 'UPDATE inv_items SET item_name = :item_name, item_part_no = :item_part_no, item_quantity = :item_quantity, item_measurement_unit = :item_measurement_unit, item_brand_id = :item_brand, item_sup_id = :item_supplier, item_loc_id = :item_location, item_status = :item_status, item_notes = :item_notes WHERE item_id = :edit_id';
             $stmt = $db->prepare($sql);
             $stmt->execute($formData);
             $lastId = $db->lastInsertId();
@@ -155,6 +156,10 @@ $statuses = $stmt->fetchAll();
         <input type="text" name="item_name" value="<?php echo escapeHtml($item['item_name']); ?>" />
     </p>
     <p>
+        <label for="item_part_no">Item Part Number</label>
+        <input type="text" name="item_part_no" value="<?php echo escapeHtml($item['item_part_no']); ?>" />
+    </p>
+    <p>
         <label for="item_quantity">Item Quantity</label>
         <input type="number" name="item_quantity" value="<?php echo escapeHtml($item['item_quantity']); ?>" />
     </p>
@@ -169,48 +174,53 @@ $statuses = $stmt->fetchAll();
     </p>
     <p>
         <label for="item_brand">Brand</label>
-        <select name="item_brand">
+        <select name="item_brand" id="item_brand">
             <option value="0">Select</option>
             <?php foreach($brands as $brand): ?>
                 <option value="<?php echo $brand['brand_id']; ?>"<?php echo ($item['item_brand_id'] == $brand['brand_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($brand['brand_name']); ?></option>
             <?php endforeach ?>
         </select>
+        <button class="add-new-attribute-value" id="add_new_brand" title="Add new Brand">+</button>
     </p>
     <p>
         <label for="item_supplier">Supplier</label>
-        <select name="item_supplier">
+        <select name="item_supplier" id="item_supplier">
             <option value="0">Select</option>
             <?php foreach($suppliers as $supplier): ?>
                 <option value="<?php echo $supplier['sup_id']; ?>"<?php echo ($item['item_sup_id'] == $supplier['sup_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($supplier['sup_name']); ?></option>
             <?php endforeach ?>
         </select>
+        <button class="add-new-attribute-value" id="add_new_supplier" title="Add new Supplier">+</button>
     </p>
     <p>
         <label for="item_category">Category</label>
-        <select name="item_category">
+        <select name="item_category" id="item_category">
             <option value="0">Select</option>
             <?php foreach($categories as $category): ?>
                 <option value="<?php echo $category['cat_id']; ?>"<?php echo ($item['cat_id'] == $category['cat_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($category['cat_name']); ?></option>
             <?php endforeach ?>
         </select>
+        <button class="add-new-attribute-value" id="add_new_category" title="Add new Category">+</button>
     </p>
     <p>
         <label for="item_location">Location</label>
-        <select name="item_location">
+        <select name="item_location" id="item_location">
             <option value="0">Select</option>
             <?php foreach($locations as $location): ?>
                 <option value="<?php echo $location['loc_id']; ?>"<?php echo ($item['item_loc_id'] == $location['loc_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($location['loc_name']); ?></option>
             <?php endforeach ?>
         </select>
+        <button class="add-new-attribute-value" id="add_new_location" title="Add new Location">+</button>
     </p>
     <p>
         <label for="item_status">Status</label>
-        <select name="item_status">
+        <select name="item_status" id="item_status">
             <option value="0">Select</option>
             <?php foreach($statuses as $status): ?>
                 <option value="<?php echo $status['status_id']; ?>"<?php echo ($item['item_status'] == $status['status_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($status['status_name']); ?></option>
             <?php endforeach ?>
         </select>
+        <button class="add-new-attribute-value" id="add_new_status" title="Add new Status">+</button>
     </p>
     <p>
         <label for="item_notes">Notes (optional)</label>

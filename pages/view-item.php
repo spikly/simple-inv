@@ -4,7 +4,7 @@ $item_id = (isset($_GET['item_id'])) ? $_GET['item_id'] : false;
 $deployments = [];
 
 try {
-    $sql = 'SELECT i.item_id, i.item_name, i.item_quantity, mu.unit_symbol, i.item_notes, b.brand_id, b.brand_name, sp.sup_id, sp.sup_name, sp.sup_website, c.cat_id, c.cat_name, l.loc_id, l.loc_name, s.status_id, s.status_name
+    $sql = 'SELECT i.item_id, i.item_name, i.item_part_no, i.item_quantity, mu.unit_symbol, i.item_notes, b.brand_id, b.brand_name, sp.sup_id, sp.sup_name, sp.sup_website, c.cat_id, c.cat_name, l.loc_id, l.loc_name, s.status_id, s.status_name
             FROM inv_items i
             LEFT JOIN inv_brands b ON b.brand_id = i.item_brand_id
             LEFT JOIN inv_suppliers sp ON sp.sup_id = i.item_sup_id
@@ -52,6 +52,14 @@ $utilisationPercentage = calculatePercentage($item['item_quantity'], $deployment
         <?php echo escapeHtml($item['item_name']); ?>
     </p>
     <div class="item-property-container">
+        <?php if(isset($item['item_part_no'])): ?>
+        <div class="item-property">
+            <h3>Part No</h3>
+            <p>
+                <?php echo escapeHtml($item['item_part_no']); ?>
+            </p>
+        </div>
+        <?php endif; ?>
         <div class="item-property">
             <h3>Quantity</h3>
             <p>

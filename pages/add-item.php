@@ -37,6 +37,7 @@ if(isset($_POST['add_item_submit'])) {
     }else{
         $formData = [
             'item_name' => trim($_POST['item_name']),
+            'item_part_no' => (!empty($_POST['item_part_no'])) ? trim($_POST['item_part_no']) : null,
             'item_quantity' => trim($_POST['item_quantity']),
             'item_measurement_unit' => trim($_POST['item_measurement_unit']),
             'item_brand' => $_POST['item_brand'],
@@ -47,7 +48,7 @@ if(isset($_POST['add_item_submit'])) {
         ];
 
         try {
-            $sql = 'INSERT INTO inv_items (item_name, item_quantity, item_measurement_unit, item_brand_id, item_sup_id, item_loc_id, item_status, item_notes) VALUES (:item_name, :item_quantity, :item_measurement_unit, :item_brand, :item_supplier, :item_location, :item_status, :item_notes)';
+            $sql = 'INSERT INTO inv_items (item_name, item_part_no, item_quantity, item_measurement_unit, item_brand_id, item_sup_id, item_loc_id, item_status, item_notes) VALUES (:item_name, :item_part_no, :item_quantity, :item_measurement_unit, :item_brand, :item_supplier, :item_location, :item_status, :item_notes)';
             $stmt = $db->prepare($sql);
             $stmt->execute($formData);
             $lastId = $db->lastInsertId();
@@ -119,6 +120,10 @@ $statuses = $stmt->fetchAll();
     <p>
         <label for="item_name">Item Name</label>
         <input type="text" name="item_name" />
+    </p>
+    <p>
+        <label for="item_part_no">Item Part Number</label>
+        <input type="text" name="item_part_no" />
     </p>
     <p>
         <label for="item_quantity">Item Quantity</label>

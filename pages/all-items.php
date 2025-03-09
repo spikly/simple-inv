@@ -106,9 +106,9 @@ if($itemCount > 0) {
     <table id="searchableTable">
         <tr>
             <th>Name</th>
+            <th>Location</th>
             <th>Brand</th>
             <th>Category</th>
-            <th>Location</th>
             <th>Status</th>
             <th>Quantity</th>
             <th>Deployed</th>
@@ -117,9 +117,9 @@ if($itemCount > 0) {
         <?php foreach($allItems as $item): ?>
             <tr>
                 <td><a href="index.php?page=view-item&item_id=<?php echo $item['item_id']; ?>"><?php echo escapeHtml($item['item_name']); ?></a></td>
+                <td><?php echo (isset($item['loc_name'])) ? escapeHtml($item['loc_name']) : '<i>Deleted</i>'; ?></td>
                 <td><?php echo (isset($item['brand_name'])) ? escapeHtml($item['brand_name']) : '<i>Deleted</i>'; ?></td>
                 <td><?php echo (isset($item['cat_name'])) ? escapeHtml($item['cat_name']) : '<i>Deleted</i>'; ?></td>
-                <td><?php echo (isset($item['loc_name'])) ? escapeHtml($item['loc_name']) : '<i>Deleted</i>'; ?></td>
                 <td><?php echo (isset($item['status_name'])) ? escapeHtml($item['status_name']) : '<i>Deleted</i>'; ?></td>
                 <td><?php echo escapeHtml($item['item_quantity']); ?><?php echo escapeHtml($item['unit_symbol']); ?></td>
                 <td><?php echo (isset($item['item_deployed_count'])) ? escapeHtml($item['item_deployed_count']) : '0'; ?><?php echo escapeHtml($item['unit_symbol']); ?></td>
