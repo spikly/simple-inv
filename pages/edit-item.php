@@ -156,7 +156,7 @@ $statuses = $stmt->fetchAll();
         <input type="text" name="item_name" value="<?php echo escapeHtml($item['item_name']); ?>" />
     </p>
     <p>
-        <label for="item_part_no">Item Part Number</label>
+        <label for="item_part_no">Manufacturers Part Number (optional)</label>
         <input type="text" name="item_part_no" value="<?php echo escapeHtml($item['item_part_no']); ?>" />
     </p>
     <p>
@@ -180,7 +180,7 @@ $statuses = $stmt->fetchAll();
                 <option value="<?php echo $brand['brand_id']; ?>"<?php echo ($item['item_brand_id'] == $brand['brand_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($brand['brand_name']); ?></option>
             <?php endforeach ?>
         </select>
-        <button class="add-new-attribute-value" id="add_new_brand" title="Add new Brand">+</button>
+        <button type="button" class="add-new-attribute-value" id="add_new_brand" title="Add new Brand">+</button>
     </p>
     <p>
         <label for="item_supplier">Supplier</label>
@@ -190,7 +190,7 @@ $statuses = $stmt->fetchAll();
                 <option value="<?php echo $supplier['sup_id']; ?>"<?php echo ($item['item_sup_id'] == $supplier['sup_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($supplier['sup_name']); ?></option>
             <?php endforeach ?>
         </select>
-        <button class="add-new-attribute-value" id="add_new_supplier" title="Add new Supplier">+</button>
+        <button type="button" class="add-new-attribute-value" id="add_new_supplier" title="Add new Supplier">+</button>
     </p>
     <p>
         <label for="item_category">Category</label>
@@ -200,7 +200,7 @@ $statuses = $stmt->fetchAll();
                 <option value="<?php echo $category['cat_id']; ?>"<?php echo ($item['cat_id'] == $category['cat_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($category['cat_name']); ?></option>
             <?php endforeach ?>
         </select>
-        <button class="add-new-attribute-value" id="add_new_category" title="Add new Category">+</button>
+        <button type="button" class="add-new-attribute-value" id="add_new_category" title="Add new Category">+</button>
     </p>
     <p>
         <label for="item_location">Location</label>
@@ -210,7 +210,7 @@ $statuses = $stmt->fetchAll();
                 <option value="<?php echo $location['loc_id']; ?>"<?php echo ($item['item_loc_id'] == $location['loc_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($location['loc_name']); ?></option>
             <?php endforeach ?>
         </select>
-        <button class="add-new-attribute-value" id="add_new_location" title="Add new Location">+</button>
+        <button type="button" class="add-new-attribute-value" id="add_new_location" title="Add new Location">+</button>
     </p>
     <p>
         <label for="item_status">Status</label>
@@ -220,7 +220,7 @@ $statuses = $stmt->fetchAll();
                 <option value="<?php echo $status['status_id']; ?>"<?php echo ($item['item_status'] == $status['status_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($status['status_name']); ?></option>
             <?php endforeach ?>
         </select>
-        <button class="add-new-attribute-value" id="add_new_status" title="Add new Status">+</button>
+        <button type="button" class="add-new-attribute-value" id="add_new_status" title="Add new Status">+</button>
     </p>
     <p>
         <label for="item_notes">Notes (optional)</label>

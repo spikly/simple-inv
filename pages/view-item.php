@@ -42,6 +42,7 @@ $utilisationPercentage = calculatePercentage($item['item_quantity'], $deployment
         <nav class="onpage-nav">
             <a href="index.php?page=add-deployment&item_id=<?php echo $item['item_id']; ?>">Deploy Item</a>
             <a href="index.php?page=edit-item&item_id=<?php echo $item['item_id']; ?>">Edit Item</a>
+            <a href="index.php?page=add-item&duplicate=<?php echo $item['item_id']; ?>">Duplicate Item</a>
         </nav>
     <?php endif; ?>
 </div>
@@ -54,7 +55,7 @@ $utilisationPercentage = calculatePercentage($item['item_quantity'], $deployment
     <div class="item-property-container">
         <?php if(isset($item['item_part_no'])): ?>
         <div class="item-property">
-            <h3>Part No</h3>
+            <h3>Manufacturers Part No</h3>
             <p>
                 <?php echo escapeHtml($item['item_part_no']); ?>
             </p>
