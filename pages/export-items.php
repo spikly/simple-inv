@@ -47,10 +47,10 @@ $allItems = $stmt->fetchAll();
 $tempFile = tempnam(sys_get_temp_dir(), 'csv');
 $fileHandle = fopen($tempFile, 'w');
 
-fputcsv($fileHandle, ['Item ID', 'Name', 'Brand', 'Category', 'Location', 'Status', 'Quantity', 'Deployed', 'Notes']);
+fputcsv($fileHandle, ['Item ID', 'Name', 'Brand', 'Category', 'Location', 'Status', 'Quantity', 'Deployed', 'Notes'], ',', '"', '\\');
 
 foreach ($allItems as $row) {
-    fputcsv($fileHandle, $row);
+    fputcsv($fileHandle, $row, ',', '"', '\\');
 }
 
 fclose($fileHandle);
