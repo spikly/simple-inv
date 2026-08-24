@@ -23,4 +23,13 @@ return [
     'add-deployment' => 'add-deployment',
     'edit-deployment' => 'edit-deployment',
     'export-items' => 'export-items',
+    'projects' => 'all-projects',
+    'add-project' => 'add-project',
+    'edit-project' => 'edit-project',
+    'view-project' => 'view-project',
+    'add-assembly' => 'add-assembly',
+    'edit-assembly' => 'edit-assembly',
+    'view-assembly' => 'view-assembly',
+    'add-assembly-item' => 'add-assembly-item',
+    'edit-assembly-item' => 'edit-assembly-item',
 ];

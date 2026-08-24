@@ -162,6 +162,96 @@ CREATE TABLE IF NOT EXISTS `inv_suppliers` (
   PRIMARY KEY (`sup_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+
+CREATE TABLE IF NOT EXISTS inv_project_statuses (
+    project_status_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    project_status_name VARCHAR(100) NOT NULL,
+    PRIMARY KEY (project_status_id),
+    UNIQUE KEY uq_project_status_name (project_status_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO inv_project_statuses
+    (project_status_name)
+VALUES
+    ('Planning'),
+    ('Active'),
+    ('On Hold'),
+    ('Complete'),
+    ('Archived');
+
+
+CREATE TABLE IF NOT EXISTS inv_projects (
+    project_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    project_name VARCHAR(255) NOT NULL,
+    project_reference VARCHAR(100) NULL,
+    project_description TEXT NULL,
+    project_status_id INT UNSIGNED NOT NULL,
+    project_notes TEXT NULL,
+    project_created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    project_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (project_id),
+    KEY idx_project_status (project_status_id),
+
+    CONSTRAINT fk_project_status
+        FOREIGN KEY (project_status_id)
+        REFERENCES inv_project_statuses(project_status_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+CREATE TABLE IF NOT EXISTS inv_project_assemblies (
+    assembly_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    assembly_project_id INT UNSIGNED NOT NULL,
+    assembly_name VARCHAR(255) NOT NULL,
+    assembly_description TEXT NULL,
+    assembly_notes TEXT NULL,
+    assembly_sort_order INT NOT NULL DEFAULT 0,
+    assembly_created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    assembly_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    PRIMARY KEY (assembly_id),
+    KEY idx_assembly_project (assembly_project_id),
+
+    CONSTRAINT fk_assembly_project
+        FOREIGN KEY (assembly_project_id)
+        REFERENCES inv_projects(project_id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+CREATE TABLE IF NOT EXISTS inv_assembly_items (
+    assembly_item_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    assembly_id INT UNSIGNED NOT NULL,
+    item_id INT NOT NULL,
+    quantity_required DECIMAL(12,3) NOT NULL DEFAULT 1,
+    quantity_allocated DECIMAL(12,3) NOT NULL DEFAULT 0,
+    quantity_installed DECIMAL(12,3) NOT NULL DEFAULT 0,
+    assembly_item_notes TEXT NULL,
+    assembly_item_sort_order INT NOT NULL DEFAULT 0,
+
+    PRIMARY KEY (assembly_item_id),
+
+    UNIQUE KEY uq_assembly_item (
+        assembly_id,
+        item_id
+    ),
+
+    KEY idx_assembly_item_assembly (assembly_id),
+    KEY idx_assembly_item_item (item_id),
+
+    CONSTRAINT fk_assembly_item_assembly
+        FOREIGN KEY (assembly_id)
+        REFERENCES inv_project_assemblies(assembly_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_assembly_item_item
+        FOREIGN KEY (item_id)
+        REFERENCES inv_items(item_id)
+        ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 --
 -- Constraints for dumped tables
 --

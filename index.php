@@ -49,6 +49,7 @@ if($currentPage == 'export-items') {
             <div class="container">
                 <a href="index.php?page=items">Items</a>
                 <a href="index.php?page=categories">Categories</a>
+                <a href="index.php?page=projects">Projects</a>
                 <a href="index.php?page=brands">Brands</a>
                 <a href="index.php?page=suppliers">Suppliers</a>
                 <a href="index.php?page=locations">Locations</a>
