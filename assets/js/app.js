@@ -19,7 +19,33 @@ document.addEventListener("DOMContentLoaded", function()
             );
         });
     });
+
+    document.querySelectorAll("select").forEach(select => {
+        createSearchableSelect(select);
+    });
+
+    searchTable();
 });
+
+function searchTable() {
+    var input, filter, table, tr, td, i, txtValue;
+    input = document.getElementById("tableSearchInput");
+    filter = input.value.toUpperCase();
+    table = document.getElementById("searchableTable");
+    tr = table.getElementsByTagName("tr");
+
+    for (i = 0; i < tr.length; i++) {
+        td = tr[i].getElementsByTagName("td")[0];
+        if (td) {
+            txtValue = td.textContent || td.innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                tr[i].style.display = "";
+            } else {
+                tr[i].style.display = "none";
+            }
+        }
+    }
+}
 
 function sendAjaxRequest(url, data, onSuccess = () => {}, onError = (err) => console.error(err))
 {
@@ -151,4 +177,432 @@ function refreshDropdown(dropdownId, newId)
             console.error("Error refreshing dropdown:", error);
         }
     );
+}
+
+function createSearchableSelect(select) {
+    if (select.dataset.searchableInitialized) {
+        return;
+    }
+
+    select.dataset.searchableInitialized = "true";
+
+    const multiple = select.multiple;
+    const wrapper = document.createElement("div");
+
+    wrapper.className = "searchable-select";
+
+    select.parentNode.insertBefore(wrapper, select);
+    wrapper.appendChild(select);
+
+    const button = document.createElement("button");
+
+    button.type = "button";
+    button.className = "searchable-select__button";
+    button.setAttribute("aria-haspopup", "listbox");
+    button.setAttribute("aria-expanded", "false");
+
+    const value = document.createElement("span");
+    value.className = "searchable-select__value";
+
+    button.appendChild(value);
+
+    const menu = document.createElement("div");
+    menu.className = "searchable-select__menu";
+
+    const search = document.createElement("input");
+    search.type = "search";
+    search.className = "searchable-select__search";
+    search.placeholder = "Search...";
+    search.autocomplete = "off";
+
+    const optionsContainer = document.createElement("div");
+    optionsContainer.className = "searchable-select__options";
+    optionsContainer.setAttribute("role", "listbox");
+
+    if (multiple) {
+        optionsContainer.setAttribute("aria-multiselectable", "true");
+    }
+
+    menu.appendChild(search);
+    menu.appendChild(optionsContainer);
+
+    wrapper.appendChild(button);
+    wrapper.appendChild(menu);
+
+    let highlightedIndex = -1;
+
+    function getOptions() {
+        return Array.from(optionsContainer.querySelectorAll(
+            ".searchable-select__option:not([hidden])"
+        ));
+    }
+
+    function updateValue() {
+        const selected = Array.from(select.options)
+            .filter(option => option.selected);
+
+        if (selected.length === 0) {
+            value.textContent =
+                select.dataset.placeholder || "Select...";
+            value.classList.add("searchable-select__placeholder");
+            return;
+        }
+
+        value.classList.remove("searchable-select__placeholder");
+
+        if (!multiple) {
+            value.textContent = selected[0].textContent;
+            return;
+        }
+
+        if (selected.length === 1) {
+            value.textContent = selected[0].textContent;
+            return;
+        }
+
+        const count = document.createElement("span");
+        count.className = "searchable-select__count";
+        count.textContent = selected.length;
+
+        value.replaceChildren();
+
+        const text = document.createTextNode(
+            `${selected.length} selected`
+        );
+
+        value.appendChild(text);
+        value.appendChild(count);
+    }
+
+    function createOptions() {
+        optionsContainer.innerHTML = "";
+
+        Array.from(select.options).forEach((option, index) => {
+            const item = document.createElement("div");
+
+            item.className = "searchable-select__option";
+            item.setAttribute("role", "option");
+            item.dataset.index = index;
+            item.textContent = option.textContent;
+
+            if (option.disabled) {
+                item.setAttribute("aria-disabled", "true");
+            }
+
+            if (option.selected) {
+                item.classList.add("is-selected");
+                item.setAttribute("aria-selected", "true");
+            } else {
+                item.setAttribute("aria-selected", "false");
+            }
+
+            if (multiple) {
+                const checkbox = document.createElement("input");
+
+                checkbox.type = "checkbox";
+                checkbox.tabIndex = -1;
+                checkbox.checked = option.selected;
+                checkbox.disabled = option.disabled;
+                checkbox.setAttribute("aria-hidden", "true");
+
+                item.prepend(checkbox);
+            }
+
+            item.addEventListener("mousedown", event => {
+                event.preventDefault();
+            });
+
+            item.addEventListener("click", () => {
+                if (option.disabled) {
+                    return;
+                }
+
+                selectOption(index);
+
+                if (!multiple) {
+                    close();
+                }
+            });
+
+            optionsContainer.appendChild(item);
+        });
+
+        updateValue();
+    }
+
+    function selectOption(index) {
+        const option = select.options[index];
+
+        if (!option || option.disabled) {
+            return;
+        }
+
+        if (multiple) {
+            option.selected = !option.selected;
+        } else {
+            select.selectedIndex = index;
+        }
+
+        select.dispatchEvent(
+            new Event("change", { bubbles: true })
+        );
+
+        createOptions();
+    }
+
+    function open() {
+        if (wrapper.classList.contains("is-open")) {
+            return;
+        }
+
+        wrapper.classList.add("is-open");
+        button.setAttribute("aria-expanded", "true");
+
+        search.value = "";
+        filterOptions();
+
+        requestAnimationFrame(() => {
+            search.focus();
+        });
+    }
+
+    function close() {
+        wrapper.classList.remove("is-open");
+        button.setAttribute("aria-expanded", "false");
+
+        highlightedIndex = -1;
+        search.value = "";
+        filterOptions();
+    }
+
+    function filterOptions() {
+        const query = search.value.trim().toLowerCase();
+
+        const items = Array.from(
+            optionsContainer.querySelectorAll(
+                ".searchable-select__option"
+            )
+        );
+
+        const results = [];
+
+        items.forEach(item => {
+            const index = Number(item.dataset.index);
+            const option = select.options[index];
+
+            const text = option.textContent.trim().toLowerCase();
+
+            let score = 0;
+
+            if (!query) {
+                score = 0;
+            } else if (text === query) {
+                // Exact match
+                score = 0;
+            } else if (text.startsWith(query)) {
+                // Starts with search string
+                score = 1;
+            } else if (text.includes(query)) {
+                // Contains search string
+                score = 2;
+            } else {
+                // Doesn't match
+                score = 999;
+            }
+
+            if (score < 999) {
+                results.push({
+                    item,
+                    index,
+                    score
+                });
+            }
+        });
+
+        // Sort by relevance while preserving original order
+        // for results with the same score.
+        results.sort((a, b) => {
+            if (a.score !== b.score) {
+                return a.score - b.score;
+            }
+
+            return a.index - b.index;
+        });
+
+        // Rebuild the options in ranked order.
+        results.forEach(result => {
+            result.item.hidden = false;
+            optionsContainer.appendChild(result.item);
+        });
+
+        items.forEach(item => {
+            if (!results.some(result => result.item === item)) {
+                item.hidden = true;
+            }
+        });
+
+        let noResults =
+            optionsContainer.querySelector(
+                ".searchable-select__no-results"
+            );
+
+        if (results.length === 0) {
+            if (!noResults) {
+                noResults = document.createElement("div");
+                noResults.className =
+                    "searchable-select__no-results";
+                noResults.textContent = "No results found.";
+                optionsContainer.appendChild(noResults);
+            }
+        } else if (noResults) {
+            noResults.remove();
+        }
+
+        highlightedIndex = -1;
+        highlightOption();
+    }
+
+    function highlightOption() {
+        const items = getOptions();
+
+        items.forEach(item => {
+            item.classList.remove("is-highlighted");
+        });
+
+        if (
+            highlightedIndex >= 0 &&
+            highlightedIndex < items.length
+        ) {
+            const item = items[highlightedIndex];
+
+            item.classList.add("is-highlighted");
+
+            item.scrollIntoView({
+                block: "nearest"
+            });
+        }
+    }
+
+    function moveHighlight(direction) {
+        const items = getOptions();
+
+        if (!items.length) {
+            return;
+        }
+
+        highlightedIndex += direction;
+
+        if (highlightedIndex < 0) {
+            highlightedIndex = items.length - 1;
+        }
+
+        if (highlightedIndex >= items.length) {
+            highlightedIndex = 0;
+        }
+
+        highlightOption();
+    }
+
+    button.addEventListener("click", () => {
+        if (wrapper.classList.contains("is-open")) {
+            close();
+        } else {
+            open();
+        }
+    });
+
+    search.addEventListener("input", filterOptions);
+
+    search.addEventListener("keydown", event => {
+        switch (event.key) {
+            case "ArrowDown":
+                event.preventDefault();
+                moveHighlight(1);
+                break;
+
+            case "ArrowUp":
+                event.preventDefault();
+                moveHighlight(-1);
+                break;
+
+            case "Enter": {
+                event.preventDefault();
+
+                const items = getOptions();
+
+                if (
+                    highlightedIndex >= 0 &&
+                    highlightedIndex < items.length
+                ) {
+                    const index =
+                        Number(items[highlightedIndex].dataset.index);
+
+                    selectOption(index);
+
+                    if (!multiple) {
+                        close();
+                    }
+                }
+
+                break;
+            }
+
+            case " ":
+                if (highlightedIndex >= 0) {
+                    event.preventDefault();
+
+                    const items = getOptions();
+
+                    if (items[highlightedIndex]) {
+                        const index =
+                            Number(items[highlightedIndex].dataset.index);
+
+                        selectOption(index);
+
+                        if (!multiple) {
+                            close();
+                        }
+                    }
+                }
+
+                break;
+
+            case "Escape":
+                event.preventDefault();
+                close();
+                button.focus();
+                break;
+
+            case "Tab":
+                close();
+                break;
+
+            case "Home":
+                event.preventDefault();
+                highlightedIndex = 0;
+                highlightOption();
+                break;
+
+            case "End":
+                event.preventDefault();
+
+                highlightedIndex =
+                    getOptions().length - 1;
+
+                highlightOption();
+                break;
+        }
+    });
+
+    document.addEventListener("click", event => {
+        if (!wrapper.contains(event.target)) {
+            close();
+        }
+    });
+
+    select.addEventListener("change", () => {
+        createOptions();
+    });
+
+    createOptions();
 }

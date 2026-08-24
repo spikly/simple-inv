@@ -2,6 +2,10 @@
 
 function escapeHtml($string, $flag = ENT_QUOTES)
 {
+    if (is_null($string)) {
+        return null;
+    }
+
     $safeText = htmlspecialchars($string, $flag);
     return $safeText;
 }

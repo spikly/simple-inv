@@ -87,7 +87,7 @@ if(isset($_POST['add_item_submit'])) {
             'item_category' => ($itemToDuplicate['cat_id'] >= 1) ? $itemToDuplicate['cat_id'] : null,
             'item_location' => $itemToDuplicate['item_loc_id'],
             'item_status' => slugify($itemToDuplicate['item_status']),
-            'item_notes' => trim($itemToDuplicate['item_notes']),
+            'item_notes' => ($itemToDuplicate['item_notes']) ? trim($itemToDuplicate['item_notes']) : null,
         ];
     }
 }
@@ -162,53 +162,73 @@ $statuses = $stmt->fetchAll();
     </p>
     <p>
         <label for="item_brand">Brand</label>
-        <select name="item_brand" id="item_brand">
-            <option value="0">Select</option>
-            <?php foreach($brands as $brand): ?>
-                <option value="<?php echo $brand['brand_id']; ?>"<?php echo (isset($formData['item_brand']) && $formData['item_brand'] == $brand['brand_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($brand['brand_name']); ?></option>
-            <?php endforeach ?>
-        </select>
-        <button type="button" class="add-new-attribute-value" id="add_new_brand" title="Add new Brand">+</button>
+        <div class="searchable-select-row">
+            <div class="searchable-select">
+                <select name="item_brand" id="item_brand">
+                    <option value="0">Select</option>
+                    <?php foreach($brands as $brand): ?>
+                        <option value="<?php echo $brand['brand_id']; ?>"<?php echo (isset($formData['item_brand']) && $formData['item_brand'] == $brand['brand_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($brand['brand_name']); ?></option>
+                    <?php endforeach ?>
+                </select>
+            </div>
+            <button type="button" class="add-new-attribute-value" id="add_new_brand" title="Add new Brand">+</button>
+        </div>
     </p>
     <p>
         <label for="item_supplier">Supplier</label>
-        <select name="item_supplier" id="item_supplier">
-            <option value="0">Select</option>
-            <?php foreach($suppliers as $supplier): ?>
-                <option value="<?php echo $supplier['sup_id']; ?>"<?php echo (isset($formData['item_supplier']) && $formData['item_supplier'] == $supplier['sup_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($supplier['sup_name']); ?></option>
-            <?php endforeach ?>
-        </select>
-        <button type="button" class="add-new-attribute-value" id="add_new_supplier" title="Add new Supplier">+</button>
+        <div class="searchable-select-row">
+            <div class="searchable-select">
+                <select name="item_supplier" id="item_supplier">
+                    <option value="0">Select</option>
+                    <?php foreach($suppliers as $supplier): ?>
+                        <option value="<?php echo $supplier['sup_id']; ?>"<?php echo (isset($formData['item_supplier']) && $formData['item_supplier'] == $supplier['sup_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($supplier['sup_name']); ?></option>
+                    <?php endforeach ?>
+                </select>
+            </div>
+            <button type="button" class="add-new-attribute-value" id="add_new_supplier" title="Add new Supplier">+</button>
+        </div>
     </p>
     <p>
         <label for="item_category">Category</label>
-        <select name="item_category" id="item_category">
-            <option value="0">Select</option>
-            <?php foreach($categories as $category): ?>
-                <option value="<?php echo $category['cat_id']; ?>"<?php echo (isset($formData['item_category']) && $formData['item_category'] == $category['cat_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($category['cat_name']); ?></option>
-            <?php endforeach ?>
-        </select>
-        <button type="button" class="add-new-attribute-value" id="add_new_category" title="Add new Category">+</button>
+        <div class="searchable-select-row">
+            <div class="searchable-select">
+                <select name="item_category" id="item_category">
+                    <option value="0">Select</option>
+                    <?php foreach($categories as $category): ?>
+                        <option value="<?php echo $category['cat_id']; ?>"<?php echo (isset($formData['item_category']) && $formData['item_category'] == $category['cat_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($category['cat_name']); ?></option>
+                    <?php endforeach ?>
+                </select>
+            </div>
+            <button type="button" class="add-new-attribute-value" id="add_new_category" title="Add new Category">+</button>
+        </div>
     </p>
     <p>
         <label for="item_location">Location</label>
-        <select name="item_location" id="item_location">
-            <option value="0">Select</option>
-            <?php foreach($locations as $location): ?>
-                <option value="<?php echo $location['loc_id']; ?>"<?php echo (isset($formData['item_location']) && $formData['item_location'] == $location['loc_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($location['loc_name']); ?></option>
-            <?php endforeach ?>
-        </select>
-        <button type="button" class="add-new-attribute-value" id="add_new_location" title="Add new Location">+</button>
+        <div class="searchable-select-row">
+            <div class="searchable-select">
+                <select name="item_location" id="item_location">
+                    <option value="0">Select</option>
+                    <?php foreach($locations as $location): ?>
+                        <option value="<?php echo $location['loc_id']; ?>"<?php echo (isset($formData['item_location']) && $formData['item_location'] == $location['loc_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($location['loc_name']); ?></option>
+                    <?php endforeach ?>
+                </select>
+            </div>
+            <button type="button" class="add-new-attribute-value" id="add_new_location" title="Add new Location">+</button>
+        </div>
     </p>
     <p>
         <label for="item_status">Status</label>
-        <select name="item_status" id="item_status">
-            <option value="0">Select</option>
-            <?php foreach($statuses as $status): ?>
-                <option value="<?php echo $status['status_id']; ?>"<?php echo (isset($formData['item_status']) && $formData['item_status'] == $status['status_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($status['status_name']); ?></option>
-            <?php endforeach ?>
-        </select>
-        <button type="button" class="add-new-attribute-value" id="add_new_status" title="Add new Status">+</button>
+        <div class="searchable-select-row">
+            <div class="searchable-select">
+                <select name="item_status" id="item_status">
+                    <option value="0">Select</option>
+                    <?php foreach($statuses as $status): ?>
+                        <option value="<?php echo $status['status_id']; ?>"<?php echo (isset($formData['item_status']) && $formData['item_status'] == $status['status_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($status['status_name']); ?></option>
+                    <?php endforeach ?>
+                </select>
+            </div>
+            <button type="button" class="add-new-attribute-value" id="add_new_status" title="Add new Status">+</button>
+        </div>
     </p>
     <p>
         <label for="item_notes">Notes (optional)</label>
