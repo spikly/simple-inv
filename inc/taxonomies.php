@@ -1,7 +1,8 @@
 <?php
 
 /**
- * The simple "lookup" entities (brand, supplier, category, location, status).
+ * The simple "lookup" entities (manufacturer, supplier, category, location,
+ * status).
  *
  * Every one of them is a table with an id, a required name and the odd extra
  * column, so a single definition drives their listing, add and edit pages, the
@@ -12,17 +13,23 @@
 function taxonomies(): array
 {
     return [
+        // Shown as "Manufacturer" throughout. The key and the columns behind it
+        // keep the original brand naming, so the database is left alone.
         'brand' => [
-            'label'      => 'Brand',
-            'plural'     => 'Brands',
+            'label'      => 'Manufacturer',
+            'plural'     => 'Manufacturers',
             'table'      => 'inv_brands',
             'id'         => 'brand_id',
             'param'      => 'brand_id',
             'itemFilter' => 'i.item_brand_id = :brand_id',
             'usedBy'     => ['inv_items', 'item_brand_id'],
             'submit'     => 'brand',
-            'routes'     => ['index' => 'brands', 'add' => 'add-brand', 'edit' => 'edit-brand'],
-            'fields'     => ['brand_name' => 'Brand Name'],
+            'routes'     => [
+                'index' => 'manufacturers',
+                'add'   => 'add-manufacturer',
+                'edit'  => 'edit-manufacturer',
+            ],
+            'fields'     => ['brand_name' => 'Manufacturer Name'],
         ],
         'supplier' => [
             'label'      => 'Supplier',

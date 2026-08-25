@@ -12,7 +12,7 @@
 const ITEM_REQUIRED_FIELDS = [
     'item_name'             => 'Item name cannot be empty',
     'item_measurement_unit' => 'You must select a measurement unit',
-    'item_brand'            => 'You must select a brand',
+    'item_brand'            => 'You must select a manufacturer',
     'item_location'         => 'You must select a location',
     'item_status'           => 'You must select a status',
 ];

@@ -59,9 +59,11 @@ if (!$rows):
     have, edit it in a spreadsheet, and bring it back.
 </p>
 <p>
-    <strong>Name</strong>, <strong>Brand</strong>, <strong>Categories</strong>, <strong>Location</strong> and
-    <strong>Status</strong> are required. Put more than one category in a cell by separating them with
-    <code>|</code>. Brands, suppliers, categories, locations and statuses that do not exist yet are created.
+    <strong>Name</strong>, <strong>Manufacturer</strong>, <strong>Categories</strong>,
+    <strong>Location</strong> and <strong>Status</strong> are required. Put more than one category in a cell
+    by separating them with <code>|</code>. Manufacturers, suppliers, categories, locations and statuses that
+    do not exist yet are created. A file exported before manufacturers were renamed still works: its
+    <strong>Brand</strong> column is read as <strong>Manufacturer</strong>.
     <strong>Unit</strong> must match a measurement unit's symbol or name. Deployed and Allocated columns are
     ignored, because those come from deployments and projects.
 </p>
@@ -86,13 +88,13 @@ if (!$rows):
 
 <?php
 renderTable(
-    ['Line', 'Name', 'Brand', 'Categories', 'Location', 'Status', 'Quantity', 'Result'],
+    ['Line', 'Name', 'Manufacturer', 'Categories', 'Location', 'Status', 'Quantity', 'Result'],
     $rows,
     function ($row) {
         return [
             (int)$row['line'],
             escapeHtml($row['name']),
-            escapeHtml($row['brand']),
+            escapeHtml($row['manufacturer']),
             escapeHtml(implode(', ', $row['categories'])),
             escapeHtml($row['location']),
             escapeHtml($row['status']),

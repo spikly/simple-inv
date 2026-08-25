@@ -101,7 +101,7 @@ function fetchItemsForExport(string $where, array $params): array
     return dbAll(
         'SELECT i.item_name AS `Name`,
                 i.item_part_no AS `Part No`,
-                b.brand_name AS `Brand`,
+                b.brand_name AS `Manufacturer`,
                 sp.sup_name AS `Supplier`,
                 GROUP_CONCAT(DISTINCT c.cat_name ORDER BY c.cat_name SEPARATOR \'|\') AS `Categories`,
                 l.loc_name AS `Location`,

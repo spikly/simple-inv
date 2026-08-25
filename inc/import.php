@@ -9,7 +9,7 @@
 const IMPORT_COLUMNS = [
     'name'         => true,
     'part no'      => false,
-    'brand'        => true,
+    'manufacturer' => true,
     'supplier'     => false,
     'categories'   => true,
     'location'     => true,
@@ -20,9 +20,16 @@ const IMPORT_COLUMNS = [
     'notes'        => false,
 ];
 
+/**
+ * Headings an older export used, read as the column that replaced them.
+ */
+const IMPORT_COLUMN_ALIASES = [
+    'brand' => 'manufacturer',
+];
+
 /** Taxonomy key => the CSV column it is read from. */
 const IMPORT_TAXONOMY_COLUMNS = [
-    'brand'    => 'brand',
+    'brand'    => 'manufacturer',
     'supplier' => 'supplier',
     'location' => 'location',
     'status'   => 'status',
@@ -56,7 +63,8 @@ function parseItemCsv(array $upload): array
     $columns = [];
 
     foreach ($heading as $index => $label) {
-        $columns[strtolower(trim((string)$label))] = $index;
+        $label = strtolower(trim((string)$label));
+        $columns[IMPORT_COLUMN_ALIASES[$label] ?? $label] = $index;
     }
 
     foreach (IMPORT_COLUMNS as $column => $required) {
@@ -115,7 +123,7 @@ function importRow(array $record, array $columns, array $known, int $line): arra
         'line'         => $line,
         'name'         => $value('name'),
         'part_no'      => $value('part no'),
-        'brand'        => $value('brand'),
+        'manufacturer' => $value('manufacturer'),
         'supplier'     => $value('supplier'),
         'categories'   => $categories,
         'location'     => $value('location'),

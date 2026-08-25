@@ -12,12 +12,12 @@ Very much work in progress. Designed for an average sized home workshop and almo
 
 ## Features
 
-* Add tools, materials etc and categorise them by type and brand
+* Add tools, materials etc and categorise them by type and manufacturer
 * Give these items a location in your workshop where they are stored or deployed
 * Give these items a status (stored, broken, deployed etc)
 * Attach a photo to an item, so you can see the thing you are looking for
 * Put an item in more than one category
-* Filter and search items by name, part number, notes, brand, supplier, category, location and status
+* Filter and search items by name, part number, notes, manufacturer, supplier, category, location and status
 * Track how much of an item is deployed, how much is reserved for projects, and how much is left
 * Stock reserves itself against the assemblies that need it, and installing a part takes it out of stock
 * Set a reorder level per item and see what is running low on the dashboard
@@ -105,7 +105,8 @@ machine.
 
 **Items &rarr; Import** takes a CSV with a heading row using the same columns as
 the export, so the simplest route is to export what you have, edit it in a
-spreadsheet, and bring it back. `Name`, `Brand`, `Categories`, `Location` and
-`Status` are required; separate multiple categories with `|`. Brands, suppliers,
+spreadsheet, and bring it back. `Name`, `Manufacturer`, `Categories`, `Location`
+and `Status` are required; separate multiple categories with `|`. A `Brand`
+column from an older export is read as `Manufacturer`. Manufacturers, suppliers,
 categories, locations and statuses that do not exist yet are created. You get a
 preview of what will happen before anything is written.

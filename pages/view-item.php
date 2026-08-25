@@ -24,7 +24,7 @@ $categories = fetchItemCategoryIds($itemId);
 
 // Headings for the taxonomies shown as item properties, in display order.
 $properties = [
-    'brand'    => 'Brand',
+    'brand'    => 'Manufacturer',
     'supplier' => 'Supplier',
     'location' => 'Storage Location',
     'status'   => 'Status',

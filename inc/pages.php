@@ -11,9 +11,14 @@ return [
     'categories' => 'all-categories',
     'add-cat' => 'add-category',
     'edit-cat' => 'edit-category',
-    'brands' => 'all-brands',
-    'add-brand' => 'add-brand',
-    'edit-brand' => 'edit-brand',
+    'manufacturers' => 'all-manufacturers',
+    'add-manufacturer' => 'add-manufacturer',
+    'edit-manufacturer' => 'edit-manufacturer',
+    // Manufacturers were called brands until they were renamed; the old
+    // addresses still work so saved links do not break.
+    'brands' => 'all-manufacturers',
+    'add-brand' => 'add-manufacturer',
+    'edit-brand' => 'edit-manufacturer',
     'suppliers' => 'all-suppliers',
     'add-supplier' => 'add-supplier',
     'edit-supplier' => 'edit-supplier',

@@ -19,14 +19,14 @@ if ($currentPage === 'export-items') {
 }
 
 $navigation = [
-    'Dashboard'  => 'dashboard',
-    'Items'      => 'items',
-    'Categories' => 'categories',
-    'Projects'   => 'projects',
-    'Brands'     => 'brands',
-    'Suppliers'  => 'suppliers',
-    'Locations'  => 'locations',
-    'Statuses'   => 'statuses',
+    'Dashboard'     => 'dashboard',
+    'Items'         => 'items',
+    'Categories'    => 'categories',
+    'Projects'      => 'projects',
+    'Manufacturers' => 'manufacturers',
+    'Suppliers'     => 'suppliers',
+    'Locations'     => 'locations',
+    'Statuses'      => 'statuses',
 ];
 
 ?>
