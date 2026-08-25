@@ -59,7 +59,7 @@ function renderErrorPage(\Throwable $e): void
         . '<link href="assets/styles/styles.css" rel="stylesheet"></head><body>'
         . '<div class="container body">'
         . '<div class="flex-nav"><h2>Something went wrong</h2></div>'
-        . '<p>The page could not be loaded. This is usually a database problem &mdash;'
+        . '<p>The page could not be loaded. This is usually a database problem -'
         . ' check that the settings in <code>config/user.config.php</code> are correct and that'
         . ' the database has been updated with <code>database-updates.sql</code>.</p>'
         . $detail

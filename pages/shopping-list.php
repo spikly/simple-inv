@@ -48,7 +48,7 @@ if (!$rows) {
 }
 
 if ($toBuyTotal <= 0) {
-    echo '<p class="form-message form-success">Nothing needs buying &mdash;'
+    echo '<p class="form-message form-success">Nothing needs buying -'
         . ' stock covers everything this project still needs.</p>' . "\n";
 }
 
@@ -83,7 +83,7 @@ foreach ($bySupplier as $supplier => $supplierRows) {
                 formatQuantity($row['from_stock']) . $unit,
                 $row['to_buy'] > 0
                     ? '<strong class="stock stock-over">' . formatQuantity($row['to_buy']) . $unit . '</strong>'
-                    : '&mdash;',
+                    : '-',
             ];
         }
     );

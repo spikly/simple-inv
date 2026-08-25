@@ -47,7 +47,7 @@ pageHeader('Labels' . countBadge(count($labels)), [
 ?>
 <p class="no-print">
     Scanning a label opens this app at that <?php echo $type === 'location' ? 'location' : 'item'; ?>.
-    The address encoded is <code><?php echo escapeHtml(baseUrl()); ?></code> &mdash;
+    The address encoded is <code><?php echo escapeHtml(baseUrl()); ?></code> -
     set <code>'site' =&gt; ['url' =&gt; '...']</code> in <code>config/user.config.php</code> if that is
     not how you reach this machine.
 </p>

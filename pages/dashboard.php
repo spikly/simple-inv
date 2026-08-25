@@ -42,7 +42,7 @@ $stockTable = function (array $items) {
                 escapeHtml($item['loc_name'] ?? ''),
                 escapeHtml($item['item_quantity']) . escapeHtml($item['unit_symbol']),
                 stockCell($item),
-                (int)$item['item_min_quantity'] > 0 ? escapeHtml($item['item_min_quantity']) : '&mdash;',
+                (int)$item['item_min_quantity'] > 0 ? escapeHtml($item['item_min_quantity']) : '-',
                 escapeHtml($item['sup_name'] ?? ''),
             ];
         }
@@ -54,12 +54,12 @@ sectionHeader('Low Stock');
 if ($lowStock) {
     $stockTable($lowStock);
 } else {
-    echo '<p>Nothing is at its reorder level. Set one on an item to be warned here.</p>' . "\n";
+    echo '<p>Nothing is at its reorder level.</p>' . "\n";
 }
 
 if ($overCommitted) {
     sectionHeader('Over Committed');
-    echo '<p>More of these is deployed and allocated to projects than you actually hold.</p>' . "\n";
+    echo '<p>More of these are deployed and allocated to projects than actually held in stock.</p>' . "\n";
     $stockTable($overCommitted);
 }
 

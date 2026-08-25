@@ -39,7 +39,7 @@ if (!$item) {
 <form method="post">
     <p>
         <strong>Item:</strong> <?php echo escapeHtml($item['item_name']); ?>
-        &mdash; <?php echo stockCell($item); ?> free of
+        - <?php echo stockCell($item); ?> free of
         <?php echo escapeHtml($item['item_quantity']) . escapeHtml($item['unit_symbol']); ?>
     </p>
     <?php formMessage($formMessage); ?>
