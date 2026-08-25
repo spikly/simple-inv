@@ -13,25 +13,36 @@ $formMessage = takeFlash();
 
 if (isset($_POST['add_assembly_item_submit'])) {
     $columns = assemblyItemColumns($_POST);
-    $error = empty($_POST['item_id']) ? 'Please select an item.' : validateAssemblyItem($columns);
+    $itemId = (int)($_POST['item_id'] ?? 0);
+    $error = empty($itemId) ? 'Please select an item.' : validateAssemblyItem($columns);
+
+    if (!$error) {
+        $error = validateAssemblyInstall($itemId, 0, $columns['quantity_installed'], 0);
+    }
 
     if ($error) {
-        $values = $columns;
+        $values = $columns + ['item_id' => $itemId];
         $formMessage = errorMessage($error);
     } else {
-        dbRun(
-            'INSERT INTO inv_assembly_items
-                (assembly_id, item_id, quantity_required, quantity_allocated, quantity_installed,
-                 assembly_item_notes)
-             VALUES
-                (:assembly_id, :item_id, :quantity_required, :quantity_allocated, :quantity_installed,
-                 :assembly_item_notes)',
-            $columns + ['assembly_id' => $assemblyId, 'item_id' => (int)$_POST['item_id']]
-        );
+        // The part is stored holding nothing, then settling the stock reserves
+        // what it can spare for it and takes anything installed out of stock.
+        $stock = dbTransaction(function () use ($columns, $assemblyId, $itemId) {
+            $assemblyItemId = dbInsert(
+                'INSERT INTO inv_assembly_items
+                    (assembly_id, item_id, quantity_required, quantity_allocated, quantity_installed,
+                     assembly_item_notes)
+                 VALUES
+                    (:assembly_id, :item_id, :quantity_required, 0, :quantity_installed,
+                     :assembly_item_notes)',
+                $columns + ['assembly_id' => $assemblyId, 'item_id' => $itemId]
+            );
+
+            return settleAssemblyItemStock($assemblyItemId, $columns['quantity_installed']);
+        });
 
         redirectWith(
             'index.php?page=add-assembly-item&assembly_id=' . $assemblyId,
-            successMessage('Part added to assembly!')
+            successMessage('Part added to assembly!' . assemblyStockMessage($stock))
         );
     }
 }
@@ -53,15 +64,22 @@ if (!$items) {
 echo '<form method="post">' . "\n";
 formMessage($formMessage);
 
+$options = [];
+
+foreach ($items as $item) {
+    $options[$item['item_id']] = $item['item_name']
+        . ' (' . formatQuantity($item['item_free_count']) . $item['unit_symbol'] . ' free)';
+}
+
 selectField(
     'item_id',
     'Item',
-    array_column($items, 'item_name', 'item_id'),
-    null,
+    $options,
+    $values['item_id'] ?? null,
     '<option value="">Select an item</option>',
     ' required'
 );
 
-renderAssemblyItemFields($values);
+renderAssemblyItemFields($values, 'stock is reserved automatically, as far as it goes');
 submitButton('add_assembly_item_submit');
 echo '</form>' . "\n";

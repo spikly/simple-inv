@@ -69,12 +69,14 @@ function renderAssemblyForm(array $values, string $submitName, $formMessage = fa
 
 /**
  * Submitted assembly part data as the columns to write.
+ *
+ * The allocated quantity is not among them: stock reserves itself against the
+ * part, see inc/allocation.php.
  */
 function assemblyItemColumns(array $post): array
 {
     return [
         'quantity_required'   => (float)$post['quantity_required'],
-        'quantity_allocated'  => (float)$post['quantity_allocated'],
         'quantity_installed'  => (float)$post['quantity_installed'],
         'assembly_item_notes' => textOrNull($post, 'assembly_item_notes'),
     ];
@@ -86,21 +88,61 @@ function validateAssemblyItem(array $columns): ?string
         return 'Quantity required must be greater than zero.';
     }
 
-    if ($columns['quantity_installed'] > $columns['quantity_allocated']) {
-        return 'Installed quantity cannot exceed allocated quantity.';
+    if ($columns['quantity_installed'] < 0) {
+        return 'Installed quantity cannot be negative.';
+    }
+
+    if ($columns['quantity_installed'] > $columns['quantity_required']) {
+        return 'Installed quantity cannot exceed the quantity required.';
     }
 
     return null;
 }
 
 /**
- * The quantity and notes fields shared by the add and edit part forms.
+ * Installing takes units out of stock for good, so the increase since the last
+ * save has to be covered by what the item has left once deployments and the
+ * other assemblies have had their share.
  */
-function renderAssemblyItemFields(array $values): void
+function validateAssemblyInstall($item_id, $assembly_item_id, float $installed, float $installedBefore): ?string
+{
+    $delta = $installed - $installedBefore;
+
+    if ($delta <= 0) {
+        return null;
+    }
+
+    $available = itemStockAvailable($item_id, $assembly_item_id);
+
+    if ($delta > $available) {
+        return 'Only ' . formatQuantity($available) . ' of this item is free to install.';
+    }
+
+    return null;
+}
+
+/**
+ * How a save went for the stock behind a part, added to its success message.
+ */
+function assemblyStockMessage(array $stock): string
+{
+    $message = ' Reserved ' . formatQuantity($stock['allocated']) . ' from stock';
+
+    return $stock['short'] > 0
+        ? $message . ', ' . formatQuantity($stock['short']) . ' short.'
+        : $message . '.';
+}
+
+/**
+ * The quantity and notes fields shared by the add and edit part forms.
+ *
+ * $stockNote is shown against the required field, so the free stock is in
+ * front of whoever is deciding the quantity.
+ */
+function renderAssemblyItemFields(array $values, string $stockNote = ''): void
 {
     $quantities = [
         'quantity_required'  => 'Quantity Required',
-        'quantity_allocated' => 'Quantity Allocated',
         'quantity_installed' => 'Quantity Installed',
     ];
 
@@ -109,8 +151,8 @@ function renderAssemblyItemFields(array $values): void
 
         textField(
             $name,
-            $label,
-            $values[$name] ?? ($required ? 1 : 0),
+            $label . ($required && $stockNote !== '' ? ' <small>' . $stockNote . '</small>' : ''),
+            formatQuantity($values[$name] ?? ($required ? 1 : 0)),
             'number',
             ' step="1" min="0"' . ($required ? ' required' : '')
         );

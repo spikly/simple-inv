@@ -28,7 +28,17 @@ if (isset($_POST['edit_assembly_submit'])) {
         redirectWith('index.php?page=edit-assembly&assembly_id=' . $assemblyId, successMessage('Assembly updated!'));
     }
 } elseif (isset($_POST['delete_assembly_submit'])) {
-    dbRun('DELETE FROM inv_project_assemblies WHERE assembly_id = :assembly_id', ['assembly_id' => $assemblyId]);
+    // Its parts go with it, so the stock they were holding is shared out
+    // again over whatever else is waiting on those items.
+    dbTransaction(function () use ($assemblyId) {
+        $itemIds = fetchAssemblyItemIds($assemblyId);
+
+        dbRun('DELETE FROM inv_project_assemblies WHERE assembly_id = :assembly_id', [
+            'assembly_id' => $assemblyId,
+        ]);
+
+        reallocateItems($itemIds);
+    });
 
     redirectWith(
         'index.php?page=view-project&project_id=' . (int)$assembly['project_id'],

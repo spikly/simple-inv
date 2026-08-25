@@ -407,24 +407,72 @@ function fetchAssemblyItems($assembly_id): array
 function fetchAssemblyItem($assembly_item_id)
 {
     return dbRow('
-        SELECT ai.*, a.assembly_name, a.assembly_project_id, i.item_name
+        SELECT ai.*, a.assembly_name, a.assembly_project_id, i.item_name, i.item_quantity, mu.unit_symbol
         FROM inv_assembly_items ai
         INNER JOIN inv_project_assemblies a ON a.assembly_id = ai.assembly_id
         INNER JOIN inv_items i ON i.item_id = ai.item_id
+        LEFT JOIN inv_measurement_units mu ON mu.unit_id = i.item_measurement_unit
         WHERE ai.assembly_item_id = :id
         LIMIT 1
     ', ['id' => $assembly_item_id]);
 }
 
+/**
+ * Items an assembly is holding stock of. Read before deleting one, so the
+ * reservations it gives up can be shared out again.
+ */
+function fetchAssemblyItemIds($assembly_id): array
+{
+    return array_column(dbAll(
+        'SELECT DISTINCT item_id FROM inv_assembly_items WHERE assembly_id = :assembly_id',
+        ['assembly_id' => $assembly_id]
+    ), 'item_id');
+}
+
+/** The same, for every assembly on a project. */
+function fetchProjectItemIds($project_id): array
+{
+    return array_column(dbAll(
+        'SELECT DISTINCT ai.item_id
+         FROM inv_assembly_items ai
+         INNER JOIN inv_project_assemblies a ON a.assembly_id = ai.assembly_id
+         WHERE a.assembly_project_id = :project_id',
+        ['project_id' => $project_id]
+    ), 'item_id');
+}
+
 function fetchAvailableItemsForAssembly($assembly_id): array
 {
     return dbAll('
-        SELECT i.item_id, i.item_name, i.item_quantity
+        SELECT i.item_id, i.item_name, i.item_quantity, mu.unit_symbol,
+               i.item_quantity
+                   - COALESCE((SELECT SUM(dep_quantity) FROM inv_deployments
+                               WHERE dep_item_id = i.item_id), 0)
+                   - COALESCE((SELECT SUM(quantity_allocated) FROM inv_assembly_items
+                               WHERE item_id = i.item_id), 0)
+                   AS item_free_count
         FROM inv_items i
+        LEFT JOIN inv_measurement_units mu ON mu.unit_id = i.item_measurement_unit
         WHERE NOT EXISTS (
             SELECT 1 FROM inv_assembly_items ai
             WHERE ai.assembly_id = :assembly_id AND ai.item_id = i.item_id
         )
         ORDER BY i.item_name
     ', ['assembly_id' => $assembly_id]);
+}
+
+/**
+ * Every assembly holding stock of an item, for the item page. Shows where the
+ * reserved and installed quantities on an item have gone.
+ */
+function fetchItemAssemblyUsage($item_id): array
+{
+    return dbAll('
+        SELECT ai.*, a.assembly_id, a.assembly_name, p.project_id, p.project_name
+        FROM inv_assembly_items ai
+        INNER JOIN inv_project_assemblies a ON a.assembly_id = ai.assembly_id
+        INNER JOIN inv_projects p ON p.project_id = a.assembly_project_id
+        WHERE ai.item_id = :item_id
+        ORDER BY p.project_name, a.assembly_sort_order, a.assembly_name
+    ', ['item_id' => $item_id]);
 }

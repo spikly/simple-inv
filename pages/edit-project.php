@@ -31,7 +31,14 @@ if (isset($_POST['edit_project_submit'])) {
         redirectWith('index.php?page=edit-project&project_id=' . $projectId, successMessage('Project updated!'));
     }
 } elseif (isset($_POST['delete_project_submit'])) {
-    dbRun('DELETE FROM inv_projects WHERE project_id = :project_id', ['project_id' => $projectId]);
+    // Its assemblies and their parts go with it, freeing the stock they held.
+    dbTransaction(function () use ($projectId) {
+        $itemIds = fetchProjectItemIds($projectId);
+
+        dbRun('DELETE FROM inv_projects WHERE project_id = :project_id', ['project_id' => $projectId]);
+
+        reallocateItems($itemIds);
+    });
 
     redirectWith('index.php?page=projects', successMessage('Project deleted!'));
 }

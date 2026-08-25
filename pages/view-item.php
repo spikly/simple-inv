@@ -18,6 +18,7 @@ if (!$item) {
 }
 
 $deployments = fetchItemDeployments($itemId);
+$assemblyUsage = fetchItemAssemblyUsage($itemId);
 $utilisation = calculatePercentage($item['item_quantity'], $item['item_committed_count']);
 $categories = fetchItemCategoryIds($itemId);
 
@@ -51,7 +52,7 @@ $properties = [
     itemProperty('Quantity', '<p>' . escapeHtml($item['item_quantity']) . escapeHtml($item['unit_symbol']) . '</p>');
     itemProperty('Deployed', '<p>' . formatQuantity($item['item_deployed_count'])
         . escapeHtml($item['unit_symbol']) . '</p>');
-    itemProperty('Allocated to Projects', '<p>' . formatQuantity($item['item_allocated_count'])
+    itemProperty('Reserved for Projects', '<p>' . formatQuantity($item['item_allocated_count'])
         . escapeHtml($item['unit_symbol']) . '</p>');
     itemProperty('Free', '<p>' . stockCell($item) . '</p>');
     itemProperty('Utilisation', $utilisation . '&percnt;', utilisationBg($utilisation));
@@ -96,6 +97,37 @@ $properties = [
 
 if ((float)$item['item_free_count'] < 0) {
     echo '<p class="form-message form-error">More of this item is deployed and allocated than you hold.</p>';
+}
+
+sectionHeader('Reserved for Assemblies');
+
+if ($assemblyUsage) {
+    echo '<p>Stock set aside for these assemblies is held back from the free quantity above.'
+        . ' Installed quantities have already left stock.</p>' . "\n";
+
+    renderTable(
+        ['Project', 'Assembly', 'Required', 'Reserved', 'Installed'],
+        $assemblyUsage,
+        function ($part) use ($item) {
+            $unit = escapeHtml($item['unit_symbol']);
+            $outstanding = max(0, (float)$part['quantity_required'] - (float)$part['quantity_installed']);
+            $short = $outstanding - (float)$part['quantity_allocated'];
+
+            return [
+                '<a href="index.php?page=view-project&project_id=' . (int)$part['project_id'] . '">'
+                    . escapeHtml($part['project_name']) . '</a>',
+                '<a href="index.php?page=view-assembly&assembly_id=' . (int)$part['assembly_id'] . '">'
+                    . escapeHtml($part['assembly_name']) . '</a>',
+                formatQuantity($part['quantity_required']) . $unit,
+                formatQuantity($part['quantity_allocated']) . $unit
+                    . ($short > 0 ? '<small class="row-note">' . formatQuantity($short)
+                        . $unit . ' short of stock</small>' : ''),
+                formatQuantity($part['quantity_installed']) . $unit,
+            ];
+        }
+    );
+} else {
+    echo '<p>This item is not on any assembly.</p>' . "\n";
 }
 
 sectionHeader('Current Deployments', [

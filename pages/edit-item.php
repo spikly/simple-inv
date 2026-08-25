@@ -37,6 +37,10 @@ if ($item && isset($_POST['edit_item_submit'])) {
             );
 
             saveItemCategories($editId, itemCategoryIds($_POST));
+
+            // A change in quantity is shared out again, so stock added here
+            // reaches the assemblies it was short for.
+            reallocateItem($editId);
         });
 
         redirectWith('index.php?page=edit-item&item_id=' . urlencode((string)$editId), successMessage('Item updated!'));

@@ -11,14 +11,16 @@ if (!$project) {
 $requirements = fetchProjectRequirements($projectId);
 
 /*
- * still_to_allocate is what the project has not yet reserved. Anything that
- * cannot come out of free stock has to be bought.
+ * still_to_allocate is what the project has not yet reserved, counting what it
+ * has already installed as met. Anything that cannot come out of free stock
+ * has to be bought.
  */
 $rows = [];
 $toBuyTotal = 0;
 
 foreach ($requirements as $row) {
-    $stillToAllocate = max(0, (float)$row['required_quantity'] - (float)$row['allocated_quantity']);
+    $outstanding = max(0, (float)$row['required_quantity'] - (float)$row['installed_quantity']);
+    $stillToAllocate = max(0, $outstanding - (float)$row['allocated_quantity']);
     $freeElsewhere = max(0, (float)$row['free_elsewhere']);
 
     $row['still_to_allocate'] = $stillToAllocate;
@@ -40,7 +42,7 @@ pageHeader('Shopping List', [
 formMessage(takeFlash());
 
 echo '<p>What <strong>' . escapeHtml($project['project_name']) . '</strong> still needs, after everything'
-    . ' already allocated to it and everything free in stock.</p>' . "\n";
+    . ' already reserved for it or installed, and everything free in stock.</p>' . "\n";
 
 if (!$rows) {
     echo '<p>This project has no parts yet.</p>' . "\n";
@@ -68,7 +70,7 @@ foreach ($bySupplier as $supplier => $supplierRows) {
     );
 
     renderTable(
-        ['Item', 'Part No', 'Required', 'Allocated', 'Still To Allocate', 'From Stock', 'To Buy'],
+        ['Item', 'Part No', 'Required', 'Installed', 'Reserved', 'Still To Reserve', 'From Stock', 'To Buy'],
         $supplierRows,
         function ($row) {
             $unit = escapeHtml($row['unit_symbol'] ?? '');
@@ -78,6 +80,7 @@ foreach ($bySupplier as $supplier => $supplierRows) {
                     . escapeHtml($row['item_name']) . '</a>',
                 escapeHtml($row['item_part_no'] ?? ''),
                 formatQuantity($row['required_quantity']) . $unit,
+                formatQuantity($row['installed_quantity']) . $unit,
                 formatQuantity($row['allocated_quantity']) . $unit,
                 formatQuantity($row['still_to_allocate']) . $unit,
                 formatQuantity($row['from_stock']) . $unit,

@@ -29,6 +29,7 @@ require __DIR__ . '/queries.php';
 require __DIR__ . '/uploads.php';
 require __DIR__ . '/items.php';
 require __DIR__ . '/projects.php';
+require __DIR__ . '/allocation.php';
 require __DIR__ . '/taxonomies.php';
 require __DIR__ . '/import.php';
 

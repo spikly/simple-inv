@@ -18,7 +18,8 @@ Very much work in progress. Designed for an average sized home workshop and almo
 * Attach a photo to an item, so you can see the thing you are looking for
 * Put an item in more than one category
 * Filter and search items by name, part number, notes, brand, supplier, category, location and status
-* Track how much of an item is deployed, how much is allocated to projects, and how much is left
+* Track how much of an item is deployed, how much is reserved for projects, and how much is left
+* Stock reserves itself against the assemblies that need it, and installing a part takes it out of stock
 * Set a reorder level per item and see what is running low on the dashboard
 * Get warned when more of an item is committed than you actually hold
 * Group items into projects and assemblies, and print a shopping list of what still needs buying
@@ -67,7 +68,8 @@ mariadb -u YOUR_USER -p YOUR_DATABASE < database-updates.sql
 
 It is safe to run more than once, so anything already applied is skipped. It
 adds the part number, reorder level, photo and timestamp columns, stops an item
-being filed under the same category twice, and drops the unused
+being filed under the same category twice, restates the quantities assemblies
+have reserved now that stock reserves itself, and drops the unused
 `item_deployed_loc` column. That last column has not been read or written since
 deployments moved into their own table, but check it is empty first if you have
 been running this since before then:

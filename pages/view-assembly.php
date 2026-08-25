@@ -32,6 +32,12 @@ if (isset($_POST['duplicate_assembly_submit'])) {
             WHERE assembly_id = :old_assembly_id
         ', ['new_assembly_id' => $newAssemblyId, 'old_assembly_id' => $assemblyId]);
 
+        // The copy starts holding nothing, so each item shares its free stock
+        // out again across the original and the copy.
+        foreach (fetchAssemblyItems($newAssemblyId) as $copiedItem) {
+            reallocateItem($copiedItem['item_id']);
+        }
+
         db()->commit();
 
         redirectWith(
@@ -73,13 +79,20 @@ if ($items) {
         ['Item', 'Required', 'Allocated', 'Installed', 'Remaining', ''],
         $items,
         function ($item) {
+            // Anything the item could not spare, so a part that is waiting on
+            // stock says so where it is being looked at.
+            $outstanding = max(0, (float)$item['quantity_required'] - (float)$item['quantity_installed']);
+            $short = $outstanding - (float)$item['quantity_allocated'];
+
             return [
                 '<a href="index.php?page=view-item&item_id=' . (int)$item['item_id'] . '">'
                     . escapeHtml($item['item_name']) . '</a>',
                 formatQuantity($item['quantity_required']),
-                formatQuantity($item['quantity_allocated']),
+                formatQuantity($item['quantity_allocated'])
+                    . ($short > 0 ? '<small class="row-note">' . formatQuantity($short)
+                        . ' short of stock</small>' : ''),
                 formatQuantity($item['quantity_installed']),
-                formatQuantity(max(0, (float)$item['quantity_required'] - (float)$item['quantity_installed'])),
+                formatQuantity($outstanding),
                 '<a href="index.php?page=edit-assembly-item&assembly_item_id='
                     . (int)$item['assembly_item_id'] . '">Edit</a>',
             ];

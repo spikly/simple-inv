@@ -47,3 +47,27 @@ ALTER TABLE `categories_items`
 -- with "SELECT item_id, item_name, item_deployed_loc FROM inv_items
 -- WHERE item_deployed_loc <> ''" before running this.
 ALTER TABLE `inv_items` DROP COLUMN IF EXISTS `item_deployed_loc`;
+
+-- Reservations against project assemblies are now worked out from stock rather
+-- than typed in: a part holds what it still needs (required less installed) as
+-- far as the item's free stock goes, oldest part first. This restates every
+-- existing quantity_allocated on that basis, so nothing is reserved twice or
+-- reserved out of stock that is not there.
+--
+-- Quantities already recorded as installed are left alone. They are treated as
+-- having come out of stock at the time, so this does not go back and take them
+-- off item_quantity; only installs made from now on move stock.
+UPDATE `inv_assembly_items` ai
+  INNER JOIN `inv_items` i ON i.item_id = ai.item_id
+  SET ai.quantity_allocated = GREATEST(0, LEAST(
+      GREATEST(0, ai.quantity_required - ai.quantity_installed),
+      i.item_quantity
+        - COALESCE((SELECT SUM(d.dep_quantity) FROM `inv_deployments` d
+                    WHERE d.dep_item_id = ai.item_id), 0)
+        -- What the parts booked before this one have already taken. Reading the
+        -- table being updated needs the derived table to copy it first.
+        - COALESCE((SELECT SUM(GREATEST(0, e.quantity_required - e.quantity_installed))
+                    FROM (SELECT * FROM `inv_assembly_items`) e
+                    WHERE e.item_id = ai.item_id
+                      AND e.assembly_item_id < ai.assembly_item_id), 0)
+  ));

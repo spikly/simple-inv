@@ -10,15 +10,21 @@ if ($item && isset($_POST['add_deployment_submit'])) {
     if ($error) {
         $formMessage = errorMessage($error);
     } else {
-        dbRun(
-            'INSERT INTO inv_deployments (dep_item_id, dep_description, dep_quantity)
-             VALUES (:dep_item_id, :dep_description, :dep_quantity)',
-            [
-                'dep_item_id'     => $itemId,
-                'dep_description' => trim($_POST['dep_description']),
-                'dep_quantity'    => trim($_POST['dep_quantity']),
-            ]
-        );
+        // Deploying takes stock the assemblies may be holding, so what is
+        // reserved is worked out again around the new deployment.
+        dbTransaction(function () use ($itemId) {
+            dbRun(
+                'INSERT INTO inv_deployments (dep_item_id, dep_description, dep_quantity)
+                 VALUES (:dep_item_id, :dep_description, :dep_quantity)',
+                [
+                    'dep_item_id'     => $itemId,
+                    'dep_description' => trim($_POST['dep_description']),
+                    'dep_quantity'    => trim($_POST['dep_quantity']),
+                ]
+            );
+
+            reallocateItem($itemId);
+        });
 
         redirectWith(
             'index.php?page=add-deployment&item_id=' . urlencode((string)$itemId),
