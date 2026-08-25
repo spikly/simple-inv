@@ -1,26 +1,24 @@
 <?php
 
 $values = [];
-$formMessage = false;
+$formMessage = takeFlash();
 
 if (isset($_POST['add_project'])) {
     if (trim($_POST['project_name']) === '') {
         $values = $_POST;
         $formMessage = errorMessage('Project name cannot be empty');
     } else {
-        $columns = projectColumns($_POST);
-
-        dbRun(
+        $projectId = dbInsert(
             'INSERT INTO inv_projects
                 (project_name, project_reference, project_description, project_status_id, project_notes)
              VALUES
                 (:project_name, :project_reference, :project_description, :project_status_id, :project_notes)',
-            $columns
+            projectColumns($_POST)
         );
 
-        $formMessage = successMessage('Project added!');
+        redirectWith('index.php?page=view-project&project_id=' . $projectId, successMessage('Project added!'));
     }
 }
 
-pageHeader('Add Project');
+pageHeader('Add Project', ['Back to Projects' => 'index.php?page=projects']);
 renderProjectForm($values, 'add_project', $formMessage);

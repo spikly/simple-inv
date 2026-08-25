@@ -46,11 +46,17 @@ switch ($request['requestType'] ?? '') {
 
     case 'get-downdown-options':
         $key = taxonomyFor($request['dropdownId'] ?? null, 'item_');
+        $multiple = !empty($request['multiple']);
+
+        // Keep what was already chosen and add whatever was just created.
+        $selected = $request['selected'] ?? [];
+        $selected = is_array($selected) ? $selected : [$selected];
+        $selected[] = $request['newId'] ?? null;
 
         echo json_encode([
             'success'     => true,
-            'optionsHtml' => '<option>Select</option>'
-                . ($key ? selectOptions(taxonomyOptions($key), $request['newId'] ?? null) : ''),
+            'optionsHtml' => ($multiple ? '' : '<option value="0">Select</option>')
+                . ($key ? selectOptions(taxonomyOptions($key), array_filter($selected, 'strlen')) : ''),
         ]);
         break;
 }

@@ -31,6 +31,7 @@ SET time_zone = "+00:00";
 CREATE TABLE IF NOT EXISTS `categories_items` (
   `cat_id` int(11) NOT NULL,
   `item_id` int(11) NOT NULL,
+  UNIQUE KEY `uniq_cat_item` (`cat_id`,`item_id`),
   KEY `cat_id` (`cat_id`),
   KEY `item_id` (`item_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -90,8 +91,12 @@ CREATE TABLE IF NOT EXISTS `inv_items` (
   `item_name` text NOT NULL,
   `item_part_no` text DEFAULT NULL,
   `item_quantity` int(11) NOT NULL DEFAULT 1,
+  `item_min_quantity` int(11) NOT NULL DEFAULT 0,
   `item_measurement_unit` int(11) NOT NULL DEFAULT 8,
   `item_notes` text DEFAULT NULL,
+  `item_image` varchar(255) DEFAULT NULL,
+  `item_created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `item_updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`item_id`),
   KEY `item_loc_id` (`item_loc_id`),
   KEY `item_brand_id` (`item_brand_id`)

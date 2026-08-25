@@ -8,7 +8,7 @@ if (!$assembly) {
     return;
 }
 
-$formMessage = false;
+$formMessage = takeFlash();
 
 if (isset($_POST['edit_assembly_submit'])) {
     if (trim($_POST['assembly_name']) === '') {
@@ -25,17 +25,15 @@ if (isset($_POST['edit_assembly_submit'])) {
             assemblyColumns($_POST) + ['assembly_id' => $assemblyId]
         );
 
-        $formMessage = successMessage('Assembly updated!');
-
-        // Refresh the displayed data.
-        $assembly = fetchAssembly($assemblyId);
+        redirectWith('index.php?page=edit-assembly&assembly_id=' . $assemblyId, successMessage('Assembly updated!'));
     }
-}
-
-if (isset($_POST['delete_assembly_submit'])) {
+} elseif (isset($_POST['delete_assembly_submit'])) {
     dbRun('DELETE FROM inv_project_assemblies WHERE assembly_id = :assembly_id', ['assembly_id' => $assemblyId]);
 
-    $formMessage = successMessage('Assembly deleted!');
+    redirectWith(
+        'index.php?page=view-project&project_id=' . (int)$assembly['project_id'],
+        successMessage('Assembly deleted!')
+    );
 }
 
 pageHeader('Edit Assembly', ['Back to Assembly' => 'index.php?page=view-assembly&assembly_id=' . $assemblyId]);

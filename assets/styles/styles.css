@@ -1039,3 +1039,254 @@ textarea:focus-visible {
         transition-duration: 0.01ms !important;
     }
 }
+/* =========================================================
+   Filter bar
+   ========================================================= */
+
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 16px;
+    align-items: flex-end;
+    padding: 16px;
+    margin: 0 0 24px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+}
+
+.filter-bar p {
+    flex: 1 1 160px;
+    margin: 0;
+    padding: 0;
+}
+
+.filter-bar .filter-search {
+    flex: 2 1 260px;
+}
+
+.filter-bar label {
+    display: block;
+    margin: 0 0 6px;
+    font-size: 1.3rem;
+}
+
+.filter-bar input[type="search"] {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.filter-bar .filter-actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 12px;
+    align-items: center;
+}
+
+.filter-bar .filter-actions input[type="submit"] {
+    margin: 0;
+}
+
+.filter-clear {
+    font-size: 1.4rem;
+}
+
+/* =========================================================
+   Sortable tables
+   ========================================================= */
+
+table th.is-sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+table th.is-sortable:hover,
+table th.is-sortable:focus-visible {
+    text-decoration: underline;
+}
+
+table th.is-sortable::after {
+    content: "\2195";
+    margin-left: 6px;
+    opacity: 0.35;
+}
+
+table th.is-sorted-asc::after {
+    content: "\2191";
+    opacity: 1;
+}
+
+table th.is-sorted-desc::after {
+    content: "\2193";
+    opacity: 1;
+}
+
+table td small.row-note {
+    display: block;
+    margin-top: 2px;
+    color: var(--color-text-muted);
+    font-size: 1.2rem;
+}
+
+/* =========================================================
+   Stock levels
+   ========================================================= */
+
+.stock {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 1.3rem;
+    white-space: nowrap;
+}
+
+.stock-ok {
+    background: var(--color-success-bg);
+    border: 1px solid var(--color-success-border);
+    color: var(--color-success-hover);
+}
+
+.stock-low {
+    background: var(--color-warning-bg);
+    border: 1px solid var(--color-warning-border);
+    color: #92400e;
+}
+
+.stock-over {
+    background: var(--color-danger-bg);
+    border: 1px solid var(--color-danger-border);
+    color: var(--color-danger-hover);
+}
+
+/* =========================================================
+   Photos
+   ========================================================= */
+
+.item-thumb {
+    display: block;
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-surface-muted);
+}
+
+.item-thumb-form {
+    width: 96px;
+    height: 96px;
+    margin: 0 0 8px;
+}
+
+.item-photo {
+    padding: 0 0 24px;
+    margin: 0;
+}
+
+.item-photo-large {
+    display: block;
+    max-width: 320px;
+    height: auto;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+}
+
+.photo-field {
+    display: block;
+}
+
+.photo-field .checkbox {
+    display: block;
+    margin: 8px 0 0;
+    font-size: 1.4rem;
+    font-weight: 400;
+}
+
+.photo-field .checkbox input {
+    margin-right: 6px;
+}
+
+/* =========================================================
+   Current page in the main navigation
+   ========================================================= */
+
+.main-nav a.is-current {
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+/* =========================================================
+   Printable QR labels
+   ========================================================= */
+
+.label-sheet {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    padding: 0 0 24px;
+}
+
+.label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    text-align: center;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    break-inside: avoid;
+}
+
+.label svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: 150px;
+}
+
+.label-title {
+    margin-top: 8px;
+    font-size: 1.4rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.label-note {
+    color: var(--color-text-muted);
+    font-size: 1.2rem;
+    overflow-wrap: anywhere;
+}
+
+.error-detail {
+    padding: 16px;
+    overflow-x: auto;
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 1.3rem;
+}
+
+@media print {
+    header,
+    .main-nav,
+    .flex-nav,
+    .no-print {
+        display: none !important;
+    }
+
+    .container.body {
+        padding: 0;
+        margin: 0;
+        max-width: none;
+    }
+
+    .label-sheet {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+
+    .label {
+        border: 1px solid #999999;
+    }
+}

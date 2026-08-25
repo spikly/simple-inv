@@ -9,7 +9,7 @@ if (!$assemblyItem) {
 }
 
 $values = $assemblyItem;
-$formMessage = false;
+$formMessage = takeFlash();
 
 if (isset($_POST['edit_assembly_item_submit'])) {
     $values = assemblyItemColumns($_POST);
@@ -28,19 +28,20 @@ if (isset($_POST['edit_assembly_item_submit'])) {
             $values + ['assembly_item_id' => $assemblyItemId]
         );
 
-        $formMessage = successMessage('Assembly part updated!');
-
-        $assemblyItem = fetchAssemblyItem($assemblyItemId);
-        $values = $assemblyItem;
+        redirectWith(
+            'index.php?page=edit-assembly-item&assembly_item_id=' . $assemblyItemId,
+            successMessage('Assembly part updated!')
+        );
     }
-}
-
-if (isset($_POST['delete_assembly_item_submit'])) {
+} elseif (isset($_POST['delete_assembly_item_submit'])) {
     dbRun('DELETE FROM inv_assembly_items WHERE assembly_item_id = :assembly_item_id', [
         'assembly_item_id' => $assemblyItemId,
     ]);
 
-    $formMessage = successMessage('Part removed from assembly!');
+    redirectWith(
+        'index.php?page=view-assembly&assembly_id=' . (int)$assemblyItem['assembly_id'],
+        successMessage('Part removed from assembly!')
+    );
 }
 
 pageHeader('Edit Assembly Part', [

@@ -8,7 +8,7 @@ if (!$assembly) {
     return;
 }
 
-$formMessage = false;
+$formMessage = takeFlash();
 
 if (isset($_POST['duplicate_assembly_submit'])) {
     try {
@@ -34,9 +34,9 @@ if (isset($_POST['duplicate_assembly_submit'])) {
 
         db()->commit();
 
-        $formMessage = successMessage(
-            'Assembly duplicated successfully. <a href="index.php?page=view-assembly&assembly_id='
-            . (int)$newAssemblyId . '">View the new assembly</a>.'
+        redirectWith(
+            'index.php?page=view-assembly&assembly_id=' . (int)$newAssemblyId,
+            successMessage('Assembly duplicated. You are looking at the copy.')
         );
     } catch (\PDOException $e) {
         if (db()->inTransaction()) {
@@ -50,7 +50,7 @@ if (isset($_POST['duplicate_assembly_submit'])) {
 $items = fetchAssemblyItems($assemblyId);
 
 $duplicateForm = '<form method="post" style="display:inline;"'
-    . ' onsubmit="return confirm(' . escapeHtml("'Duplicate this assembly and all of its parts?'") . ');">'
+    . ' onsubmit="return confirm(' . jsString('Duplicate this assembly and all of its parts?') . ');">'
     . '<input type="submit" name="duplicate_assembly_submit" value="Duplicate Assembly">'
     . '</form>';
 
@@ -76,10 +76,10 @@ if ($items) {
             return [
                 '<a href="index.php?page=view-item&item_id=' . (int)$item['item_id'] . '">'
                     . escapeHtml($item['item_name']) . '</a>',
-                $item['quantity_required'],
-                $item['quantity_allocated'],
-                $item['quantity_installed'],
-                max(0, (float)$item['quantity_required'] - (float)$item['quantity_installed']),
+                formatQuantity($item['quantity_required']),
+                formatQuantity($item['quantity_allocated']),
+                formatQuantity($item['quantity_installed']),
+                formatQuantity(max(0, (float)$item['quantity_required'] - (float)$item['quantity_installed'])),
                 '<a href="index.php?page=edit-assembly-item&assembly_item_id='
                     . (int)$item['assembly_item_id'] . '">Edit</a>',
             ];

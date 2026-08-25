@@ -1,55 +1,64 @@
 <?php
 
 $editId = queryParam('item_id');
-$formMessage = false;
-$deleted = false;
+$item = fetchSingleItem($editId);
+$formMessage = takeFlash();
+$values = $item ? itemFormValues($item) : [];
 
-if (isset($_POST['edit_item_submit'])) {
+if ($item && isset($_POST['edit_item_submit'])) {
+    $values = $_POST;
     $error = validateItem($_POST);
+    $photo = ['name' => $item['item_image']];
+
+    if (!$error) {
+        $photo = resolveItemPhoto($item['item_image'], !empty($_POST['remove_photo']));
+        $error = $photo['error'] ?? null;
+    }
 
     if ($error) {
         $formMessage = errorMessage($error);
     } else {
-        dbRun(
-            'UPDATE inv_items SET
-                item_name = :item_name,
-                item_part_no = :item_part_no,
-                item_quantity = :item_quantity,
-                item_measurement_unit = :item_measurement_unit,
-                item_brand_id = :item_brand,
-                item_sup_id = :item_supplier,
-                item_loc_id = :item_location,
-                item_status = :item_status,
-                item_notes = :item_notes
-             WHERE item_id = :edit_id',
-            itemColumns($_POST) + ['edit_id' => $editId]
-        );
+        dbTransaction(function () use ($editId, $photo) {
+            dbRun(
+                'UPDATE inv_items SET
+                    item_name = :item_name,
+                    item_part_no = :item_part_no,
+                    item_quantity = :item_quantity,
+                    item_min_quantity = :item_min_quantity,
+                    item_measurement_unit = :item_measurement_unit,
+                    item_brand_id = :item_brand,
+                    item_sup_id = :item_supplier,
+                    item_loc_id = :item_location,
+                    item_status = :item_status,
+                    item_notes = :item_notes,
+                    item_image = :item_image
+                 WHERE item_id = :edit_id',
+                itemColumns($_POST, $photo['name']) + ['edit_id' => $editId]
+            );
 
-        // This query will need to change if an item can ever belong to multiple categories
-        // but for the simple 1 category per item system we have right now this is fine
-        dbRun('UPDATE categories_items SET cat_id = :cat_id WHERE item_id = :edit_id', [
-            'edit_id' => $editId,
-            'cat_id'  => $_POST['item_category'],
-        ]);
+            saveItemCategories($editId, itemCategoryIds($_POST));
+        });
 
-        $formMessage = successMessage('Item updated!');
+        redirectWith('index.php?page=edit-item&item_id=' . urlencode((string)$editId), successMessage('Item updated!'));
     }
-} elseif (isset($_POST['delete_item_submit'])) {
+} elseif ($item && isset($_POST['delete_item_submit'])) {
+    deleteItemImage($item['item_image']);
     dbRun('DELETE FROM inv_items WHERE item_id = :edit_id LIMIT 1', ['edit_id' => $editId]);
 
-    $formMessage = successMessage('Item deleted!');
-    $deleted = true;
+    redirectWith('index.php?page=items', successMessage('Item deleted!'));
 }
 
-$item = fetchSingleItem($editId);
+pageHeader('Edit Item', $item ? [
+    'View Item'   => 'index.php?page=view-item&item_id=' . $item['item_id'],
+    'Back to Items' => 'index.php?page=items',
+] : []);
 
-pageHeader('Edit Item', $item ? ['View Item' => 'index.php?page=view-item&item_id=' . $item['item_id']] : []);
-
-if ($item) {
-    renderItemForm(itemFormValues($item), 'edit_item_submit', $formMessage);
-    deleteSection('Item', 'delete_item_submit');
-} elseif ($deleted) {
+if (!$item) {
     formMessage($formMessage);
-} else {
     echo '<p>No item found</p>';
+    return;
 }
+
+renderItemForm($values, 'edit_item_submit', $formMessage);
+deleteSection('Item', 'delete_item_submit', 'Delete',
+    'Delete "' . $item['item_name'] . '"? Its deployments and assembly entries go too.');

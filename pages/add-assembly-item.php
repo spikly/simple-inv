@@ -9,33 +9,34 @@ if (!$assembly) {
 }
 
 $values = [];
-$formMessage = false;
+$formMessage = takeFlash();
 
 if (isset($_POST['add_assembly_item_submit'])) {
-    if (empty($_POST['item_id'])) {
-        $formMessage = errorMessage('Please select an item.');
+    $columns = assemblyItemColumns($_POST);
+    $error = empty($_POST['item_id']) ? 'Please select an item.' : validateAssemblyItem($columns);
+
+    if ($error) {
+        $values = $columns;
+        $formMessage = errorMessage($error);
     } else {
-        $columns = assemblyItemColumns($_POST);
-        $error = validateAssemblyItem($columns);
+        dbRun(
+            'INSERT INTO inv_assembly_items
+                (assembly_id, item_id, quantity_required, quantity_allocated, quantity_installed,
+                 assembly_item_notes)
+             VALUES
+                (:assembly_id, :item_id, :quantity_required, :quantity_allocated, :quantity_installed,
+                 :assembly_item_notes)',
+            $columns + ['assembly_id' => $assemblyId, 'item_id' => (int)$_POST['item_id']]
+        );
 
-        if ($error) {
-            $values = $columns;
-            $formMessage = errorMessage($error);
-        } else {
-            dbRun(
-                'INSERT INTO inv_assembly_items
-                    (assembly_id, item_id, quantity_required, quantity_allocated, quantity_installed,
-                     assembly_item_notes)
-                 VALUES
-                    (:assembly_id, :item_id, :quantity_required, :quantity_allocated, :quantity_installed,
-                     :assembly_item_notes)',
-                $columns + ['assembly_id' => $assemblyId, 'item_id' => (int)$_POST['item_id']]
-            );
-
-            $formMessage = successMessage('Part added to assembly!');
-        }
+        redirectWith(
+            'index.php?page=add-assembly-item&assembly_id=' . $assemblyId,
+            successMessage('Part added to assembly!')
+        );
     }
 }
+
+$items = fetchAvailableItemsForAssembly($assemblyId);
 
 pageHeader('Add Part', [
     'Back to Assembly' => 'index.php?page=view-assembly&assembly_id=' . (int)$assembly['assembly_id'],
@@ -43,13 +44,19 @@ pageHeader('Add Part', [
 
 echo '<p>Assembly: <strong>' . escapeHtml($assembly['assembly_name']) . '</strong></p>' . "\n";
 
+if (!$items) {
+    formMessage($formMessage);
+    echo '<p>Every item is already part of this assembly.</p>' . "\n";
+    return;
+}
+
 echo '<form method="post">' . "\n";
 formMessage($formMessage);
 
 selectField(
     'item_id',
     'Item',
-    array_column(fetchAvailableItemsForAssembly($assemblyId), 'item_name', 'item_id'),
+    array_column($items, 'item_name', 'item_id'),
     null,
     '<option value="">Select an item</option>',
     ' required'

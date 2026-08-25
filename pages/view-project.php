@@ -14,9 +14,12 @@ $summary = getProjectSummary($projectId);
 $addAssemblyLink = 'index.php?page=add-assembly&project_id=' . $projectId;
 
 pageHeader(escapeHtml($project['project_name']), [
-    'Add Assembly' => $addAssemblyLink,
-    'Edit'         => 'index.php?page=edit-project&project_id=' . $projectId,
+    'Add Assembly'  => $addAssemblyLink,
+    'Shopping List' => 'index.php?page=shopping-list&project_id=' . $projectId,
+    'Edit'          => 'index.php?page=edit-project&project_id=' . $projectId,
 ]);
+
+formMessage(takeFlash());
 
 if ($project['project_reference']) {
     echo '<p><strong>Reference:</strong> ' . escapeHtml($project['project_reference']) . '</p>' . "\n";
@@ -31,7 +34,7 @@ if ($project['project_description']) {
 echo '<div class="item-property-container">' . "\n";
 
 foreach (['Required' => 'required_quantity', 'Allocated' => 'allocated_quantity', 'Installed' => 'installed_quantity'] as $heading => $column) {
-    itemProperty($heading, '<p>' . (float)$summary[$column] . '</p>');
+    itemProperty($heading, '<p>' . formatQuantity($summary[$column]) . '</p>');
 }
 
 echo '</div>' . "\n";
@@ -52,8 +55,8 @@ if ($assemblies) {
                 '<a href="index.php?page=view-assembly&assembly_id=' . $id . '">'
                     . escapeHtml($assembly['assembly_name']) . '</a>',
                 (int)$assembly['item_count'],
-                $required,
-                $installed,
+                formatQuantity($required),
+                formatQuantity($installed),
                 $progress . '%',
                 '<a href="index.php?page=edit-assembly&assembly_id=' . $id . '">Edit</a>',
             ];

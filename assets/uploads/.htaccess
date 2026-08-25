@@ -1,0 +1,6 @@
+# Uploaded files are data, never code. Apache only; on nginx add the
+# equivalent "location ^~ /assets/uploads/ { }" rule with no PHP handler.
+php_flag engine off
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>

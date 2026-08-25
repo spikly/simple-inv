@@ -9,7 +9,7 @@ if (!$project) {
 }
 
 $values = $project;
-$formMessage = false;
+$formMessage = takeFlash();
 
 if (isset($_POST['edit_project_submit'])) {
     $values = $_POST;
@@ -28,17 +28,17 @@ if (isset($_POST['edit_project_submit'])) {
             projectColumns($_POST) + ['project_id' => $projectId]
         );
 
-        $formMessage = successMessage('Project updated!');
+        redirectWith('index.php?page=edit-project&project_id=' . $projectId, successMessage('Project updated!'));
     }
-}
-
-if (isset($_POST['delete_project_submit'])) {
+} elseif (isset($_POST['delete_project_submit'])) {
     dbRun('DELETE FROM inv_projects WHERE project_id = :project_id', ['project_id' => $projectId]);
 
-    $formMessage = successMessage('Project deleted!');
+    redirectWith('index.php?page=projects', successMessage('Project deleted!'));
 }
 
-pageHeader('Edit Project', ['Back to Project' => 'index.php?page=view-project&project_id=' . $projectId]);
+pageHeader('Edit Project', [
+    'Back to Project' => 'index.php?page=view-project&project_id=' . $projectId,
+]);
 
 renderProjectForm($values, 'edit_project_submit', $formMessage);
 

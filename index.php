@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-chdir(dirname(__DIR__));
-
 require __DIR__ . '/inc/bootstrap.php';
 
 $pages = require __DIR__ . '/inc/pages.php';
 
-$currentPage = 'all-items';
+$currentPage = 'dashboard';
 
 if (isset($_GET['page'])) {
     $currentPage = $pages[strtolower($_GET['page'])] ?? '404';
 }
 
+// Sends its own headers, so it must run before any markup.
 if ($currentPage === 'export-items') {
     include __DIR__ . '/pages/export-items.php';
     exit();
 }
 
 $navigation = [
+    'Dashboard'  => 'dashboard',
     'Items'      => 'items',
     'Categories' => 'categories',
     'Projects'   => 'projects',
@@ -35,21 +35,23 @@ $navigation = [
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
-        <title>Inventory Tracker</title>
+        <title><?php echo escapeHtml(siteTitle()); ?></title>
         <link href="assets/styles/styles.css?<?php echo filemtime(__DIR__ . '/assets/styles/styles.css'); ?>" rel="stylesheet">
     </head>
     <body>
         <header>
             <div class="container">
                 <h1>
-                    <a href="index.php">Inventory Tracker</a>
+                    <a href="index.php"><?php echo escapeHtml(siteTitle()); ?></a>
                 </h1>
             </div>
         </header>
         <nav class="main-nav">
             <div class="container">
                 <?php foreach ($navigation as $label => $page): ?>
-                    <a href="index.php?page=<?php echo $page; ?>"><?php echo $label; ?></a>
+                    <a href="index.php?page=<?php echo $page; ?>"<?php
+                        echo ($pages[$page] ?? null) === $currentPage ? ' class="is-current"' : '';
+                    ?>><?php echo $label; ?></a>
                 <?php endforeach; ?>
             </div>
         </nav>

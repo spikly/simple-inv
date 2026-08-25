@@ -12,15 +12,23 @@ Very much work in progress. Designed for an average sized home workshop and almo
 
 ## Features
 
-### Current features
-
 * Add tools, materials etc and categorise them by type and brand
 * Give these items a location in your workshop where they are stored or deployed
 * Give these items a status (stored, broken, deployed etc)
+* Attach a photo to an item, so you can see the thing you are looking for
+* Put an item in more than one category
+* Filter and search items by name, part number, notes, brand, supplier, category, location and status
+* Track how much of an item is deployed, how much is allocated to projects, and how much is left
+* Set a reorder level per item and see what is running low on the dashboard
+* Get warned when more of an item is committed than you actually hold
+* Group items into projects and assemblies, and print a shopping list of what still needs buying
+* Print QR labels for locations and items; scanning one opens it in the app
+* Import and export items as CSV
 
 ### Todo
 
-* Improve filtering and search capabilites
+* Somewhere to record what an item cost and where it came from
+* Deployment history, so returning something keeps a record rather than deleting one
 
 ## Requirements
 
@@ -41,4 +49,61 @@ Older/newer versions may also and probably will work fine but are untested.
 
 4) Enter your database details into the newly created `user.config.php`
 
-5) Visit http://yourserver/folder-where-you-copied-the-files to start using it
+5) Make `assets/uploads/items/` writable by the webserver if you want to attach photos:
+
+```
+chmod -R 775 assets/uploads
+```
+
+6) Visit http://yourserver/folder-where-you-copied-the-files to start using it
+
+## To upgrade an existing install
+
+Run `database-updates.sql` against your database once:
+
+```
+mariadb -u YOUR_USER -p YOUR_DATABASE < database-updates.sql
+```
+
+It is safe to run more than once, so anything already applied is skipped. It
+adds the part number, reorder level, photo and timestamp columns, stops an item
+being filed under the same category twice, and drops the unused
+`item_deployed_loc` column. That last column has not been read or written since
+deployments moved into their own table, but check it is empty first if you have
+been running this since before then:
+
+```sql
+SELECT item_id, item_name, item_deployed_loc FROM inv_items WHERE item_deployed_loc <> '';
+```
+
+## Settings
+
+Beyond the database details, `config/user.config.php` takes:
+
+```php
+'site' => [
+    'title' => 'Inventory Tracker',   // shown in the header and browser tab
+    'url'   => 'http://192.168.1.50/inventory/',  // only needed if QR labels
+                                                  // guess the wrong address
+],
+
+'debug' => false,   // show error details on screen instead of only logging them
+```
+
+## QR labels
+
+**Locations &rarr; Labels** prints a code per location, and **Items &rarr; Labels**
+prints one per item in the current filter. Scanning a location label opens the
+list of what is in it, so a code stuck on a drawer tells you what should be
+inside without opening it. The address encoded is worked out from how you
+reached the page; set `site.url` if that is not how the workshop reaches this
+machine.
+
+## Importing
+
+**Items &rarr; Import** takes a CSV with a heading row using the same columns as
+the export, so the simplest route is to export what you have, edit it in a
+spreadsheet, and bring it back. `Name`, `Brand`, `Categories`, `Location` and
+`Status` are required; separate multiple categories with `|`. Brands, suppliers,
+categories, locations and statuses that do not exist yet are created. You get a
+preview of what will happen before anything is written.

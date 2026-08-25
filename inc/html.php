@@ -74,7 +74,7 @@ function searchBox(string $placeholder): void
 function renderTable(array $headings, array $items, callable $rows, bool $searchable = false): void
 {
     echo '<div class="table-container">' . "\n";
-    echo '    <table' . ($searchable ? ' id="searchableTable"' : '') . '>' . "\n";
+    echo '    <table class="sortable"' . ($searchable ? ' id="searchableTable"' : '') . '>' . "\n";
     echo '        <tr><th>' . implode('</th><th>', $headings) . '</th></tr>' . "\n";
 
     foreach ($items as $item) {
@@ -88,11 +88,17 @@ function renderTable(array $headings, array $items, callable $rows, bool $search
 /**
  * Heading plus a plain "this cannot be undone" delete form.
  */
-function deleteSection(string $heading, string $submitName, string $buttonLabel = 'Delete'): void
-{
+function deleteSection(
+    string $heading,
+    string $submitName,
+    string $buttonLabel = 'Delete',
+    string $confirmText = ''
+): void {
+    $confirmText = $confirmText ?: 'Delete this ' . strtolower($heading) . '? This cannot be undone.';
+
     sectionHeader('Delete ' . $heading);
 
-    echo '<form method="post">' . "\n";
+    echo '<form method="post" onsubmit="return confirm(' . jsString($confirmText) . ');">' . "\n";
     echo '    <p>This action cannot be undone.</p>' . "\n";
     echo '    <input type="submit" name="' . $submitName . '" class="delete" value="' . $buttonLabel . '">' . "\n";
     echo '</form>' . "\n";
@@ -104,7 +110,7 @@ function deleteSection(string $heading, string $submitName, string $buttonLabel 
 function confirmDeleteForm(string $submitName, string $buttonLabel, string $confirmText): void
 {
     echo '<hr>' . "\n";
-    echo '<form method="post" onsubmit="return confirm(' . escapeHtml("'" . $confirmText . "'") . ');">' . "\n";
+    echo '<form method="post" onsubmit="return confirm(' . jsString($confirmText) . ');">' . "\n";
     echo '    <p><input type="submit" name="' . $submitName . '" value="' . $buttonLabel . '" class="delete"></p>' . "\n";
     echo '</form>' . "\n";
 }
@@ -114,10 +120,18 @@ function confirmDeleteForm(string $submitName, string $buttonLabel, string $conf
  */
 function selectOptions(array $options, $selected): string
 {
+    $chosen = array_map('strval', is_array($selected) ? $selected : [$selected]);
     $html = '';
 
     foreach ($options as $value => $label) {
-        $isSelected = ($selected !== null && $selected !== '' && $selected == $value) ? ' selected' : '';
+        // A nested array is a group of options rather than one option.
+        if (is_array($label)) {
+            $html .= '<optgroup label="' . escapeHtml($value) . '">'
+                . selectOptions($label, $selected) . '</optgroup>';
+            continue;
+        }
+
+        $isSelected = in_array((string)$value, $chosen, true) ? ' selected' : '';
         $html .= '<option value="' . $value . '"' . $isSelected . '>' . escapeHtml($label) . '</option>';
     }
 
@@ -212,4 +226,86 @@ function selectField(
 function submitButton(string $name, string $label = 'Save'): void
 {
     echo '    <p><input type="submit" name="' . $name . '" value="' . $label . '"></p>' . "\n";
+}
+
+/**
+ * Quantities are stored as DECIMAL(12,3); show them without trailing zeros.
+ */
+function formatQuantity($value): string
+{
+    $number = (float)$value;
+
+    return rtrim(rtrim(number_format($number, 3, '.', ''), '0'), '.') ?: '0';
+}
+
+/**
+ * Item photo thumbnail, or nothing when the item has no photo.
+ */
+function itemThumb(?string $image, string $alt = '', string $class = 'item-thumb'): string
+{
+    $url = itemImageUrl($image);
+
+    return $url
+        ? '<img src="' . $url . '" alt="' . escapeHtml($alt) . '" class="' . $class . '" loading="lazy">'
+        : '';
+}
+
+/**
+ * Free stock shown with a colour that reflects how tight it is.
+ */
+function stockCell(array $item): string
+{
+    $free = (float)$item['item_free_count'];
+    $minimum = (float)($item['item_min_quantity'] ?? 0);
+
+    if ($free < 0) {
+        $class = 'stock-over';
+    } elseif ($minimum > 0 && $free <= $minimum) {
+        $class = 'stock-low';
+    } else {
+        $class = 'stock-ok';
+    }
+
+    return '<span class="stock ' . $class . '">' . formatQuantity($free)
+        . escapeHtml($item['unit_symbol'] ?? '') . '</span>';
+}
+
+/**
+ * Filter bar for the items listing: one dropdown per taxonomy plus a text
+ * search, all combined with AND. Current selections come from the query string.
+ */
+function renderItemFilters(array $applied): void
+{
+    $search = (string)queryParam('q');
+    $hasFilters = $applied || $search !== '';
+
+    echo '<form method="get" class="filter-bar">' . "\n";
+    echo '    <input type="hidden" name="page" value="items">' . "\n";
+    echo '    <p class="filter-search">' . "\n";
+    echo '        <label for="q">Search</label>' . "\n";
+    echo '        <input type="search" name="q" id="q" value="' . escapeHtml($search) . '"'
+        . ' placeholder="Name, part number or notes">' . "\n";
+    echo '    </p>' . "\n";
+
+    foreach (taxonomies() as $key => $tax) {
+        $name = $tax['param'];
+
+        echo '    <p>' . "\n";
+        echo '        <label for="filter_' . $name . '">' . $tax['label'] . '</label>' . "\n";
+        echo '        <select name="' . $name . '" id="filter_' . $name . '" data-placeholder="Any">'
+            . '<option value="">Any</option>'
+            . selectOptions(taxonomyOptions($key), queryParam($name))
+            . '</select>' . "\n";
+        echo '    </p>' . "\n";
+    }
+
+    echo '    <p class="filter-actions">' . "\n";
+    echo '        <input type="submit" value="Filter">' . "\n";
+
+    if ($hasFilters) {
+        echo '        <a href="index.php?page=items" class="filter-clear">Clear</a>' . "\n";
+    }
+
+    echo '    </p>' . "\n";
+    echo '</form>' . "\n";
 }

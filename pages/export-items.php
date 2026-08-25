@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * CSV of the current item filters. The columns match what the import page
+ * expects, so an export can be edited and read straight back in.
+ */
+
 [$where, $params] = itemFilters();
 
 $items = fetchItemsForExport($where, $params);
@@ -7,9 +12,13 @@ $items = fetchItemsForExport($where, $params);
 $tempFile = tempnam(sys_get_temp_dir(), 'csv');
 $fileHandle = fopen($tempFile, 'w');
 
-fputcsv($fileHandle, [
-    'Item ID', 'Name', 'Brand', 'Category', 'Location', 'Status', 'Quantity', 'Deployed', 'Notes',
-], ',', '"', '\\');
+// The query aliases each column to its heading.
+$headings = $items
+    ? array_keys($items[0])
+    : ['Name', 'Part No', 'Brand', 'Supplier', 'Categories', 'Location', 'Status',
+       'Quantity', 'Min Quantity', 'Unit', 'Deployed', 'Allocated', 'Notes'];
+
+fputcsv($fileHandle, $headings, ',', '"', '\\');
 
 foreach ($items as $item) {
     fputcsv($fileHandle, $item, ',', '"', '\\');

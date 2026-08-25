@@ -18,7 +18,8 @@ function taxonomies(): array
             'table'      => 'inv_brands',
             'id'         => 'brand_id',
             'param'      => 'brand_id',
-            'itemFilter' => 'i.item_brand_id',
+            'itemFilter' => 'i.item_brand_id = :brand_id',
+            'usedBy'     => ['inv_items', 'item_brand_id'],
             'submit'     => 'brand',
             'routes'     => ['index' => 'brands', 'add' => 'add-brand', 'edit' => 'edit-brand'],
             'fields'     => ['brand_name' => 'Brand Name'],
@@ -29,7 +30,8 @@ function taxonomies(): array
             'table'      => 'inv_suppliers',
             'id'         => 'sup_id',
             'param'      => 'supplier_id',
-            'itemFilter' => 'i.item_sup_id',
+            'itemFilter' => 'i.item_sup_id = :supplier_id',
+            'usedBy'     => ['inv_items', 'item_sup_id'],
             'submit'     => 'sup',
             'routes'     => ['index' => 'suppliers', 'add' => 'add-supplier', 'edit' => 'edit-supplier'],
             'fields'     => [
@@ -44,7 +46,10 @@ function taxonomies(): array
             'table'      => 'inv_categories',
             'id'         => 'cat_id',
             'param'      => 'category_id',
-            'itemFilter' => 'ci.cat_id',
+            'itemFilter' => 'EXISTS (SELECT 1 FROM categories_items fci'
+                . ' WHERE fci.item_id = i.item_id AND fci.cat_id = :category_id)',
+            'usedBy'     => ['categories_items', 'cat_id'],
+            'multiple'   => true,
             'submit'     => 'cat',
             'routes'     => ['index' => 'categories', 'add' => 'add-cat', 'edit' => 'edit-cat'],
             'fields'     => ['cat_name' => 'Category Name'],
@@ -56,7 +61,8 @@ function taxonomies(): array
             'table'      => 'inv_locations',
             'id'         => 'loc_id',
             'param'      => 'location_id',
-            'itemFilter' => 'i.item_loc_id',
+            'itemFilter' => 'i.item_loc_id = :location_id',
+            'usedBy'     => ['inv_items', 'item_loc_id'],
             'submit'     => 'loc',
             'routes'     => ['index' => 'locations', 'add' => 'add-loc', 'edit' => 'edit-loc'],
             'fields'     => ['loc_name' => 'Location Name'],
@@ -67,7 +73,8 @@ function taxonomies(): array
             'table'      => 'inv_statuses',
             'id'         => 'status_id',
             'param'      => 'status_id',
-            'itemFilter' => 'i.item_status',
+            'itemFilter' => 'i.item_status = :status_id',
+            'usedBy'     => ['inv_items', 'item_status'],
             'submit'     => 'status',
             'routes'     => ['index' => 'statuses', 'add' => 'add-status', 'edit' => 'edit-status'],
             'fields'     => ['status_name' => 'Status Name'],
@@ -112,6 +119,25 @@ function taxonomyOptions(string $key): array
     $tax = taxonomy($key);
 
     return array_column(taxonomyRows($tax), taxonomyNameField($tax), $tax['id']);
+}
+
+/** The name of one row, used for filter labels. Null when it no longer exists. */
+function taxonomyName(string $key, $id): ?string
+{
+    $tax = taxonomy($key);
+
+    return dbValue(
+        'SELECT ' . taxonomyNameField($tax) . ' FROM ' . $tax['table'] . ' WHERE ' . $tax['id'] . ' = :id',
+        ['id' => $id]
+    );
+}
+
+/** How many items still refer to one row. */
+function taxonomyUsageCount(array $tax, $id): int
+{
+    [$table, $column] = $tax['usedBy'];
+
+    return (int)dbValue('SELECT COUNT(*) FROM ' . $table . ' WHERE ' . $column . ' = :id', ['id' => $id], 0);
 }
 
 /**
@@ -211,10 +237,15 @@ function taxonomyIndexPage(string $key): void
     $nameField = taxonomyNameField($tax);
     $extraColumns = $tax['columns'] ?? [];
 
-    pageHeader(
-        $tax['plural'] . countBadge(count($rows)),
-        ['Add New ' . $tax['label'] => 'index.php?page=' . $tax['routes']['add']]
-    );
+    $links = ['Add New ' . $tax['label'] => 'index.php?page=' . $tax['routes']['add']];
+
+    if ($key === 'location' && $rows) {
+        $links['Labels'] = 'index.php?page=labels&amp;type=location';
+    }
+
+    pageHeader($tax['plural'] . countBadge(count($rows)), $links);
+
+    formMessage(takeFlash());
 
     if (!$rows) {
         echo 'No items' . "\n";
@@ -224,13 +255,16 @@ function taxonomyIndexPage(string $key): void
     searchBox('Search for ' . strtolower($tax['plural']) . '...');
 
     renderTable(
-        array_merge(['Name'], array_keys($extraColumns), ['Edit']),
+        array_merge(['Name', 'Items'], array_keys($extraColumns), ['Edit']),
         $rows,
         function ($row) use ($tax, $nameField, $extraColumns) {
             $id = $row[$tax['id']];
+            $itemsUrl = 'index.php?page=items&' . $tax['param'] . '=' . $id;
 
-            $cells = ['<a href="index.php?page=items&' . $tax['param'] . '=' . $id . '">'
-                . escapeHtml($row[$nameField]) . '</a>'];
+            $cells = [
+                '<a href="' . $itemsUrl . '">' . escapeHtml($row[$nameField]) . '</a>',
+                taxonomyUsageCount($tax, $id),
+            ];
 
             foreach ($extraColumns as $render) {
                 $cells[] = $render($row);
@@ -250,18 +284,28 @@ function taxonomyIndexPage(string $key): void
 function taxonomyAddPage(string $key): void
 {
     $tax = taxonomy($key);
-    $formMessage = false;
+    $formMessage = takeFlash();
+    $values = [];
 
     if (isset($_POST['add_' . $tax['submit'] . '_submit'])) {
         $result = taxonomyInsert($key, $_POST);
 
-        $formMessage = $result['success']
-            ? successMessage($tax['label'] . ' added!')
-            : errorMessage($result['error']);
+        if ($result['success']) {
+            redirectWith(
+                'index.php?page=' . $tax['routes']['index'],
+                successMessage($tax['label'] . ' added!')
+            );
+        }
+
+        $values = $_POST;
+        $formMessage = errorMessage($result['error']);
     }
 
-    pageHeader('Add ' . $tax['label']);
-    taxonomyForm($tax, 'add', [], $formMessage);
+    pageHeader('Add ' . $tax['label'], [
+        'Back to ' . $tax['plural'] => 'index.php?page=' . $tax['routes']['index'],
+    ]);
+
+    taxonomyForm($tax, 'add', $values, $formMessage);
 }
 
 /**
@@ -271,8 +315,9 @@ function taxonomyEditPage(string $key): void
 {
     $tax = taxonomy($key);
     $editId = queryParam($tax['param']);
-    $formMessage = false;
-    $deleted = false;
+    $formMessage = takeFlash();
+    $editUrl = 'index.php?page=' . $tax['routes']['edit'] . '&' . $tax['param'] . '=' . urlencode((string)$editId);
+    $indexUrl = 'index.php?page=' . $tax['routes']['index'];
 
     if (isset($_POST['edit_' . $tax['submit'] . '_submit'])) {
         $result = taxonomyValues($tax, $_POST);
@@ -292,25 +337,55 @@ function taxonomyEditPage(string $key): void
                 $result['values'] + ['edit_id' => $editId]
             );
 
-            $formMessage = successMessage($tax['label'] . ' updated!');
+            redirectWith($editUrl, successMessage($tax['label'] . ' updated!'));
         }
     } elseif (isset($_POST['delete_' . $tax['submit'] . '_submit'])) {
-        dbRun('DELETE FROM ' . $tax['table'] . ' WHERE ' . $tax['id'] . ' = :edit_id LIMIT 1', ['edit_id' => $editId]);
+        $inUse = taxonomyUsageCount($tax, $editId);
 
-        $formMessage = successMessage($tax['label'] . ' deleted!');
-        $deleted = true;
+        if ($inUse > 0) {
+            $formMessage = errorMessage(
+                $inUse . ' ' . ($inUse === 1 ? 'item still uses' : 'items still use')
+                . ' this ' . strtolower($tax['label']) . ', so it cannot be deleted.'
+                . ' Reassign ' . ($inUse === 1 ? 'it' : 'them') . ' first.'
+            );
+        } else {
+            dbRun(
+                'DELETE FROM ' . $tax['table'] . ' WHERE ' . $tax['id'] . ' = :edit_id LIMIT 1',
+                ['edit_id' => $editId]
+            );
+
+            redirectWith($indexUrl, successMessage($tax['label'] . ' deleted!'));
+        }
     }
 
     $row = dbRow('SELECT * FROM ' . $tax['table'] . ' WHERE ' . $tax['id'] . ' = :edit_id', ['edit_id' => $editId]);
 
-    pageHeader('Edit ' . $tax['label']);
+    pageHeader('Edit ' . $tax['label'], ['Back to ' . $tax['plural'] => $indexUrl]);
 
-    if ($row) {
-        taxonomyForm($tax, 'edit', $row, $formMessage);
-        deleteSection($tax['label'], 'delete_' . $tax['submit'] . '_submit');
-    } elseif ($deleted) {
+    if (!$row) {
         formMessage($formMessage);
-    } else {
         echo '<p>No ' . strtolower($tax['label']) . ' found</p>' . "\n";
+        return;
     }
+
+    taxonomyForm($tax, 'edit', $row, $formMessage);
+
+    $inUse = taxonomyUsageCount($tax, $editId);
+
+    if ($inUse > 0) {
+        sectionHeader('Delete ' . $tax['label']);
+        echo '<p>This ' . strtolower($tax['label']) . ' is used by '
+            . '<a href="index.php?page=items&' . $tax['param'] . '=' . $editId . '">'
+            . $inUse . ' ' . ($inUse === 1 ? 'item' : 'items') . '</a>.'
+            . ' Move ' . ($inUse === 1 ? 'it' : 'them') . ' elsewhere before deleting.</p>' . "\n";
+
+        return;
+    }
+
+    deleteSection(
+        $tax['label'],
+        'delete_' . $tax['submit'] . '_submit',
+        'Delete',
+        'Delete this ' . strtolower($tax['label']) . '?'
+    );
 }

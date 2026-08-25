@@ -2,7 +2,9 @@
 
 $projects = fetchProjects();
 
-pageHeader('Projects', ['Add Project' => 'index.php?page=add-project']);
+pageHeader('Projects' . countBadge(count($projects)), ['Add Project' => 'index.php?page=add-project']);
+
+formMessage(takeFlash());
 
 if (!$projects) {
     echo '<p>No projects have been created.</p>';
@@ -21,8 +23,8 @@ renderTable(
             escapeHtml($project['project_reference']),
             escapeHtml($project['project_status_name']),
             (int)$project['assembly_count'],
-            (float)$project['required_quantity'],
-            (float)$project['installed_quantity'],
+            formatQuantity($project['required_quantity']),
+            formatQuantity($project['installed_quantity']),
             '<a href="index.php?page=edit-project&project_id=' . $id . '">Edit</a>',
         ];
     }

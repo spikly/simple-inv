@@ -8,13 +8,12 @@ function db(): PDO
     static $pdo = null;
 
     if ($pdo === null) {
-        $config = require __DIR__ . '/../config/user.config.php';
-        $db = $config['db'];
-
         $pdo = new PDO(
-            'mysql:host=' . $db['host'] . ';dbname=' . $db['database'] . ';charset=' . $db['charset'],
-            $db['username'],
-            $db['password'],
+            'mysql:host=' . config('db.host')
+                . ';dbname=' . config('db.database')
+                . ';charset=' . config('db.charset', 'utf8mb4'),
+            config('db.username'),
+            config('db.password'),
             [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -54,6 +53,16 @@ function dbRow(string $sql, array $params = [])
 }
 
 /**
+ * The first column of the first row, or $default when there is no row.
+ */
+function dbValue(string $sql, array $params = [], $default = null)
+{
+    $value = dbRun($sql, $params)->fetchColumn();
+
+    return ($value === false) ? $default : $value;
+}
+
+/**
  * Run an INSERT and return the new row's id.
  */
 function dbInsert(string $sql, array $params = []): string
@@ -61,4 +70,25 @@ function dbInsert(string $sql, array $params = []): string
     dbRun($sql, $params);
 
     return db()->lastInsertId();
+}
+
+/**
+ * Run $work inside a transaction, rolling back if it throws.
+ */
+function dbTransaction(callable $work)
+{
+    db()->beginTransaction();
+
+    try {
+        $result = $work();
+        db()->commit();
+    } catch (\Throwable $e) {
+        if (db()->inTransaction()) {
+            db()->rollBack();
+        }
+
+        throw $e;
+    }
+
+    return $result;
 }

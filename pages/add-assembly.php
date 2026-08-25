@@ -9,14 +9,14 @@ if (!$project) {
 }
 
 $values = [];
-$formMessage = false;
+$formMessage = takeFlash();
 
 if (isset($_POST['add_assembly_submit'])) {
     if (trim($_POST['assembly_name']) === '') {
         $values = $_POST;
         $formMessage = errorMessage('Assembly name cannot be empty');
     } else {
-        dbRun(
+        $assemblyId = dbInsert(
             'INSERT INTO inv_project_assemblies
                 (assembly_project_id, assembly_name, assembly_description, assembly_notes, assembly_sort_order)
              VALUES
@@ -24,7 +24,7 @@ if (isset($_POST['add_assembly_submit'])) {
             assemblyColumns($_POST) + ['assembly_project_id' => $projectId]
         );
 
-        $formMessage = successMessage('Assembly added!');
+        redirectWith('index.php?page=view-assembly&assembly_id=' . $assemblyId, successMessage('Assembly added!'));
     }
 }
 

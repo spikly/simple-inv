@@ -24,14 +24,106 @@ document.addEventListener("DOMContentLoaded", function()
         createSearchableSelect(select);
     });
 
+    document.querySelectorAll("table.sortable").forEach(table => {
+        makeTableSortable(table);
+    });
+
+    document.querySelectorAll('a[href="#print"]').forEach(link => {
+        link.addEventListener("click", event => {
+            event.preventDefault();
+            window.print();
+        });
+    });
+
     searchTable();
 });
+
+/**
+ * Click a heading to sort the rows under it. The first row holds the headings
+ * and stays put; columns of numbers sort numerically, everything else by text.
+ */
+function makeTableSortable(table) {
+    const headerRow = table.rows[0];
+
+    if (!headerRow || table.rows.length < 3) {
+        return;
+    }
+
+    Array.from(headerRow.cells).forEach((cell, index) => {
+        if (!cell.textContent.trim()) {
+            return;
+        }
+
+        cell.classList.add("is-sortable");
+        cell.setAttribute("role", "button");
+        cell.setAttribute("tabindex", "0");
+
+        const sort = () => sortTableByColumn(table, index, cell);
+
+        cell.addEventListener("click", sort);
+        cell.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                sort();
+            }
+        });
+    });
+}
+
+function sortTableByColumn(table, index, headerCell) {
+    const headerRow = table.rows[0];
+    const rows = Array.from(table.rows).slice(1);
+    const ascending = headerCell.dataset.sortDirection !== "asc";
+
+    const cellValue = row => (row.cells[index] ? row.cells[index].textContent.trim() : "");
+
+    // Treat a column as numeric only when every value in it looks like a number.
+    const asNumber = value => {
+        const cleaned = value.replace(/[^0-9.\-]/g, "");
+        return cleaned === "" || cleaned === "-" ? NaN : parseFloat(cleaned);
+    };
+
+    const numeric = rows.every(row => {
+        const value = cellValue(row);
+        return value === "" || !isNaN(asNumber(value));
+    });
+
+    rows.sort((a, b) => {
+        const first = cellValue(a);
+        const second = cellValue(b);
+
+        if (numeric) {
+            const x = isNaN(asNumber(first)) ? 0 : asNumber(first);
+            const y = isNaN(asNumber(second)) ? 0 : asNumber(second);
+            return ascending ? x - y : y - x;
+        }
+
+        return ascending
+            ? first.localeCompare(second, undefined, { numeric: true, sensitivity: "base" })
+            : second.localeCompare(first, undefined, { numeric: true, sensitivity: "base" });
+    });
+
+    rows.forEach(row => table.tBodies[0].appendChild(row));
+
+    Array.from(headerRow.cells).forEach(cell => {
+        delete cell.dataset.sortDirection;
+        cell.classList.remove("is-sorted-asc", "is-sorted-desc");
+    });
+
+    headerCell.dataset.sortDirection = ascending ? "asc" : "desc";
+    headerCell.classList.add(ascending ? "is-sorted-asc" : "is-sorted-desc");
+}
 
 function searchTable() {
     var input, filter, table, tr, td, i, txtValue;
     input = document.getElementById("tableSearchInput");
-    filter = input.value.toUpperCase();
     table = document.getElementById("searchableTable");
+
+    if (!input || !table) {
+        return;
+    }
+
+    filter = input.value.toUpperCase();
     tr = table.getElementsByTagName("tr");
 
     for (i = 0; i < tr.length; i++) {
@@ -158,20 +250,26 @@ function showModalError(message)
 
 function refreshDropdown(dropdownId, newId)
 {
-    let requestData = { 
+    const select = document.getElementById(dropdownId);
+    if (!select) return;
+
+    // Keep what is already chosen; a multi-select would otherwise lose it.
+    const selected = Array.from(select.selectedOptions).map(option => option.value);
+
+    let requestData = {
         requestType: 'get-downdown-options',
         dropdownId: dropdownId,
-        newId: newId
+        newId: newId,
+        selected: selected,
+        multiple: select.multiple
     };
 
-    const select = document.getElementById(dropdownId);
     select.innerHTML = "<option>Loading...</option>";
 
-    sendAjaxRequest("inc/ajax.php", requestData, 
+    sendAjaxRequest("inc/ajax.php", requestData,
         (data) => {
-            if (select) {
-                select.innerHTML = data.optionsHtml;
-            }
+            select.innerHTML = data.optionsHtml;
+            select.dispatchEvent(new Event("change", { bubbles: true }));
         },
         (error) => {
             console.error("Error refreshing dropdown:", error);

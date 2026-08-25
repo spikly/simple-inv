@@ -89,3 +89,31 @@ function errorMessage(string $message): array
 {
     return ['status' => 'error', 'message' => $message];
 }
+
+/**
+ * A string safe to drop into JavaScript inside an HTML attribute, quotes and
+ * all. Used for the confirm() prompts on delete buttons.
+ */
+function jsString(string $text): string
+{
+    return escapeHtml(json_encode($text, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+}
+
+/**
+ * Absolute URL of the folder the app is served from, used for QR labels.
+ * Set 'site' => ['url' => '...'] in user.config.php when the guessed value is
+ * wrong, for example behind a proxy.
+ */
+function baseUrl(): string
+{
+    $configured = config('site.url');
+
+    if ($configured) {
+        return rtrim($configured, '/') . '/';
+    }
+
+    $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || ($_SERVER['SERVER_PORT'] ?? '') === '443';
+    $folder = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
+
+    return ($secure ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . $folder . '/';
+}

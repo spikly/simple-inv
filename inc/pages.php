@@ -1,7 +1,10 @@
 <?php
 
 return [
+    'dashboard' => 'dashboard',
     'items' => 'all-items',
+    'import-items' => 'import-items',
+    'labels' => 'labels',
     'add-item' => 'add-item',
     'edit-item' => 'edit-item',
     'view-item' => 'view-item',
@@ -27,6 +30,7 @@ return [
     'add-project' => 'add-project',
     'edit-project' => 'edit-project',
     'view-project' => 'view-project',
+    'shopping-list' => 'shopping-list',
     'add-assembly' => 'add-assembly',
     'edit-assembly' => 'edit-assembly',
     'view-assembly' => 'view-assembly',
