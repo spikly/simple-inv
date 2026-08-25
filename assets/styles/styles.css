@@ -150,6 +150,10 @@ h3 {
     font-size: 1.8rem;
 }
 
+p {
+    margin: 0 0 12px;
+}
+
 h1 a {
     color: inherit;
     text-decoration: none;
@@ -805,6 +809,10 @@ div.notes-box p:last-child {
 
 .item-property h3 {
     margin: 0 0 7px;
+}
+
+.item-property p {
+    margin: 0;
 }
 
 /* Status cards */
