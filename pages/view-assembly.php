@@ -9,6 +9,107 @@ if(!$assembly) {
     return;
 }
 
+$formMessage = false;
+
+
+if(isset($_POST['duplicate_assembly_submit'])) {
+
+    try {
+
+        $db->beginTransaction();
+
+
+        /*
+         * Duplicate assembly
+         */
+        $sql = "
+            INSERT INTO inv_project_assemblies
+            (
+                assembly_project_id,
+                assembly_name,
+                assembly_description,
+                assembly_notes,
+                assembly_sort_order
+            )
+            SELECT
+                assembly_project_id,
+                CONCAT(assembly_name, ' (Copy)'),
+                assembly_description,
+                assembly_notes,
+                assembly_sort_order
+            FROM inv_project_assemblies
+            WHERE assembly_id = :assembly_id
+        ";
+
+        $stmt = $db->prepare($sql);
+
+        $stmt->execute([
+            'assembly_id' => $assembly_id,
+        ]);
+
+
+        $new_assembly_id =
+            (int)$db->lastInsertId();
+
+
+        /*
+         * Duplicate parts
+         */
+        $sql = "
+            INSERT INTO inv_assembly_items
+            (
+                assembly_id,
+                item_id,
+                quantity_required,
+                quantity_allocated,
+                quantity_installed,
+                assembly_item_notes
+            )
+            SELECT
+                :new_assembly_id,
+                item_id,
+                quantity_required,
+                0,
+                0,
+                assembly_item_notes
+            FROM inv_assembly_items
+            WHERE assembly_id = :old_assembly_id
+        ";
+
+        $stmt = $db->prepare($sql);
+
+        $stmt->execute([
+            'new_assembly_id' => $new_assembly_id,
+            'old_assembly_id' => $assembly_id,
+        ]);
+
+
+        $db->commit();
+
+
+        $formMessage = [
+            'status' => 'success',
+            'message' =>
+                'Assembly duplicated successfully. ' .
+                '<a href="index.php?page=view-assembly&assembly_id=' .
+                (int)$new_assembly_id .
+                '">View the new assembly</a>.',
+        ];
+
+
+    } catch(\PDOException $e) {
+
+        if($db->inTransaction()) {
+            $db->rollBack();
+        }
+
+        throw new \PDOException(
+            $e->getMessage(),
+            (int)$e->getCode()
+        );
+    }
+}
+
 $items = fetchAssemblyItems($assembly_id);
 
 ?>
@@ -39,10 +140,37 @@ Edit Assembly
 Back to Project
 </a>
 
+<form
+    method="post"
+    style="display:inline;"
+    onsubmit="return confirm(
+        'Duplicate this assembly and all of its parts?'
+    );"
+>
+
+    <input
+        type="submit"
+        name="duplicate_assembly_submit"
+        value="Duplicate Assembly"
+    >
+
+</form>
+
 </nav>
 
 </div>
 
+<?php
+
+echo ($formMessage)
+    ? '<p class="form-message form-' .
+        $formMessage['status'] .
+        '">' .
+        $formMessage['message'] .
+        '</p>'
+    : '';
+
+?>
 
 <?php if($assembly['assembly_description']): ?>
 

@@ -198,7 +198,8 @@ p.item-name {
 }
 
 .main-nav a,
-.onpage-nav a {
+.onpage-nav a,
+.flex-nav input[type=submit] {
     display: inline-block;
     margin: 0 14px 0 0;
     color: #374151;
@@ -209,10 +210,22 @@ p.item-name {
         background-color var(--transition);
 }
 
+.flex-nav input[type=submit] {
+    margin: 0 0 0 14px;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+}
+
 .main-nav a:hover,
-.onpage-nav a:hover {
+.onpage-nav a:hover,
+.flex-nav input[type=submit]:hover {
     color: var(--color-primary);
     text-decoration: none;
+}
+
+.flex-nav input[type=submit]:hover {
+    background: none;
 }
 
 .onpage-nav a {
@@ -408,11 +421,6 @@ button:not(.searchable-select__button) {
 
 button:not(.searchable-select__button):hover {
     background: var(--color-primary-hover);
-}
-
-button:not(.searchable-select__button):active,
-form input[type="submit"]:active {
-    transform: translateY(1px);
 }
 
 form input[type="submit"] {
