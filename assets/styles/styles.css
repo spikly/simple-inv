@@ -207,7 +207,8 @@ p.item-name {
     font-weight: 500;
     transition:
         color var(--transition),
-        background-color var(--transition);
+        background-color var(--transition),
+        box-shadow var(--transition);
 }
 
 .flex-nav input[type=submit] {
@@ -1253,8 +1254,8 @@ table td.col-thumb .item-thumb {
    ========================================================= */
 
 .main-nav a.is-current {
-    font-weight: 600;
-    text-decoration: underline;
+    color: var(--color-primary);
+    box-shadow: inset 0 -2px 0 var(--color-primary);
 }
 
 /* =========================================================
