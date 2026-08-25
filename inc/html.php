@@ -108,15 +108,29 @@ function renderSearchBar(string $page, string $placeholder): void
  *
  * $rows receives each item and returns the cells for one row as an array of
  * HTML strings. Headings are clickable to sort, see assets/js/app.js.
+ *
+ * $columnClasses maps a column's position to a class put on both its heading
+ * and its cells, which is how a column gets sized differently from the rest.
  */
-function renderTable(array $headings, array $items, callable $rows): void
+function renderTable(array $headings, array $items, callable $rows, array $columnClasses = []): void
 {
+    $cells = function (array $values, string $tag) use ($columnClasses) {
+        $html = '';
+
+        foreach (array_values($values) as $index => $value) {
+            $class = isset($columnClasses[$index]) ? ' class="' . $columnClasses[$index] . '"' : '';
+            $html .= '<' . $tag . $class . '>' . $value . '</' . $tag . '>';
+        }
+
+        return $html;
+    };
+
     echo '<div class="table-container">' . "\n";
     echo '    <table class="sortable">' . "\n";
-    echo '        <tr><th>' . implode('</th><th>', $headings) . '</th></tr>' . "\n";
+    echo '        <tr>' . $cells($headings, 'th') . '</tr>' . "\n";
 
     foreach ($items as $item) {
-        echo '        <tr><td>' . implode('</td><td>', $rows($item)) . '</td></tr>' . "\n";
+        echo '        <tr>' . $cells($rows($item), 'td') . '</tr>' . "\n";
     }
 
     echo '    </table>' . "\n";

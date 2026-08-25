@@ -59,5 +59,6 @@ renderTable(
             '<a href="index.php?page=edit-item&item_id=' . $item['item_id'] . '">Edit</a>'
                 . ' / <a href="index.php?page=add-item&duplicate=' . $item['item_id'] . '">Duplicate</a>',
         ];
-    }
+    },
+    [0 => 'col-thumb']
 );

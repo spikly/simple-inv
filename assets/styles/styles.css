@@ -1190,6 +1190,20 @@ table td small.row-note {
    Photos
    ========================================================= */
 
+/* Sizes the column to the image rather than letting the table share out
+   the leftover width between every column. The thumbnail opts out of the
+   reset's max-width:100%, which would otherwise shrink it to fit the very
+   column it is meant to be setting the width of. */
+table th.col-thumb,
+table td.col-thumb {
+    width: 1%;
+    padding-right: 0;
+}
+
+table td.col-thumb .item-thumb {
+    max-width: none;
+}
+
 .item-thumb {
     display: block;
     width: 48px;
@@ -1213,7 +1227,7 @@ table td small.row-note {
 
 .item-photo-large {
     display: block;
-    max-width: 320px;
+    max-width: 300px;
     height: auto;
     border: 1px solid var(--color-border);
     border-radius: 8px;

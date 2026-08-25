@@ -109,7 +109,8 @@ if ($recent) {
                 escapeHtml($item['status_name'] ?? ''),
                 escapeHtml($item['item_created_at']),
             ];
-        }
+        },
+        [0 => 'col-thumb']
     );
 } else {
     echo '<p>No items yet. <a href="index.php?page=add-item">Add your first one.</a></p>' . "\n";
