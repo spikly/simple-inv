@@ -1,115 +1,58 @@
 <?php
-header("Content-Type: application/json");
 
-$db = require __DIR__ . '/utils.php';
-$config = require __DIR__ . '/../config/user.config.php';
-$db = require __DIR__ . '/db.php';
+header('Content-Type: application/json');
 
-$rawData = file_get_contents("php://input");
-$requestData = json_decode($rawData, true);
+require __DIR__ . '/bootstrap.php';
 
-if($requestData['requestType'] == 'load-form') {
-    if (!isset($requestData['buttonId'])) {
-        echo json_encode(["error" => "Invalid request. No button ID provided."]);
-        exit;
-    }
+$request = json_decode(file_get_contents('php://input'), true) ?: [];
 
-    $idToTemplateMap = [
-        'add_new_brand' => [
-            'template' => '../forms/view/new-brand.phtml',
-            'selectId' => 'item_brand',
-        ],
-        'add_new_supplier' => [
-            'template' => '../forms/view/new-supplier.phtml',
-            'selectId' => 'item_supplier',
-        ],
-        'add_new_category' => [
-            'template' => '../forms/view/new-category.phtml',
-            'selectId' => 'item_category',
-        ],
-        'add_new_location' => [
-            'template' => '../forms/view/new-location.phtml',
-            'selectId' => 'item_location',
-        ],
-        'add_new_status' => [
-            'template' => '../forms/view/new-status.phtml',
-            'selectId' => 'item_status',
-        ],
-    ];
+/**
+ * The item form names its controls after the taxonomy they edit, so
+ * "add_new_brand" and "item_brand" both resolve to the "brand" taxonomy.
+ */
+function taxonomyFor(?string $control, string $prefix): ?string
+{
+    $key = substr((string)$control, strlen($prefix));
 
-    ob_start();
-    require $idToTemplateMap[htmlspecialchars($requestData['buttonId'])]['template'];
-    $formHtml = ob_get_clean();
-
-    echo json_encode([
-        "success" => true,
-        "formHtml" => $formHtml,
-        "selectId" => $idToTemplateMap[htmlspecialchars($requestData['buttonId'])]['selectId'],
-    ]);
+    return isset(taxonomies()[$key]) ? $key : null;
 }
 
-if($requestData['requestType'] == 'submit-form') {
+switch ($request['requestType'] ?? '') {
 
-    require __DIR__ . '/../forms/form-processor.php';
+    case 'load-form':
+        $key = taxonomyFor($request['buttonId'] ?? null, 'add_new_');
 
-    switch ($requestData['formId']) {
-        case 'item_brand':
-            $result = addNewBrand($db, $requestData['formData']);
+        if (!$key) {
+            echo json_encode(['error' => 'Invalid request. No button ID provided.']);
             break;
-        case 'item_supplier':
-            $result = addNewSupplier($db, $requestData['formData']);
-            break;
-        case 'item_category':
-            $result = addNewCategory($db, $requestData['formData']);
-            break;
-        case 'item_location':
-            $result = addNewLocation($db, $requestData['formData']);
-            break;
-        case 'item_status':
-            $result = addNewStatus($db, $requestData['formData']);
-            break;
-    }
+        }
 
-    echo json_encode($result);
-}
+        echo json_encode([
+            'success'  => true,
+            'formHtml' => taxonomyModalForm($key),
+            'selectId' => 'item_' . $key,
+        ]);
+        break;
 
-if($requestData['requestType'] == 'get-downdown-options') {
+    case 'submit-form':
+        $key = taxonomyFor($request['formId'] ?? null, 'item_');
 
-    $selectOptions = [];
-    $optionsHtml = '<option>Select</option>';
+        echo json_encode(
+            $key
+                ? taxonomyInsert($key, $request['formData'] ?? [])
+                : ['success' => false, 'error' => 'Unknown form.']
+        );
+        break;
 
-    switch ($requestData['dropdownId']) {
-        case 'item_brand':
-            $sql = 'SELECT brand_id AS option_id, brand_name AS option_name FROM inv_brands ORDER BY brand_name asc';
-            break;
-        case 'item_supplier':
-            $sql = 'SELECT sup_id AS option_id, sup_name AS option_name FROM inv_suppliers ORDER BY sup_name asc';
-            break;
-        case 'item_category':
-            $sql = 'SELECT cat_id AS option_id, cat_name AS option_name FROM inv_categories ORDER BY cat_name asc';
-            break;
-        case 'item_location':
-            $sql = 'SELECT loc_id AS option_id, loc_name AS option_name FROM inv_locations ORDER BY loc_name asc';
-            break;
-        case 'item_status':
-            $sql = 'SELECT status_id AS option_id, status_name AS option_name FROM inv_statuses ORDER BY status_name asc';
-            break;
-    }
+    case 'get-downdown-options':
+        $key = taxonomyFor($request['dropdownId'] ?? null, 'item_');
 
-    $stmt = $db->prepare($sql);
-    $stmt->execute();
-    $selectOptions = $stmt->fetchAll();
-
-    foreach ($selectOptions as $option) {
-        $selected = ($requestData['newId'] == $option['option_id']) ? ' selected' : '';
-        $optionsHtml .= '<option value="' . $option['option_id'] . '"' . $selected . '>' . $option['option_name'] . '</option>';
-    }
-
-
-    echo json_encode([
-        "success" => true,
-        "optionsHtml" => $optionsHtml,
-    ]);
+        echo json_encode([
+            'success'     => true,
+            'optionsHtml' => '<option>Select</option>'
+                . ($key ? selectOptions(taxonomyOptions($key), $request['newId'] ?? null) : ''),
+        ]);
+        break;
 }
 
 exit;

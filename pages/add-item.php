@@ -1,240 +1,38 @@
 <?php
 
-$formData = [];
+$values = [];
 $formMessage = false;
 
-if(isset($_POST['add_item_submit'])) {
-    $formData = [
-        'item_name' => trim($_POST['item_name']),
-        'item_part_no' => (!empty($_POST['item_part_no'])) ? trim($_POST['item_part_no']) : null,
-        'item_quantity' => trim($_POST['item_quantity']),
-        'item_measurement_unit' => trim($_POST['item_measurement_unit']),
-        'item_brand' => $_POST['item_brand'],
-        'item_supplier' => ($_POST['item_supplier'] >= 1) ? $_POST['item_supplier'] : null,
-        'item_category' => ($_POST['item_category'] >= 1) ? $_POST['item_category'] : null,
-        'item_location' => $_POST['item_location'],
-        'item_status' => slugify($_POST['item_status']),
-        'item_notes' => trim($_POST['item_notes']),
-    ];
+if (isset($_POST['add_item_submit'])) {
+    $values = $_POST;
+    $error = validateItem($_POST);
 
-    if(empty($_POST['item_name'])) {
-        $formMessage = [
-            'status' => 'error',
-            'message' => 'Item name cannot be empty',
-        ];
-    }elseif($_POST['item_measurement_unit'] < 1) {
-        $formMessage = [
-            'status' => 'error',
-            'message' => 'Item measurement unit cannot be empty',
-        ];
-    }elseif($_POST['item_brand'] < 1) {
-        $formMessage = [
-            'status' => 'error',
-            'message' => 'You must select a category',
-        ];
-    }elseif($_POST['item_category'] < 1) {
-        $formMessage = [
-            'status' => 'error',
-            'message' => 'You must select a category',
-        ];
-    }elseif($_POST['item_location'] < 1) {
-        $formMessage = [
-            'status' => 'error',
-            'message' => 'You must select a location',
-        ];
-    }elseif($_POST['item_status'] < 1) {
-        $formMessage = [
-            'status' => 'error',
-            'message' => 'You must select a status',
-        ];
-    }else{
-        unset($formData['item_category']);
+    if ($error) {
+        $formMessage = errorMessage($error);
+    } else {
+        $itemId = dbInsert(
+            'INSERT INTO inv_items
+                (item_name, item_part_no, item_quantity, item_measurement_unit, item_brand_id,
+                 item_sup_id, item_loc_id, item_status, item_notes)
+             VALUES
+                (:item_name, :item_part_no, :item_quantity, :item_measurement_unit, :item_brand,
+                 :item_supplier, :item_location, :item_status, :item_notes)',
+            itemColumns($_POST)
+        );
 
-        try {
-            $sql = 'INSERT INTO inv_items (item_name, item_part_no, item_quantity, item_measurement_unit, item_brand_id, item_sup_id, item_loc_id, item_status, item_notes) VALUES (:item_name, :item_part_no, :item_quantity, :item_measurement_unit, :item_brand, :item_supplier, :item_location, :item_status, :item_notes)';
-            $stmt = $db->prepare($sql);
-            $stmt->execute($formData);
-            $lastId = $db->lastInsertId();
+        dbRun('INSERT INTO categories_items (cat_id, item_id) VALUES (:cat_id, :item_id)', [
+            'cat_id'  => $_POST['item_category'],
+            'item_id' => $itemId,
+        ]);
 
-            $sql = 'INSERT INTO categories_items (cat_id, item_id) VALUES (:cat_id, :item_id)';
-            $stmt = $db->prepare($sql);
-            $stmt->execute([
-                'cat_id' => $_POST['item_category'],
-                'item_id' => $lastId,
-            ]);
-
-            $formMessage = [
-                'status' => 'success',
-                'message' => 'Item added! <a href="index.php?page=view-item&item_id=' . $lastId . '">View Item</a>',
-            ];
-        } catch (\PDOException $e) {
-            throw new \PDOException($e->getMessage(), (int)$e->getCode());
-        }
+        $formMessage = successMessage(
+            'Item added! <a href="index.php?page=view-item&item_id=' . $itemId . '">View Item</a>'
+        );
     }
-}elseif(isset($_GET['duplicate'])) {
-
-    $itemToDuplicateId = $_GET['duplicate'];
-    $itemToDuplicate = fetchSingleItem($itemToDuplicateId);
-
-    if($itemToDuplicate) {
-        $formData = [
-            'item_name' => trim($itemToDuplicate['item_name']),
-            'item_part_no' => (!empty($itemToDuplicate['item_part_no'])) ? trim($itemToDuplicate['item_part_no']) : null,
-            'item_quantity' => trim($itemToDuplicate['item_quantity']),
-            'item_measurement_unit' => trim($itemToDuplicate['item_measurement_unit']),
-            'item_brand' => $itemToDuplicate['item_brand_id'],
-            'item_supplier' => ($itemToDuplicate['item_sup_id'] >= 1) ? $itemToDuplicate['item_sup_id'] : null,
-            'item_category' => ($itemToDuplicate['cat_id'] >= 1) ? $itemToDuplicate['cat_id'] : null,
-            'item_location' => $itemToDuplicate['item_loc_id'],
-            'item_status' => slugify($itemToDuplicate['item_status']),
-            'item_notes' => ($itemToDuplicate['item_notes']) ? trim($itemToDuplicate['item_notes']) : null,
-        ];
-    }
+} elseif (queryParam('duplicate')) {
+    $item = fetchSingleItem(queryParam('duplicate'));
+    $values = $item ? itemFormValues($item) : [];
 }
 
-$munits = [];
-$brands = [];
-$suppliers = [];
-$categories = [];
-$locations = [];
-$statuses = [];
-
-$sql = 'SELECT unit_id, unit_label, unit_symbol FROM inv_measurement_units ORDER BY unit_id asc';
-$stmt = $db->prepare($sql);
-$stmt->execute();
-$munits = $stmt->fetchAll();
-
-$sql = 'SELECT brand_id, brand_name FROM inv_brands ORDER BY brand_name asc';
-$stmt = $db->prepare($sql);
-$stmt->execute();
-$brands = $stmt->fetchAll();
-
-$sql = 'SELECT sup_id, sup_name FROM inv_suppliers ORDER BY sup_name asc';
-$stmt = $db->prepare($sql);
-$stmt->execute();
-$suppliers = $stmt->fetchAll();
-
-$sql = 'SELECT cat_id, cat_name FROM inv_categories ORDER BY cat_name asc';
-$stmt = $db->prepare($sql);
-$stmt->execute();
-$categories = $stmt->fetchAll();
-
-$sql = 'SELECT loc_id, loc_name FROM inv_locations ORDER BY loc_name asc';
-$stmt = $db->prepare($sql);
-$stmt->execute();
-$locations = $stmt->fetchAll();
-
-$sql = 'SELECT status_id, status_name FROM inv_statuses ORDER BY status_name asc';
-$stmt = $db->prepare($sql);
-$stmt->execute();
-$statuses = $stmt->fetchAll();
-
-?>
-
-<div class="flex-nav">
-    <h2>
-        Add Item
-    </h2>
-</div>
-
-<form method="post">
-    <?php echo ($formMessage) ? '<p class="form-message form-' . $formMessage['status'] . '">' . $formMessage['message'] . '</p>' : ''; ?>
-    <p>
-        <label for="item_name">Item Name</label>
-        <input type="text" name="item_name" value="<?php echo (isset($formData['item_name'])) ? escapeHtml($formData['item_name']) : ''; ?>" />
-    </p>
-    <p>
-        <label for="item_part_no">Manufacturers Part Number (optional)</label>
-        <input type="text" name="item_part_no" value="<?php echo (isset($formData['item_part_no'])) ? escapeHtml($formData['item_part_no']) : ''; ?>" />
-    </p>
-    <p>
-        <label for="item_quantity">Item Quantity</label>
-        <input type="number" name="item_quantity" value="<?php echo (isset($formData['item_quantity'])) ? escapeHtml($formData['item_quantity']) : 1; ?>" />
-    </p>
-    <p>
-        <label for="item_measurement_unit">Measurement Unit</label>
-        <select name="item_measurement_unit">
-            <option value="0">Select</option>
-            <?php foreach($munits as $munit): ?>
-                <option value="<?php echo $munit['unit_id']; ?>"<?php echo (isset($formData['item_measurement_unit']) && $formData['item_measurement_unit'] == $munit['unit_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($munit['unit_label']); ?> (<?php echo escapeHtml($munit['unit_symbol']); ?>)</option>
-            <?php endforeach ?>
-        </select>
-    </p>
-    <p>
-        <label for="item_brand">Brand</label>
-        <div class="searchable-select-row">
-            <div class="searchable-select">
-                <select name="item_brand" id="item_brand">
-                    <option value="0">Select</option>
-                    <?php foreach($brands as $brand): ?>
-                        <option value="<?php echo $brand['brand_id']; ?>"<?php echo (isset($formData['item_brand']) && $formData['item_brand'] == $brand['brand_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($brand['brand_name']); ?></option>
-                    <?php endforeach ?>
-                </select>
-            </div>
-            <button type="button" class="add-new-attribute-value" id="add_new_brand" title="Add new Brand">+</button>
-        </div>
-    </p>
-    <p>
-        <label for="item_supplier">Supplier</label>
-        <div class="searchable-select-row">
-            <div class="searchable-select">
-                <select name="item_supplier" id="item_supplier">
-                    <option value="0">Select</option>
-                    <?php foreach($suppliers as $supplier): ?>
-                        <option value="<?php echo $supplier['sup_id']; ?>"<?php echo (isset($formData['item_supplier']) && $formData['item_supplier'] == $supplier['sup_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($supplier['sup_name']); ?></option>
-                    <?php endforeach ?>
-                </select>
-            </div>
-            <button type="button" class="add-new-attribute-value" id="add_new_supplier" title="Add new Supplier">+</button>
-        </div>
-    </p>
-    <p>
-        <label for="item_category">Category</label>
-        <div class="searchable-select-row">
-            <div class="searchable-select">
-                <select name="item_category" id="item_category">
-                    <option value="0">Select</option>
-                    <?php foreach($categories as $category): ?>
-                        <option value="<?php echo $category['cat_id']; ?>"<?php echo (isset($formData['item_category']) && $formData['item_category'] == $category['cat_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($category['cat_name']); ?></option>
-                    <?php endforeach ?>
-                </select>
-            </div>
-            <button type="button" class="add-new-attribute-value" id="add_new_category" title="Add new Category">+</button>
-        </div>
-    </p>
-    <p>
-        <label for="item_location">Location</label>
-        <div class="searchable-select-row">
-            <div class="searchable-select">
-                <select name="item_location" id="item_location">
-                    <option value="0">Select</option>
-                    <?php foreach($locations as $location): ?>
-                        <option value="<?php echo $location['loc_id']; ?>"<?php echo (isset($formData['item_location']) && $formData['item_location'] == $location['loc_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($location['loc_name']); ?></option>
-                    <?php endforeach ?>
-                </select>
-            </div>
-            <button type="button" class="add-new-attribute-value" id="add_new_location" title="Add new Location">+</button>
-        </div>
-    </p>
-    <p>
-        <label for="item_status">Status</label>
-        <div class="searchable-select-row">
-            <div class="searchable-select">
-                <select name="item_status" id="item_status">
-                    <option value="0">Select</option>
-                    <?php foreach($statuses as $status): ?>
-                        <option value="<?php echo $status['status_id']; ?>"<?php echo (isset($formData['item_status']) && $formData['item_status'] == $status['status_id']) ? ' selected' : ''; ?>><?php echo escapeHtml($status['status_name']); ?></option>
-                    <?php endforeach ?>
-                </select>
-            </div>
-            <button type="button" class="add-new-attribute-value" id="add_new_status" title="Add new Status">+</button>
-        </div>
-    </p>
-    <p>
-        <label for="item_notes">Notes (optional)</label>
-        <textarea name="item_notes"><?php echo (isset($formData['item_name'])) ? escapeHtml(trim($formData['item_notes'])) : ''; ?></textarea>
-    </p>
-    <p>
-        <input type="submit" name="add_item_submit" value="Save">
-    </p>
-</form>
+pageHeader('Add Item');
+renderItemForm($values, 'add_item_submit', $formMessage);

@@ -2,20 +2,12 @@
 
 function escapeHtml($string, $flag = ENT_QUOTES)
 {
-    if (is_null($string)) {
-        return null;
-    }
-
-    $safeText = htmlspecialchars($string, $flag);
-    return $safeText;
+    return is_null($string) ? null : htmlspecialchars($string, $flag);
 }
 
 function slugify($string)
 {
-    $string = strtolower($string);
-    $string = trim($string);
-    $string = str_replace(' ', '-', $string);
-    return $string;
+    return str_replace(' ', '-', trim(strtolower($string)));
 }
 
 function nl2p($string)
@@ -33,27 +25,67 @@ function nl2p($string)
 
 function text2link($string)
 {
-    $string = strip_tags($string);
-    return preg_replace('@(https?://([-\w\.]+[-\w])+(:\d+)?(/([\w/_\.#-]*(\?\S+)?[^\.\s])?)?)@', '<a href="$1" rel="nofollow" target="_blank">$1</a>', $string);
+    return preg_replace(
+        '@(https?://([-\w\.]+[-\w])+(:\d+)?(/([\w/_\.#-]*(\?\S+)?[^\.\s])?)?)@',
+        '<a href="$1" rel="nofollow" target="_blank">$1</a>',
+        strip_tags($string)
+    );
 }
 
 function calculatePercentage($number1, $number2)
 {
-    if($number1 == 0) {
+    if ($number1 == 0) {
         return 0;
     }
 
-    $percentage = (($number2 / $number1) * 100);
-    return round($percentage, 2);
+    return round(($number2 / $number1) * 100, 2);
 }
 
 function utilisationBg($utilisation = 0)
 {
-    if($utilisation >= 75) {
+    if ($utilisation >= 75) {
         return 'red';
-    }elseif($utilisation >= 50) {
-        return 'amber';
-    }else{
-        return 'green';
     }
+
+    if ($utilisation >= 50) {
+        return 'amber';
+    }
+
+    return 'green';
+}
+
+/**
+ * A GET value, or false when it was not supplied.
+ */
+function queryParam(string $name)
+{
+    return $_GET[$name] ?? false;
+}
+
+/**
+ * A GET value cast to an integer.
+ */
+function queryId(string $name): int
+{
+    return (int)($_GET[$name] ?? 0);
+}
+
+/**
+ * A trimmed value from a submitted form, or null when it is blank.
+ */
+function textOrNull(array $source, string $name)
+{
+    $value = trim($source[$name] ?? '');
+
+    return ($value === '') ? null : $value;
+}
+
+function successMessage(string $message): array
+{
+    return ['status' => 'success', 'message' => $message];
+}
+
+function errorMessage(string $message): array
+{
+    return ['status' => 'error', 'message' => $message];
 }

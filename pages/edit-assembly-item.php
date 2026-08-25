@@ -1,342 +1,59 @@
 <?php
 
-$assembly_item_id =
-    (int)($_GET['assembly_item_id'] ?? 0);
+$assemblyItemId = queryId('assembly_item_id');
+$assemblyItem = fetchAssemblyItem($assemblyItemId);
 
-$assemblyItem =
-    fetchAssemblyItem($assembly_item_id);
-
-if(!$assemblyItem) {
-
+if (!$assemblyItem) {
     echo '<p>Assembly item not found.</p>';
     return;
-
 }
 
-
-$formData = [
-    'quantity_required' =>
-        $assemblyItem['quantity_required'],
-
-    'quantity_allocated' =>
-        $assemblyItem['quantity_allocated'],
-
-    'quantity_installed' =>
-        $assemblyItem['quantity_installed'],
-
-    'assembly_item_notes' =>
-        $assemblyItem['assembly_item_notes'],
-];
-
+$values = $assemblyItem;
 $formMessage = false;
 
+if (isset($_POST['edit_assembly_item_submit'])) {
+    $values = assemblyItemColumns($_POST);
+    $error = validateAssemblyItem($values);
 
-if(isset($_POST['edit_assembly_item_submit'])) {
-
-    $formData = [
-        'quantity_required' =>
-            (float)$_POST['quantity_required'],
-
-        'quantity_allocated' =>
-            (float)$_POST['quantity_allocated'],
-
-        'quantity_installed' =>
-            (float)$_POST['quantity_installed'],
-
-        'assembly_item_notes' =>
-            trim($_POST['assembly_item_notes']),
-    ];
-
-
-    if($formData['quantity_required'] <= 0) {
-
-        $formMessage = [
-            'status' => 'error',
-            'message' =>
-                'Quantity required must be greater than zero.',
-        ];
-
-    } elseif(
-        $formData['quantity_installed'] >
-        $formData['quantity_allocated']
-    ) {
-
-        $formMessage = [
-            'status' => 'error',
-            'message' =>
-                'Installed quantity cannot exceed allocated quantity.',
-        ];
-
+    if ($error) {
+        $formMessage = errorMessage($error);
     } else {
+        dbRun(
+            'UPDATE inv_assembly_items SET
+                quantity_required = :quantity_required,
+                quantity_allocated = :quantity_allocated,
+                quantity_installed = :quantity_installed,
+                assembly_item_notes = :assembly_item_notes
+             WHERE assembly_item_id = :assembly_item_id',
+            $values + ['assembly_item_id' => $assemblyItemId]
+        );
 
-        try {
+        $formMessage = successMessage('Assembly part updated!');
 
-            $sql = "
-                UPDATE inv_assembly_items
-
-                SET
-                    quantity_required = :quantity_required,
-                    quantity_allocated = :quantity_allocated,
-                    quantity_installed = :quantity_installed,
-                    assembly_item_notes = :assembly_item_notes
-
-                WHERE assembly_item_id = :assembly_item_id
-            ";
-
-            $stmt = $db->prepare($sql);
-
-            $stmt->execute([
-
-                'quantity_required' =>
-                    $formData['quantity_required'],
-
-                'quantity_allocated' =>
-                    $formData['quantity_allocated'],
-
-                'quantity_installed' =>
-                    $formData['quantity_installed'],
-
-                'assembly_item_notes' =>
-                    $formData['assembly_item_notes']
-                        ?: null,
-
-                'assembly_item_id' =>
-                    $assembly_item_id,
-            ]);
-
-
-            $formMessage = [
-                'status' => 'success',
-                'message' =>
-                    'Assembly part updated!',
-            ];
-
-
-            $assemblyItem =
-                fetchAssemblyItem(
-                    $assembly_item_id
-                );
-
-        } catch(\PDOException $e) {
-
-            throw new \PDOException(
-                $e->getMessage(),
-                (int)$e->getCode()
-            );
-        }
+        $assemblyItem = fetchAssemblyItem($assemblyItemId);
+        $values = $assemblyItem;
     }
 }
 
+if (isset($_POST['delete_assembly_item_submit'])) {
+    dbRun('DELETE FROM inv_assembly_items WHERE assembly_item_id = :assembly_item_id', [
+        'assembly_item_id' => $assemblyItemId,
+    ]);
 
-if(isset($_POST['delete_assembly_item_submit'])) {
-
-    try {
-
-        $sql = "
-            DELETE FROM inv_assembly_items
-
-            WHERE assembly_item_id = :assembly_item_id
-        ";
-
-        $stmt = $db->prepare($sql);
-
-        $stmt->execute([
-            'assembly_item_id' =>
-                $assembly_item_id,
-        ]);
-
-
-        $formMessage = [
-            'status' => 'success',
-            'message' => 'Part removed from assembly!',
-        ];
-
-    } catch(\PDOException $e) {
-
-        throw new \PDOException(
-            $e->getMessage(),
-            (int)$e->getCode()
-        );
-    }
+    $formMessage = successMessage('Part removed from assembly!');
 }
 
-?>
+pageHeader('Edit Assembly Part', [
+    'Back to Assembly' => 'index.php?page=view-assembly&assembly_id=' . (int)$assemblyItem['assembly_id'],
+]);
 
-<div class="flex-nav">
+echo '<p>Item: <strong>' . escapeHtml($assemblyItem['item_name']) . '</strong></p>' . "\n";
+echo '<p>Assembly: <strong>' . escapeHtml($assemblyItem['assembly_name']) . '</strong></p>' . "\n";
 
-    <h2>
-        Edit Assembly Part
-    </h2>
+echo '<form method="post">' . "\n";
+formMessage($formMessage);
+renderAssemblyItemFields($values);
+submitButton('edit_assembly_item_submit');
+echo '</form>' . "\n";
 
-    <nav class="onpage-nav">
-
-    <a href="index.php?page=view-assembly&assembly_id=<?php
-        echo (int)$assemblyItem['assembly_id'];
-    ?>">
-    Back to Assembly
-    </a>
-
-    </nav>
-
-</div>
-
-
-<p>
-
-    Item:
-
-    <strong>
-        <?php
-        echo escapeHtml(
-            $assemblyItem['item_name']
-        );
-        ?>
-    </strong>
-
-</p>
-
-
-<p>
-
-    Assembly:
-
-    <strong>
-        <?php
-        echo escapeHtml(
-            $assemblyItem['assembly_name']
-        );
-        ?>
-    </strong>
-
-</p>
-
-
-<form method="post">
-
-    <?php
-
-    echo ($formMessage)
-        ? '<p class="form-message form-' .
-            $formMessage['status'] .
-            '">' .
-            $formMessage['message'] .
-            '</p>'
-        : '';
-
-    ?>
-
-
-    <p>
-
-        <label for="quantity_required">
-            Quantity Required
-        </label>
-
-        <input
-            type="number"
-            step="1"
-            min="0"
-            name="quantity_required"
-            id="quantity_required"
-            value="<?php
-                echo $formData['quantity_required'];
-            ?>"
-            required
-        >
-
-    </p>
-
-
-    <p>
-
-        <label for="quantity_allocated">
-            Quantity Allocated
-        </label>
-
-        <input
-            type="number"
-            step="1"
-            min="0"
-            name="quantity_allocated"
-            id="quantity_allocated"
-            value="<?php
-                echo $formData['quantity_allocated'];
-            ?>"
-        >
-
-    </p>
-
-
-    <p>
-
-        <label for="quantity_installed">
-            Quantity Installed
-        </label>
-
-        <input
-            type="number"
-            step="1"
-            min="0"
-            name="quantity_installed"
-            id="quantity_installed"
-            value="<?php
-                echo $formData['quantity_installed'];
-            ?>"
-        >
-
-    </p>
-
-
-    <p>
-
-        <label for="assembly_item_notes">
-            Notes
-        </label>
-
-        <textarea
-            name="assembly_item_notes"
-            id="assembly_item_notes"
-        ><?php
-            echo escapeHtml(
-                $formData['assembly_item_notes']
-            );
-        ?></textarea>
-
-    </p>
-
-
-    <p>
-
-        <input
-            type="submit"
-            name="edit_assembly_item_submit"
-            value="Save"
-        >
-
-    </p>
-
-</form>
-
-
-<hr>
-
-
-<form
-    method="post"
-    onsubmit="return confirm(
-        'Remove this part from the assembly?'
-    );"
->
-
-    <p>
-
-        <input
-            type="submit"
-            name="delete_assembly_item_submit"
-            value="Remove Part"
-            class="delete"
-        >
-
-    </p>
-
-</form>
+confirmDeleteForm('delete_assembly_item_submit', 'Remove Part', 'Remove this part from the assembly?');

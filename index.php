@@ -4,29 +4,30 @@ declare(strict_types=1);
 
 chdir(dirname(__DIR__));
 
-if(!file_exists(__DIR__ . '/config/user.config.php')) {
-    die('user.config.php file not found in /config. Copy /config/sample.config.php and add your settings.');
-}
+require __DIR__ . '/inc/bootstrap.php';
 
-require __DIR__ . '/inc/utils.php';
-$config = require __DIR__ . '/config/user.config.php';
-$db = require __DIR__ . '/inc/db.php';
 $pages = require __DIR__ . '/inc/pages.php';
-require __DIR__ . '/inc/queries.php';
 
 $currentPage = 'all-items';
-if(isset($_GET['page'])) {
-    if(array_key_exists(strtolower($_GET['page']), $pages)) {
-        $currentPage = $pages[strtolower($_GET['page'])];
-    }else{
-        $currentPage = '404';
-    }
+
+if (isset($_GET['page'])) {
+    $currentPage = $pages[strtolower($_GET['page'])] ?? '404';
 }
 
-if($currentPage == 'export-items') {
-    include __DIR__ . '/pages/' . $currentPage . '.php';
+if ($currentPage === 'export-items') {
+    include __DIR__ . '/pages/export-items.php';
     exit();
 }
+
+$navigation = [
+    'Items'      => 'items',
+    'Categories' => 'categories',
+    'Projects'   => 'projects',
+    'Brands'     => 'brands',
+    'Suppliers'  => 'suppliers',
+    'Locations'  => 'locations',
+    'Statuses'   => 'statuses',
+];
 
 ?>
 <!doctype html>
@@ -47,19 +48,13 @@ if($currentPage == 'export-items') {
         </header>
         <nav class="main-nav">
             <div class="container">
-                <a href="index.php?page=items">Items</a>
-                <a href="index.php?page=categories">Categories</a>
-                <a href="index.php?page=projects">Projects</a>
-                <a href="index.php?page=brands">Brands</a>
-                <a href="index.php?page=suppliers">Suppliers</a>
-                <a href="index.php?page=locations">Locations</a>
-                <a href="index.php?page=statuses">Statuses</a>
+                <?php foreach ($navigation as $label => $page): ?>
+                    <a href="index.php?page=<?php echo $page; ?>"><?php echo $label; ?></a>
+                <?php endforeach; ?>
             </div>
         </nav>
         <div class="container body">
-            <?php 
-                include __DIR__ . '/pages/' . $currentPage . '.php';
-            ?>
+            <?php include __DIR__ . '/pages/' . $currentPage . '.php'; ?>
         </div>
         <script src="assets/js/app.js?<?php echo filemtime(__DIR__ . '/assets/js/app.js'); ?>"></script>
     </body>

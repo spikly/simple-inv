@@ -1,17 +1,64 @@
 <?php
 
-$dsn = 'mysql:host=' . $config['db']['host'] . ';dbname=' . $config['db']['database'] . ';charset=' . $config['db']['charset'];
+/**
+ * Lazily created shared PDO connection.
+ */
+function db(): PDO
+{
+    static $pdo = null;
 
-$options = [
-    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-    PDO::ATTR_EMULATE_PREPARES   => false,
-];
+    if ($pdo === null) {
+        $config = require __DIR__ . '/../config/user.config.php';
+        $db = $config['db'];
 
-try {
-    $pdo = new PDO($dsn, $config['db']['username'], $config['db']['password'], $options);
-} catch (\PDOException $e) {
-    throw new \PDOException($e->getMessage(), (int)$e->getCode());
+        $pdo = new PDO(
+            'mysql:host=' . $db['host'] . ';dbname=' . $db['database'] . ';charset=' . $db['charset'],
+            $db['username'],
+            $db['password'],
+            [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+            ]
+        );
+    }
+
+    return $pdo;
 }
 
-return $pdo;
+/**
+ * Prepare and execute a statement.
+ */
+function dbRun(string $sql, array $params = []): PDOStatement
+{
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
+
+    return $stmt;
+}
+
+/**
+ * Every matching row, or an empty array.
+ */
+function dbAll(string $sql, array $params = []): array
+{
+    return dbRun($sql, $params)->fetchAll();
+}
+
+/**
+ * The first matching row, or false.
+ */
+function dbRow(string $sql, array $params = [])
+{
+    return dbRun($sql, $params)->fetch();
+}
+
+/**
+ * Run an INSERT and return the new row's id.
+ */
+function dbInsert(string $sql, array $params = []): string
+{
+    dbRun($sql, $params);
+
+    return db()->lastInsertId();
+}
