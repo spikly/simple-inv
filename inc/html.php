@@ -56,25 +56,63 @@ function formMessage($formMessage): void
 }
 
 /**
- * Client side filter box for a table rendered with renderTable($searchable = true).
+ * One control in a filter bar. The label is kept for screen readers; sighted
+ * users get the same wording from the control's own placeholder.
  */
-function searchBox(string $placeholder): void
+function filterField(string $id, string $label, string $control, string $class = ''): void
 {
-    echo '<div class="search-box">' . "\n";
-    echo '    <input type="search" id="tableSearchInput" onkeyup="searchTable()" placeholder="' . $placeholder . '">' . "\n";
-    echo '</div>' . "\n";
+    echo '    <p class="filter-field' . ($class ? ' ' . $class : '') . '">' . "\n";
+    echo '        <label for="' . $id . '" class="visually-hidden">' . $label . '</label>' . "\n";
+    echo '        ' . $control . "\n";
+    echo '    </p>' . "\n";
+}
+
+/** Submit and clear buttons that close a filter bar. */
+function filterActions(string $page, bool $hasFilters, string $label = 'Filter'): void
+{
+    echo '    <p class="filter-actions">' . "\n";
+    echo '        <input type="submit" value="' . $label . '">' . "\n";
+
+    if ($hasFilters) {
+        echo '        <a href="index.php?page=' . $page . '" class="filter-clear">Clear</a>' . "\n";
+    }
+
+    echo '    </p>' . "\n";
+}
+
+/**
+ * Search box on its own, for listings that have nothing else to filter by.
+ */
+function renderSearchBar(string $page, string $placeholder): void
+{
+    $search = (string)queryParam('q');
+
+    echo '<form method="get" class="filter-bar">' . "\n";
+    echo '    <input type="hidden" name="page" value="' . $page . '">' . "\n";
+
+    filterField(
+        'q',
+        'Search',
+        '<input type="search" name="q" id="q" value="' . escapeHtml($search)
+            . '" placeholder="' . escapeHtml($placeholder) . '">',
+        'filter-search'
+    );
+
+    filterActions($page, $search !== '', 'Search');
+
+    echo '</form>' . "\n";
 }
 
 /**
  * Table with a header row, wrapped in its scrolling container.
  *
  * $rows receives each item and returns the cells for one row as an array of
- * HTML strings. Pass $searchable to hook the table up to searchBox().
+ * HTML strings. Headings are clickable to sort, see assets/js/app.js.
  */
-function renderTable(array $headings, array $items, callable $rows, bool $searchable = false): void
+function renderTable(array $headings, array $items, callable $rows): void
 {
     echo '<div class="table-container">' . "\n";
-    echo '    <table class="sortable"' . ($searchable ? ' id="searchableTable"' : '') . '>' . "\n";
+    echo '    <table class="sortable">' . "\n";
     echo '        <tr><th>' . implode('</th><th>', $headings) . '</th></tr>' . "\n";
 
     foreach ($items as $item) {
@@ -277,35 +315,34 @@ function stockCell(array $item): string
 function renderItemFilters(array $applied): void
 {
     $search = (string)queryParam('q');
-    $hasFilters = $applied || $search !== '';
 
     echo '<form method="get" class="filter-bar">' . "\n";
     echo '    <input type="hidden" name="page" value="items">' . "\n";
-    echo '    <p class="filter-search">' . "\n";
-    echo '        <label for="q">Search</label>' . "\n";
-    echo '        <input type="search" name="q" id="q" value="' . escapeHtml($search) . '"'
-        . ' placeholder="Name, part number or notes">' . "\n";
-    echo '    </p>' . "\n";
+
+    filterField(
+        'q',
+        'Search',
+        '<input type="search" name="q" id="q" value="' . escapeHtml($search)
+            . '" placeholder="Search name, part number or notes">',
+        'filter-search'
+    );
 
     foreach (taxonomies() as $key => $tax) {
-        $name = $tax['param'];
+        $id = 'filter_' . $tax['param'];
 
-        echo '    <p>' . "\n";
-        echo '        <label for="filter_' . $name . '">' . $tax['label'] . '</label>' . "\n";
-        echo '        <select name="' . $name . '" id="filter_' . $name . '" data-placeholder="Any">'
-            . '<option value="">Any</option>'
-            . selectOptions(taxonomyOptions($key), queryParam($name))
-            . '</select>' . "\n";
-        echo '    </p>' . "\n";
+        // The "Any ..." option doubles as the dropdown's resting label, so the
+        // bar reads clearly without a row of headings above it.
+        filterField(
+            $id,
+            $tax['label'],
+            '<select name="' . $tax['param'] . '" id="' . $id . '">'
+                . '<option value="">Any ' . $tax['label'] . '</option>'
+                . selectOptions(taxonomyOptions($key), queryParam($tax['param']))
+                . '</select>'
+        );
     }
 
-    echo '    <p class="filter-actions">' . "\n";
-    echo '        <input type="submit" value="Filter">' . "\n";
+    filterActions('items', $applied || $search !== '');
 
-    if ($hasFilters) {
-        echo '        <a href="index.php?page=items" class="filter-clear">Clear</a>' . "\n";
-    }
-
-    echo '    </p>' . "\n";
     echo '</form>' . "\n";
 }

@@ -237,33 +237,9 @@ p.item-name {
    Search
    ========================================================= */
 
-.search-box {
-    padding: 0 0 24px;
-}
 
-.search-box input {
-    box-sizing: border-box;
-    width: 100%;
-    max-width: 400px;
-    padding: 10px 14px;
-    border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-md);
-    background: var(--color-surface);
-    color: var(--color-text);
-    box-shadow: var(--shadow-sm);
-    transition:
-        border-color var(--transition),
-        box-shadow var(--transition);
-}
 
-.search-box input::placeholder {
-    color: #6b7280;
-}
 
-.search-box input:focus {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
-}
 
 /* =========================================================
    Tables
@@ -1043,37 +1019,69 @@ textarea:focus-visible {
    Filter bar
    ========================================================= */
 
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .filter-bar {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px 16px;
-    align-items: flex-end;
-    padding: 16px;
-    margin: 0 0 24px;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
+    gap: 8px;
+    align-items: center;
+    padding: 0 0 24px;
 }
 
-.filter-bar p {
-    flex: 1 1 160px;
+.filter-bar .filter-field {
+    flex: 1 1 130px;
+    min-width: 0;
     margin: 0;
     padding: 0;
 }
 
 .filter-bar .filter-search {
-    flex: 2 1 260px;
+    flex: 2 1 240px;
 }
 
-.filter-bar label {
-    display: block;
-    margin: 0 0 6px;
-    font-size: 1.3rem;
+/* The wrapper app.js builds around each select. */
+.filter-bar .searchable-select {
+    max-width: none;
 }
 
 .filter-bar input[type="search"] {
-    width: 100%;
     box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 13px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: #111827;
+    font-family: inherit;
+    font-size: 1.5rem;
+    line-height: 1.4;
+    box-shadow: var(--shadow-sm);
+    -webkit-appearance: none;
+    appearance: none;
+    transition:
+        border-color var(--transition),
+        box-shadow var(--transition);
+}
+
+.filter-bar input[type="search"]::placeholder {
+    color: #6b7280;
+}
+
+.filter-bar input[type="search"]:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
 }
 
 .filter-bar .filter-actions {
@@ -1081,14 +1089,33 @@ textarea:focus-visible {
     flex: 0 0 auto;
     gap: 12px;
     align-items: center;
+    margin: 0;
+    padding: 0;
 }
 
 .filter-bar .filter-actions input[type="submit"] {
+    min-height: 44px;
     margin: 0;
 }
 
 .filter-clear {
     font-size: 1.4rem;
+    white-space: nowrap;
+}
+
+@media (max-width: 699px) {
+    .filter-bar .filter-field,
+    .filter-bar .filter-search {
+        flex-basis: 100%;
+    }
+
+    .filter-bar .filter-actions {
+        flex: 1 1 100%;
+    }
+
+    .filter-bar .filter-actions input[type="submit"] {
+        flex: 1 1 auto;
+    }
 }
 
 /* =========================================================

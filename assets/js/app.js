@@ -34,8 +34,6 @@ document.addEventListener("DOMContentLoaded", function()
             window.print();
         });
     });
-
-    searchTable();
 });
 
 /**
@@ -112,31 +110,6 @@ function sortTableByColumn(table, index, headerCell) {
 
     headerCell.dataset.sortDirection = ascending ? "asc" : "desc";
     headerCell.classList.add(ascending ? "is-sorted-asc" : "is-sorted-desc");
-}
-
-function searchTable() {
-    var input, filter, table, tr, td, i, txtValue;
-    input = document.getElementById("tableSearchInput");
-    table = document.getElementById("searchableTable");
-
-    if (!input || !table) {
-        return;
-    }
-
-    filter = input.value.toUpperCase();
-    tr = table.getElementsByTagName("tr");
-
-    for (i = 0; i < tr.length; i++) {
-        td = tr[i].getElementsByTagName("td")[0];
-        if (td) {
-            txtValue = td.textContent || td.innerText;
-            if (txtValue.toUpperCase().indexOf(filter) > -1) {
-                tr[i].style.display = "";
-            } else {
-                tr[i].style.display = "none";
-            }
-        }
-    }
 }
 
 function sendAjaxRequest(url, data, onSuccess = () => {}, onError = (err) => console.error(err))

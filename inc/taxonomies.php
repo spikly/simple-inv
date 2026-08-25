@@ -107,10 +107,19 @@ function taxonomyNameField(array $tax): string
     return array_key_first($tax['fields']);
 }
 
-/** All rows, ordered by name. */
-function taxonomyRows(array $tax): array
+/** All rows, ordered by name, optionally narrowed to a name search. */
+function taxonomyRows(array $tax, string $search = ''): array
 {
-    return dbAll('SELECT * FROM ' . $tax['table'] . ' ORDER BY ' . taxonomyNameField($tax) . ' asc');
+    $nameField = taxonomyNameField($tax);
+    $where = '';
+    $params = [];
+
+    if ($search !== '') {
+        $where = ' WHERE ' . $nameField . ' LIKE :search';
+        $params['search'] = '%' . $search . '%';
+    }
+
+    return dbAll('SELECT * FROM ' . $tax['table'] . $where . ' ORDER BY ' . $nameField . ' asc', $params);
 }
 
 /** Rows as a value => label map, for use in a <select>. */
@@ -233,7 +242,8 @@ function taxonomyModalForm(string $key): string
 function taxonomyIndexPage(string $key): void
 {
     $tax = taxonomy($key);
-    $rows = taxonomyRows($tax);
+    $search = trim((string)queryParam('q'));
+    $rows = taxonomyRows($tax, $search);
     $nameField = taxonomyNameField($tax);
     $extraColumns = $tax['columns'] ?? [];
 
@@ -246,13 +256,15 @@ function taxonomyIndexPage(string $key): void
     pageHeader($tax['plural'] . countBadge(count($rows)), $links);
 
     formMessage(takeFlash());
+    renderSearchBar($tax['routes']['index'], 'Search ' . strtolower($tax['plural']) . '...');
 
     if (!$rows) {
-        echo 'No items' . "\n";
+        echo '<p>' . ($search !== ''
+            ? 'No ' . strtolower($tax['plural']) . ' match &ldquo;' . escapeHtml($search) . '&rdquo;.'
+            : 'No ' . strtolower($tax['plural']) . ' yet.') . '</p>' . "\n";
+
         return;
     }
-
-    searchBox('Search for ' . strtolower($tax['plural']) . '...');
 
     renderTable(
         array_merge(['Name', 'Items'], array_keys($extraColumns), ['Edit']),
@@ -273,8 +285,7 @@ function taxonomyIndexPage(string $key): void
             $cells[] = '<a href="index.php?page=' . $tax['routes']['edit'] . '&' . $tax['param'] . '=' . $id . '">Edit</a>';
 
             return $cells;
-        },
-        true
+        }
     );
 }
 
