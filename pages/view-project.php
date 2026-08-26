@@ -8,7 +8,8 @@ if (!$project) {
     return;
 }
 
-$assemblies = fetchProjectAssemblies($projectId);
+$assemblySlice = paginate(countProjectAssemblies($projectId));
+$assemblies = fetchProjectAssemblies($projectId, $assemblySlice);
 $summary = getProjectSummary($projectId);
 
 $addAssemblyLink = 'index.php?page=add-assembly&project_id=' . $projectId;
@@ -39,7 +40,7 @@ foreach (['Required' => 'required_quantity', 'Allocated' => 'allocated_quantity'
 
 echo '</div>' . "\n";
 
-sectionHeader('Assemblies', ['Add Assembly' => $addAssemblyLink]);
+sectionHeader('Assemblies' . countBadge($assemblySlice['total']), ['Add Assembly' => $addAssemblyLink]);
 
 if ($assemblies) {
     renderTable(
@@ -62,6 +63,8 @@ if ($assemblies) {
             ];
         }
     );
+
+    renderPagination($assemblySlice, 'assemblies');
 } else {
     echo '<p>No assemblies yet.</p>' . "\n";
 }

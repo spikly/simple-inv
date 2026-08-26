@@ -34,9 +34,7 @@ if (isset($_POST['duplicate_assembly_submit'])) {
 
         // The copy starts holding nothing, so each item shares its free stock
         // out again across the original and the copy.
-        foreach (fetchAssemblyItems($newAssemblyId) as $copiedItem) {
-            reallocateItem($copiedItem['item_id']);
-        }
+        reallocateItems(fetchAssemblyItemIds($newAssemblyId));
 
         db()->commit();
 
@@ -53,7 +51,8 @@ if (isset($_POST['duplicate_assembly_submit'])) {
     }
 }
 
-$items = fetchAssemblyItems($assemblyId);
+$slice = paginate(countAssemblyItems($assemblyId));
+$items = fetchAssemblyItems($assemblyId, $slice);
 
 $duplicateForm = '<form method="post" style="display:inline;"'
     . ' onsubmit="return confirm(' . jsString('Duplicate this assembly and all of its parts?') . ');">'
@@ -72,7 +71,7 @@ if ($assembly['assembly_description']) {
     notesBox($assembly['assembly_description']);
 }
 
-sectionHeader('Parts');
+sectionHeader('Parts' . countBadge($slice['total']));
 
 if ($items) {
     renderTable(
@@ -98,6 +97,8 @@ if ($items) {
             ];
         }
     );
+
+    renderPagination($slice, 'parts');
 } else {
     echo '<p>No parts assigned to this assembly.</p>' . "\n";
 }

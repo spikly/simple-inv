@@ -1,8 +1,9 @@
 <?php
 
-$projects = fetchProjects();
+$slice = paginate(countProjects());
+$projects = fetchProjects($slice);
 
-pageHeader('Projects' . countBadge(count($projects)), ['Add Project' => 'index.php?page=add-project']);
+pageHeader('Projects' . countBadge($slice['total']), ['Add Project' => 'index.php?page=add-project']);
 
 formMessage(takeFlash());
 
@@ -29,3 +30,5 @@ renderTable(
         ];
     }
 );
+
+renderPagination($slice, 'projects');

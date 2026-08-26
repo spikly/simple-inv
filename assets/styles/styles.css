@@ -1286,6 +1286,79 @@ table td.col-thumb .item-thumb {
 }
 
 /* =========================================================
+   Pagination
+   ========================================================= */
+
+.pagination {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    align-items: center;
+    justify-content: space-between;
+    margin: 18px 0 0;
+}
+
+.pagination p {
+    margin: 0;
+}
+
+.pagination-count {
+    color: var(--color-text-muted);
+    font-size: 1.4rem;
+}
+
+.pagination-pages {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+
+.pagination-pages a,
+.pagination-current,
+.pagination-step {
+    display: inline-block;
+    min-width: 38px;
+    padding: 7px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 1.4rem;
+    text-align: center;
+    text-decoration: none;
+}
+
+.pagination-pages a:hover {
+    border-color: var(--color-border-strong);
+    background: var(--color-surface-muted);
+}
+
+.pagination-current {
+    border-color: var(--color-primary);
+    background: var(--color-primary);
+    color: #fff;
+    font-weight: 600;
+}
+
+/* Kept in place rather than removed at the ends, so the row does not shift
+   under the pointer as you move through the pages. */
+
+.pagination-step.is-disabled {
+    border-color: var(--color-border);
+    color: var(--color-border-strong);
+}
+
+.pagination-gap {
+    padding: 0 2px;
+    color: var(--color-text-muted);
+}
+
+@media print {
+    .pagination {
+        display: none;
+    }
+}
+
+/* =========================================================
    Current page in the main navigation
    ========================================================= */
 

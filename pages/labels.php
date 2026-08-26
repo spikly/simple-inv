@@ -9,10 +9,13 @@ $type = (queryParam('type') === 'item') ? 'item' : 'location';
 $labels = [];
 
 if ($type === 'location') {
-    foreach (taxonomyRows(taxonomy('location')) as $row) {
+    $locations = taxonomyRows(taxonomy('location'));
+    $usage = taxonomyUsageCounts(taxonomy('location'), array_column($locations, 'loc_id'));
+
+    foreach ($locations as $row) {
         $labels[] = [
             'title' => $row['loc_name'],
-            'note'  => taxonomyUsageCount(taxonomy('location'), $row['loc_id']) . ' items',
+            'note'  => ($usage[$row['loc_id']] ?? 0) . ' items',
             'url'   => baseUrl() . 'index.php?page=items&location_id=' . $row['loc_id'],
         ];
     }

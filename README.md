@@ -31,6 +31,7 @@ Very much work in progress. Designed for an average sized home workshop and almo
 * Group parts into projects and assemblies, and print a shopping list of what still needs buying
 * Print QR labels for locations and items; scanning one opens it in the app
 * Import and export items as CSV
+* Long listings are split into pages, so a few hundred parts stay quick to load
 
 ### Todo
 
@@ -127,9 +128,10 @@ Beyond the database details, `config/user.config.php` takes:
 
 ```php
 'site' => [
-    'title' => 'Inventory Tracker',   // shown in the header and browser tab
-    'url'   => 'http://192.168.1.50/inventory/',  // only needed if QR labels
-                                                  // guess the wrong address
+    'title'    => 'Inventory Tracker',   // shown in the header and browser tab
+    'url'      => 'http://192.168.1.50/inventory/',  // only needed if QR labels
+                                                     // guess the wrong address
+    'per_page' => 50,   // rows per page in the listings
 ],
 
 'debug' => false,   // show error details on screen instead of only logging them

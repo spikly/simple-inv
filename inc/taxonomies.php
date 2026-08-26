@@ -157,19 +157,43 @@ function taxonomyNameField(array $tax): string
     return array_key_first($tax['fields']);
 }
 
-/** All rows, ordered by name, optionally narrowed to a name search. */
-function taxonomyRows(array $tax, string $search = ''): array
+/** The name search a listing was asked for, as [sql fragment, bound params]. */
+function taxonomySearch(array $tax, string $search): array
 {
-    $nameField = taxonomyNameField($tax);
-    $where = '';
-    $params = [];
-
-    if ($search !== '') {
-        $where = ' WHERE ' . $nameField . ' LIKE :search';
-        $params['search'] = '%' . $search . '%';
+    if ($search === '') {
+        return ['', []];
     }
 
-    return dbAll('SELECT * FROM ' . $tax['table'] . $where . ' ORDER BY ' . $nameField . ' asc', $params);
+    return [
+        ' WHERE ' . taxonomyNameField($tax) . ' LIKE :search',
+        ['search' => '%' . $search . '%'],
+    ];
+}
+
+/**
+ * Rows ordered by name, optionally narrowed to a name search and to one page.
+ *
+ * The dropdowns and the label sheets pass no slice, because those want every
+ * row rather than a screenful.
+ */
+function taxonomyRows(array $tax, string $search = '', ?array $slice = null): array
+{
+    [$where, $params] = taxonomySearch($tax, $search);
+
+    return dbAll(
+        'SELECT * FROM ' . $tax['table'] . $where
+        . ' ORDER BY ' . taxonomyNameField($tax) . ' asc'
+        . ($slice ? paginationLimit($slice) : ''),
+        $params
+    );
+}
+
+/** How many rows that same search matches. */
+function taxonomyRowCount(array $tax, string $search = ''): int
+{
+    [$where, $params] = taxonomySearch($tax, $search);
+
+    return (int)dbValue('SELECT COUNT(*) FROM ' . $tax['table'] . $where, $params, 0);
 }
 
 /** Rows as a value => label map, for use in a <select>. */
@@ -232,6 +256,28 @@ function taxonomyUsageCount(array $tax, $id): int
     [$table, $column] = $tax['usedBy'];
 
     return (int)dbValue('SELECT COUNT(*) FROM ' . $table . ' WHERE ' . $column . ' = :id', ['id' => $id], 0);
+}
+
+/**
+ * The same for a set of rows at once, as id => count, so a listing does not
+ * ask once per line. Ids with nothing against them are left out.
+ */
+function taxonomyUsageCounts(array $tax, array $ids): array
+{
+    [$table, $column] = $tax['usedBy'];
+    $ids = array_filter(array_map('intval', $ids));
+
+    if (!$ids) {
+        return [];
+    }
+
+    // The ids come from rows just read out of the database, so they are
+    // already integers; a bound parameter cannot stand in for a list.
+    return array_column(dbAll(
+        'SELECT ' . $column . ' AS id, COUNT(*) AS total FROM ' . $table
+        . ' WHERE ' . $column . ' IN (' . implode(',', $ids) . ')'
+        . ' GROUP BY ' . $column
+    ), 'total', 'id');
 }
 
 /**
@@ -359,9 +405,13 @@ function taxonomyIndexPage(string $key): void
 {
     $tax = taxonomy($key);
     $search = trim((string)queryParam('q'));
-    $rows = taxonomyRows($tax, $search);
+    $slice = paginate(taxonomyRowCount($tax, $search));
+    $rows = taxonomyRows($tax, $search, $slice);
     $nameField = taxonomyNameField($tax);
     $extraColumns = $tax['columns'] ?? [];
+
+    // One query for the whole page rather than one per line.
+    $usage = taxonomyUsageCounts($tax, array_column($rows, $tax['id']));
 
     $links = ['Add New ' . $tax['label'] => 'index.php?page=' . $tax['routes']['add']];
 
@@ -369,7 +419,7 @@ function taxonomyIndexPage(string $key): void
         $links['Labels'] = 'index.php?page=labels&amp;type=location';
     }
 
-    pageHeader($tax['plural'] . countBadge(count($rows)), $links);
+    pageHeader($tax['plural'] . countBadge($slice['total']), $links);
 
     formMessage(takeFlash());
     renderSearchBar($tax['routes']['index'], 'Search ' . strtolower($tax['plural']) . '...');
@@ -385,13 +435,13 @@ function taxonomyIndexPage(string $key): void
     renderTable(
         array_merge(['Name', 'Items'], array_keys($extraColumns), ['Edit']),
         $rows,
-        function ($row) use ($tax, $nameField, $extraColumns) {
+        function ($row) use ($tax, $nameField, $extraColumns, $usage) {
             $id = $row[$tax['id']];
             $itemsUrl = 'index.php?page=items&' . $tax['param'] . '=' . $id;
 
             $cells = [
                 '<a href="' . $itemsUrl . '">' . escapeHtml($row[$nameField]) . '</a>',
-                taxonomyUsageCount($tax, $id),
+                $usage[$id] ?? 0,
             ];
 
             foreach ($extraColumns as $render) {
@@ -403,6 +453,8 @@ function taxonomyIndexPage(string $key): void
             return $cells;
         }
     );
+
+    renderPagination($slice, strtolower($tax['plural']));
 }
 
 /**

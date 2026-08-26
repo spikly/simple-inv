@@ -315,13 +315,16 @@ function itemsIndexPage(?string $type): void
     // Parts and Tools pages, and whatever the mixed one was filtered by.
     [$where, $params, $applied, $kind] = itemFilters($type);
 
-    $items = fetchItems($where, $params);
+    $slice = paginate(countItems($where, $params));
+    $items = fetchItems($where, $params, $slice);
     $noun = ($type === null) ? 'Items' : ITEM_TYPE_PLURALS[$type];
     [$badges, $query] = itemFilterSummary($applied, $params, $type, $kind);
 
     $links = [];
 
-    if ($items) {
+    // Export and labels cover everything the filters match, not just this
+    // page, so they are offered whenever anything matched at all.
+    if ($slice['total'] > 0) {
         $links['Export'] = 'index.php?page=export-items' . $query;
         $links['Labels'] = 'index.php?page=labels&amp;type=item' . $query;
     }
@@ -330,7 +333,7 @@ function itemsIndexPage(?string $type): void
     $links['Add New ' . ($kind === null ? 'Item' : ITEM_TYPES[$kind])] =
         'index.php?page=add-item' . ($kind === null ? '' : '&amp;kind=' . $kind);
 
-    pageHeader($noun . countBadge(count($items), $badges), $links);
+    pageHeader($noun . countBadge($slice['total'], $badges), $links);
 
     formMessage(takeFlash());
     renderItemFilters($applied, $type, itemTypePage($type));
@@ -351,6 +354,8 @@ function itemsIndexPage(?string $type): void
 
         return $cells;
     }, [0 => 'col-thumb']);
+
+    renderPagination($slice, strtolower($noun));
 }
 
 /**

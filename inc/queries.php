@@ -114,17 +114,35 @@ function itemFilters(?string $pinnedKind = null): array
     return [$clauses ? ' WHERE ' . implode(' AND ', $clauses) : '', $params, $applied, $kind];
 }
 
-/** Items for the listing page, honouring the query string filters. */
-function fetchItems(string $where, array $params): array
+/**
+ * Items for the listing page, honouring the query string filters.
+ *
+ * $slice limits it to one page. Export and labels pass nothing, because those
+ * are meant to cover everything the filters match.
+ */
+function fetchItems(string $where, array $params, ?array $slice = null): array
 {
     return dbAll(
         'SELECT i.item_id, i.item_name, i.item_part_no, i.item_quantity, i.item_min_quantity, i.item_image,
                 mu.unit_symbol, b.brand_name, sp.sup_name, l.loc_name, s.status_name,'
         . ITEM_STOCK_COLUMNS
         . ITEM_JOINS . $where
-        . ' GROUP BY i.item_id ORDER BY i.item_name asc',
+        . ' GROUP BY i.item_id ORDER BY i.item_name asc'
+        . ($slice ? paginationLimit($slice) : ''),
         $params
     );
+}
+
+/**
+ * How many items the same filters match, for the heading and the page count.
+ *
+ * The joins are the ones fetchItems() uses, so any filter that works there
+ * works here; counting distinct items undoes the category join multiplying
+ * anything filed in more than one.
+ */
+function countItems(string $where, array $params): int
+{
+    return (int)dbValue('SELECT COUNT(DISTINCT i.item_id)' . ITEM_JOINS . $where, $params, 0);
 }
 
 /** Items for the CSV export. The column order matches the export headings. */
@@ -285,7 +303,12 @@ function fetchProjectStatuses(): array
     return dbAll('SELECT * FROM inv_project_statuses ORDER BY project_status_id');
 }
 
-function fetchProjects(): array
+function countProjects(): int
+{
+    return (int)dbValue('SELECT COUNT(*) FROM inv_projects', [], 0);
+}
+
+function fetchProjects(?array $slice = null): array
 {
     return dbAll('
         SELECT
@@ -300,7 +323,7 @@ function fetchProjects(): array
         LEFT JOIN inv_assembly_items ai ON ai.assembly_id = a.assembly_id
         GROUP BY p.project_id
         ORDER BY p.project_name
-    ');
+    ' . ($slice ? paginationLimit($slice) : ''));
 }
 
 function fetchProject($project_id)
@@ -366,7 +389,16 @@ function fetchProjectRequirements($project_id): array
  * Assemblies
  */
 
-function fetchProjectAssemblies($project_id): array
+function countProjectAssemblies($project_id): int
+{
+    return (int)dbValue(
+        'SELECT COUNT(*) FROM inv_project_assemblies WHERE assembly_project_id = :project_id',
+        ['project_id' => $project_id],
+        0
+    );
+}
+
+function fetchProjectAssemblies($project_id, ?array $slice = null): array
 {
     return dbAll('
         SELECT
@@ -379,7 +411,7 @@ function fetchProjectAssemblies($project_id): array
         WHERE a.assembly_project_id = :project_id
         GROUP BY a.assembly_id
         ORDER BY a.assembly_sort_order, a.assembly_name
-    ', ['project_id' => $project_id]);
+    ' . ($slice ? paginationLimit($slice) : ''), ['project_id' => $project_id]);
 }
 
 function fetchAssembly($assembly_id)
@@ -393,7 +425,16 @@ function fetchAssembly($assembly_id)
     ', ['assembly_id' => $assembly_id]);
 }
 
-function fetchAssemblyItems($assembly_id): array
+function countAssemblyItems($assembly_id): int
+{
+    return (int)dbValue(
+        'SELECT COUNT(*) FROM inv_assembly_items WHERE assembly_id = :assembly_id',
+        ['assembly_id' => $assembly_id],
+        0
+    );
+}
+
+function fetchAssemblyItems($assembly_id, ?array $slice = null): array
 {
     return dbAll('
         SELECT ai.*, i.item_name, i.item_quantity, mu.unit_symbol
@@ -402,7 +443,7 @@ function fetchAssemblyItems($assembly_id): array
         LEFT JOIN inv_measurement_units mu ON mu.unit_id = i.item_measurement_unit
         WHERE ai.assembly_id = :assembly_id
         ORDER BY ai.assembly_item_sort_order, i.item_name
-    ', ['assembly_id' => $assembly_id]);
+    ' . ($slice ? paginationLimit($slice) : ''), ['assembly_id' => $assembly_id]);
 }
 
 function fetchAssemblyItem($assembly_item_id)

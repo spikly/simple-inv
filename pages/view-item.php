@@ -132,7 +132,10 @@ if ($type === 'tool') {
         $signLink => 'index.php?page=loan-tool&item_id=' . $item['item_id'],
     ]);
 
-    renderToolLoans(fetchToolLoans($itemId));
+    $loanSlice = paginate(countToolLoans($itemId), 'lp');
+    renderToolLoans(fetchToolLoans($itemId, $loanSlice));
+    renderPagination($loanSlice, 'sign-outs');
+
     renderItemNotes($item);
 
     return;

@@ -12,6 +12,9 @@ return [
 	'site' => [
 		// Shown in the browser tab and the header.
 		'title' => 'Inventory Tracker',
+
+		// How many rows a listing shows before it starts a new page.
+		'per_page' => 50,
 	],
 
 	// Show full error details on screen instead of just logging them.

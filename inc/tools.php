@@ -39,12 +39,22 @@ function fetchOpenToolLoan($item_id): ?array
     ) ?: null;
 }
 
+function countToolLoans($item_id): int
+{
+    return (int)dbValue(
+        'SELECT COUNT(*) FROM inv_tool_loans WHERE loan_item_id = :item_id',
+        ['item_id' => (int)$item_id],
+        0
+    );
+}
+
 /** Everywhere a tool has been, newest first. */
-function fetchToolLoans($item_id): array
+function fetchToolLoans($item_id, ?array $slice = null): array
 {
     return dbAll(
         'SELECT * FROM inv_tool_loans WHERE loan_item_id = :item_id
-         ORDER BY loan_out_at DESC, loan_id DESC',
+         ORDER BY loan_out_at DESC, loan_id DESC'
+        . ($slice ? paginationLimit($slice) : ''),
         ['item_id' => (int)$item_id]
     );
 }

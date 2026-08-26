@@ -124,7 +124,7 @@ $openProjects = array_filter($projects, function ($project) {
 if ($openProjects) {
     renderTable(
         ['Project', 'Status', 'Assemblies', 'Required', 'Installed', 'Progress'],
-        $openProjects,
+        $topOf($openProjects),
         function ($project) {
             $required = (float)$project['required_quantity'];
             $installed = (float)$project['installed_quantity'];

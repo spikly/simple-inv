@@ -24,6 +24,7 @@ registerErrorHandlers();
 require __DIR__ . '/flash.php';
 require __DIR__ . '/db.php';
 require __DIR__ . '/html.php';
+require __DIR__ . '/pagination.php';
 require __DIR__ . '/qr.php';
 require __DIR__ . '/queries.php';
 require __DIR__ . '/uploads.php';

@@ -88,4 +88,7 @@ if ($loan) {
 }
 
 sectionHeader('Sign-Out History');
-renderToolLoans(fetchToolLoans($itemId));
+
+$loanSlice = paginate(countToolLoans($itemId), 'lp');
+renderToolLoans(fetchToolLoans($itemId, $loanSlice));
+renderPagination($loanSlice, 'sign-outs');
