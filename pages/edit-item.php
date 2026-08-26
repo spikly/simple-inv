@@ -25,6 +25,10 @@ if ($item && isset($_POST['edit_item_submit'])) {
     $values = $_POST;
     $values['item_type'] = $type;
 
+    // A file input submits nothing when nothing was chosen, so the photo the
+    // item already has is put back for the form to draw again.
+    $values['item_image'] = $item['item_image'];
+
     $blocked = itemKindChangeError($item, $type);
 
     // Becoming the other kind is about the item rather than any one field, so

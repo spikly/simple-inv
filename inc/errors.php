@@ -54,7 +54,7 @@ function renderErrorPage(\Throwable $e): void
             . $e->getFile() . ':' . $e->getLine() . "\n\n" . $e->getTraceAsString()) . '</pre>'
         : '<p>The details have been written to the server error log.</p>';
 
-    echo '<!doctype html><html lang="en"><head><meta name="viewport"'
+    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport"'
         . ' content="width=device-width, initial-scale=1.0"><title>Something went wrong</title>'
         . '<link href="assets/styles/styles.css" rel="stylesheet"></head><body>'
         . '<div class="container body">'

@@ -18,12 +18,21 @@ if (isset($_POST['add_item_submit'])) {
     $values['duplicate_of'] = $duplicateOf ?: null;
 
     $errors = validateItem($_POST, $type);
+    $source = $duplicateOf ? fetchSingleItem($duplicateOf) : false;
+
+    // The photo a duplicate starts with belongs to its original, and a file
+    // input submits nothing when nothing was chosen, so it is put back here
+    // for the form to draw again if this save is rejected.
+    $values['item_image'] = $source ? $source['item_image'] : null;
     $photo = ['name' => null];
 
     // Storing the upload moves the file, so it waits until the rest is sound.
     if (!$errors) {
-        $source = $duplicateOf ? fetchSingleItem($duplicateOf) : false;
-        $photo = resolveItemPhoto($source ? $source['item_image'] : null, false, (bool)$source);
+        $photo = resolveItemPhoto(
+            $source ? $source['item_image'] : null,
+            !empty($_POST['remove_photo']),
+            (bool)$source
+        );
 
         if (isset($photo['error'])) {
             $errors['item_photo'] = $photo['error'];

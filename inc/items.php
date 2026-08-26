@@ -213,7 +213,7 @@ function renderItemForm(array $values, string $submitName, string $type, $formMe
         echo '    <input type="hidden" name="duplicate_of" value="' . (int)$values['duplicate_of'] . '">' . "\n";
     }
 
-    renderItemPhotoField($values['item_image'] ?? null);
+    renderItemPhotoField($values['item_image'] ?? null, !empty($values['remove_photo']));
 
     textareaField('item_notes', 'Notes (optional)', trim($values['item_notes'] ?? ''));
 
@@ -313,8 +313,13 @@ function renderItemNotes(array $item): void
     notesBox(trim((string)$item['item_notes']) !== '' ? $item['item_notes'] : '-');
 }
 
-/** Photo picker, showing what is already stored with the option to remove it. */
-function renderItemPhotoField(?string $image): void
+/**
+ * Photo picker, showing what is already stored with the option to remove it.
+ *
+ * $remove keeps the box ticked when a rejected save is drawn again, so asking
+ * for the photo to go is not quietly undone by a mistake in another field.
+ */
+function renderItemPhotoField(?string $image, bool $remove = false): void
 {
     $control = '<input type="file" name="item_photo" id="item_photo"'
         . ' accept="image/jpeg,image/png,image/gif,image/webp"' . invalidAttributes('item_photo') . '>';
@@ -323,7 +328,8 @@ function renderItemPhotoField(?string $image): void
         $control = '<span class="photo-field">'
             . itemThumb($image, 'Current photo', 'item-thumb item-thumb-form')
             . $control
-            . '<label class="checkbox"><input type="checkbox" name="remove_photo" value="1"> Remove this photo</label>'
+            . '<label class="checkbox"><input type="checkbox" name="remove_photo" value="1"'
+            . ($remove ? ' checked' : '') . '> Remove this photo</label>'
             . '</span>';
     }
 

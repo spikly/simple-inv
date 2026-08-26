@@ -88,7 +88,7 @@ $properties = [
         itemProperty('Free', '<p>' . stockCell($item) . '</p>');
 
         $utilisation = calculatePercentage($item['item_quantity'], $item['item_allocated_count']);
-        itemProperty('Utilisation', $utilisation . '&percnt;', utilisationBg($utilisation));
+        itemProperty('Utilisation', '<p>' . $utilisation . '&percnt;</p>', utilisationBg($utilisation));
 
         if ((int)$item['item_min_quantity'] > 0) {
             itemProperty('Reorder Level', '<p>' . escapeHtml($item['item_min_quantity'])

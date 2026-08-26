@@ -364,7 +364,7 @@ function taxonomyFields(array $tax, array $values = [], array $locked = []): voi
             formRow($column, $label, '<span class="locked-field">'
                 . escapeHtml($field['options'][$locked[$column]] ?? $locked[$column]) . '</span>'
                 . '<input type="hidden" name="' . $column . '" value="'
-                . escapeHtml($locked[$column]) . '">');
+                . escapeHtml($locked[$column]) . '">', false);
             continue;
         }
 

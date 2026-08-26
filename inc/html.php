@@ -292,13 +292,17 @@ function itemProperty(string $heading, string $body, string $class = ''): void
  * The row is a <div> rather than a <p> because some controls are built from
  * block elements, and a browser closes a paragraph as soon as it meets one:
  * the row would end where its control began, taking the mark with it.
+ *
+ * $hasControl says whether there is something focusable for the label to point
+ * at. A row that only states a value the page has already settled has not, and
+ * a label naming an id that does not exist is worse than one naming nothing.
  */
-function formRow(string $name, string $label, string $control): void
+function formRow(string $name, string $label, string $control, bool $hasControl = true): void
 {
     $error = fieldError($name);
 
     echo '    <div class="form-row' . ($error ? ' field-invalid' : '') . '">' . "\n";
-    echo '        <label for="' . $name . '">' . $label . '</label>' . "\n";
+    echo '        <label' . ($hasControl ? ' for="' . $name . '"' : '') . '>' . $label . '</label>' . "\n";
     echo '        ' . $control . "\n";
 
     if ($error) {
