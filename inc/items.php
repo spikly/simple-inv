@@ -239,7 +239,7 @@ function itemTaxonomyField(string $key, array $tax, string $type, array $options
     $label = ($key === 'category') ? ITEM_TYPES[$type] . ' ' . $tax['label'] : $tax['label'];
 
     formRow($name, $label . ($multiple ? ' (choose one or more)' : ''),
-        '<div class="searchable-select-row' . invalidClass($name) . '">'
+        '<div class="searchable-select-row">'
         . '<div class="searchable-select">'
         . '<select name="' . $name . ($multiple ? '[]' : '') . '" id="' . $name . '"'
         . ' data-item-type="' . $type . '"' . invalidAttributes($name)

@@ -308,7 +308,8 @@ table td i {
    Forms
    ========================================================= */
 
-form p {
+form p,
+form .form-row {
     margin: 0 0 22px;
 }
 
@@ -803,8 +804,7 @@ form input[type="submit"].delete:hover {
     color: #991b1b;
 }
 
-/* The taxonomy dropdowns are a button standing in for a hidden select, and the
-   mark is on their row rather than the paragraph, see invalidClass(). */
+/* The taxonomy dropdowns are a button standing in for a hidden select. */
 
 .field-invalid .searchable-select.is-open .searchable-select__button {
     border-color: var(--color-danger);

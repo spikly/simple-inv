@@ -83,18 +83,6 @@ function invalidAttributes(string $name): string
 }
 
 /**
- * ' field-invalid' for a control that has to carry the mark itself.
- *
- * A browser closes a paragraph as soon as it parses a block element inside it,
- * so a control built from a <div> ends up beside the row formRow() marked
- * rather than within it, and the mark does not reach it.
- */
-function invalidClass(string $name): string
-{
-    return fieldError($name) ? ' field-invalid' : '';
-}
-
-/**
  * Render a form status message created by successMessage()/errorMessage().
  *
  * Every error is listed, not just the first, and the ones naming a field are
@@ -300,12 +288,16 @@ function itemProperty(string $heading, string $body, string $class = ''): void
  * A field the last submission was rejected over is marked, and the reason is
  * repeated below the control so it is answered where it is fixed rather than
  * only in the summary at the top of the form.
+ *
+ * The row is a <div> rather than a <p> because some controls are built from
+ * block elements, and a browser closes a paragraph as soon as it meets one:
+ * the row would end where its control began, taking the mark with it.
  */
 function formRow(string $name, string $label, string $control): void
 {
     $error = fieldError($name);
 
-    echo '    <p' . ($error ? ' class="field-invalid"' : '') . '>' . "\n";
+    echo '    <div class="form-row' . ($error ? ' field-invalid' : '') . '">' . "\n";
     echo '        <label for="' . $name . '">' . $label . '</label>' . "\n";
     echo '        ' . $control . "\n";
 
@@ -313,7 +305,7 @@ function formRow(string $name, string $label, string $control): void
         echo '        <span class="field-error" id="' . $name . '_error">' . $error . '</span>' . "\n";
     }
 
-    echo '    </p>' . "\n";
+    echo '    </div>' . "\n";
 }
 
 /**
