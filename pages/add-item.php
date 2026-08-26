@@ -60,11 +60,10 @@ if (isset($_POST['add_item_submit'])) {
     }
 }
 
-$plural = ITEM_TYPE_PLURALS[$type];
 $other = ($type === 'part') ? 'tool' : 'part';
 
 pageHeader('Add ' . ITEM_TYPES[$type], [
-    'Back to ' . $plural  => 'index.php?page=' . strtolower($plural),
+    'Back to ' . ITEM_TYPE_PLURALS[$type] => 'index.php?page=' . itemTypePage($type),
     'Add a ' . ITEM_TYPES[$other] . ' Instead' => 'index.php?page=add-item&kind=' . $other,
 ]);
 

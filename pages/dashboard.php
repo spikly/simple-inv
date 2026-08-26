@@ -1,11 +1,29 @@
 <?php
 
+/**
+ * How many rows each section of the dashboard shows. The tiles above count
+ * everything, so a section that has more than this says so rather than
+ * quietly disagreeing with the number over it.
+ */
+const DASHBOARD_ROWS = 10;
+
 $totals = fetchDashboardTotals();
-$lowStock = fetchStockWarnings('low', 10);
-$overCommitted = fetchStockWarnings('over', 10);
+$lowStock = fetchStockWarnings('low');
+$overCommitted = fetchStockWarnings('over');
 $projects = fetchProjects();
-$toolsOut = fetchOpenToolLoans(10);
-$overdue = countOverdueToolLoans();
+$toolsOut = fetchOpenToolLoans();
+$overdue = countOverdueLoans($toolsOut);
+
+/** The first DASHBOARD_ROWS of a list, noting anything left off the end. */
+$topOf = function (array $rows) {
+    $hidden = count($rows) - DASHBOARD_ROWS;
+
+    if ($hidden > 0) {
+        echo '<p>Showing the first ' . DASHBOARD_ROWS . ', with ' . $hidden . ' more not listed.</p>' . "\n";
+    }
+
+    return array_slice($rows, 0, DASHBOARD_ROWS);
+};
 
 pageHeader('Dashboard', [
     'Add Part'    => 'index.php?page=add-item&kind=part',
@@ -60,7 +78,7 @@ $stockTable = function (array $items) {
 sectionHeader('Low Stock');
 
 if ($lowStock) {
-    $stockTable($lowStock);
+    $stockTable($topOf($lowStock));
 } else {
     echo '<p>Nothing is at its reorder level.</p>' . "\n";
 }
@@ -68,7 +86,7 @@ if ($lowStock) {
 if ($overCommitted) {
     sectionHeader('Over Committed');
     echo '<p>More of these are reserved for projects than actually held in stock.</p>' . "\n";
-    $stockTable($overCommitted);
+    $stockTable($topOf($overCommitted));
 }
 
 sectionHeader('Tools Out', ['All Tools' => 'index.php?page=tools']);
@@ -76,7 +94,7 @@ sectionHeader('Tools Out', ['All Tools' => 'index.php?page=tools']);
 if ($toolsOut) {
     renderTable(
         ['Tool', 'Signed Out To', 'Out Since', 'Due Back', 'Kept In'],
-        $toolsOut,
+        $topOf($toolsOut),
         function ($loan) {
             $late = loanIsOverdue($loan['loan_due_at']);
 

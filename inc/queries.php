@@ -51,17 +51,21 @@ const ITEM_STOCK_COLUMNS = '
 ';
 
 /**
- * Narrows a listing to one kind of thing. An item is a tool when it is filed
- * under tool categories, so the kind is a question about its categories.
+ * Whether the item joined as `i` is a tool, asked of its categories, since
+ * that is the only place the answer is kept.
+ *
+ * ITEM_KIND_FILTER is the same question with the kind bound, for narrowing a
+ * listing to whichever one it is showing.
  */
+const ITEM_IS_TOOL = "EXISTS (SELECT 1 FROM categories_items tci
+    INNER JOIN inv_categories tc ON tc.cat_id = tci.cat_id
+    WHERE tci.item_id = i.item_id AND tc.cat_type = 'tool')";
+
+const ITEM_IS_PART = 'NOT ' . ITEM_IS_TOOL;
+
 const ITEM_KIND_FILTER = 'EXISTS (SELECT 1 FROM categories_items kci
     INNER JOIN inv_categories kc ON kc.cat_id = kci.cat_id
     WHERE kci.item_id = i.item_id AND kc.cat_type = :item_kind)';
-
-/** The same, fixed to parts, for the queries that only ever want stock. */
-const ITEM_IS_PART = "NOT EXISTS (SELECT 1 FROM categories_items pci
-    INNER JOIN inv_categories pc ON pc.cat_id = pci.cat_id
-    WHERE pci.item_id = i.item_id AND pc.cat_type = 'tool')";
 
 /**
  * The ?brand_id=1 style filters present in the query string.
@@ -223,7 +227,7 @@ function fetchDashboardTotals(): array
     return dbRow('
         SELECT
             (SELECT COUNT(*) FROM inv_items i WHERE ' . ITEM_IS_PART . ') AS part_count,
-            (SELECT COUNT(*) FROM inv_items i WHERE NOT (' . ITEM_IS_PART . ')) AS tool_count,
+            (SELECT COUNT(*) FROM inv_items i WHERE ' . ITEM_IS_TOOL . ') AS tool_count,
             (SELECT COALESCE(SUM(i.item_quantity), 0) FROM inv_items i
                 WHERE ' . ITEM_IS_PART . ') AS total_quantity,
             (SELECT COUNT(*) FROM inv_projects p
@@ -238,7 +242,7 @@ function fetchDashboardTotals(): array
  * $mode "low" is stock at or under its reorder level, "over" is stock
  * committed beyond what is actually held.
  */
-function fetchStockWarnings(string $mode, int $limit = 0): array
+function fetchStockWarnings(string $mode): array
 {
     $having = ($mode === 'over')
         ? 'item_free_count < 0'
@@ -252,7 +256,6 @@ function fetchStockWarnings(string $mode, int $limit = 0): array
         . ' WHERE ' . ITEM_IS_PART
         . ' GROUP BY i.item_id HAVING ' . $having
         . ' ORDER BY item_free_count asc, i.item_name asc'
-        . ($limit > 0 ? ' LIMIT ' . $limit : '')
     );
 }
 
@@ -264,7 +267,7 @@ function fetchRecentItems(string $column, int $limit = 6): array
     return dbAll(
         'SELECT i.item_id, i.item_name, i.item_image, i.item_created_at, i.item_updated_at,
                 l.loc_name, s.status_name,
-                NOT (' . ITEM_IS_PART . ') AS item_is_tool
+                ' . ITEM_IS_TOOL . ' AS item_is_tool
          FROM inv_items i
          LEFT JOIN inv_locations l ON l.loc_id = i.item_loc_id
          LEFT JOIN inv_statuses s ON s.status_id = i.item_status
@@ -456,6 +459,16 @@ function fetchAvailableItemsForAssembly($assembly_id): array
         )
         ORDER BY i.item_name
     ', ['assembly_id' => $assembly_id]);
+}
+
+/** Whether an item is a part on any assembly, without reading them all. */
+function itemIsOnAnAssembly($item_id): bool
+{
+    return (bool)dbValue(
+        'SELECT EXISTS (SELECT 1 FROM inv_assembly_items WHERE item_id = :item_id)',
+        ['item_id' => $item_id],
+        0
+    );
 }
 
 /**

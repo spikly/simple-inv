@@ -18,9 +18,14 @@
  */
 function pieceUnitId(): int
 {
-    $id = dbValue("SELECT unit_id FROM inv_measurement_units WHERE unit_symbol = 'pcs' LIMIT 1");
+    static $unitId = null;
 
-    return (int)($id ?? dbValue('SELECT unit_id FROM inv_measurement_units ORDER BY unit_id LIMIT 1', [], 1));
+    if ($unitId === null) {
+        $id = dbValue("SELECT unit_id FROM inv_measurement_units WHERE unit_symbol = 'pcs' LIMIT 1");
+        $unitId = (int)($id ?? dbValue('SELECT unit_id FROM inv_measurement_units ORDER BY unit_id LIMIT 1', [], 1));
+    }
+
+    return $unitId;
 }
 
 /** The loan a tool is currently out on, or null when it is here. */
@@ -44,51 +49,45 @@ function fetchToolLoans($item_id): array
     );
 }
 
-/**
- * Only loans against something that is actually a tool count.
- *
- * An install upgraded from deployments can hold rows against items that were
- * then filed as parts. They are kept as history, but a part is not out with
- * anybody, so nothing that counts tools should see them.
- */
-const LOAN_ITEM_IS_TOOL = 'NOT (' . ITEM_IS_PART . ')';
+/** Whether a tool has ever been signed out, without reading the history. */
+function toolHasBeenSignedOut($item_id): bool
+{
+    return (bool)dbValue(
+        'SELECT EXISTS (SELECT 1 FROM inv_tool_loans WHERE loan_item_id = :item_id)',
+        ['item_id' => $item_id],
+        0
+    );
+}
 
-/** Every tool that is out right now, overdue ones first. */
-function fetchOpenToolLoans(int $limit = 0): array
+/**
+ * Every tool that is out right now, overdue ones first.
+ *
+ * Only loans against something that is actually a tool are included. An
+ * install upgraded from deployments can hold rows against items that were then
+ * filed as parts; they are kept as history, but a part is not out with
+ * anybody, so nothing counting tools should see them.
+ */
+function fetchOpenToolLoans(): array
 {
     return dbAll(
         'SELECT l.*, i.item_name, loc.loc_name
          FROM inv_tool_loans l
          INNER JOIN inv_items i ON i.item_id = l.loan_item_id
          LEFT JOIN inv_locations loc ON loc.loc_id = i.item_loc_id
-         WHERE l.loan_in_at IS NULL AND ' . LOAN_ITEM_IS_TOOL . '
+         WHERE l.loan_in_at IS NULL AND ' . ITEM_IS_TOOL . '
          ORDER BY (l.loan_due_at IS NOT NULL AND l.loan_due_at < CURDATE()) DESC,
                   l.loan_due_at IS NULL, l.loan_due_at ASC, l.loan_out_at ASC'
-        . ($limit > 0 ? ' LIMIT ' . $limit : '')
     );
 }
 
-function countOpenToolLoans(): int
+/** How many of a set of open loans are past their due date. */
+function countOverdueLoans(array $loans): int
 {
-    return (int)dbValue(
-        'SELECT COUNT(*) FROM inv_tool_loans l
-          INNER JOIN inv_items i ON i.item_id = l.loan_item_id
-          WHERE l.loan_in_at IS NULL AND ' . LOAN_ITEM_IS_TOOL,
-        [],
-        0
-    );
-}
+    $overdue = array_filter($loans, function (array $loan) {
+        return loanIsOverdue($loan['loan_due_at'], $loan['loan_in_at']);
+    });
 
-function countOverdueToolLoans(): int
-{
-    return (int)dbValue(
-        'SELECT COUNT(*) FROM inv_tool_loans l
-          INNER JOIN inv_items i ON i.item_id = l.loan_item_id
-          WHERE l.loan_in_at IS NULL AND l.loan_due_at IS NOT NULL
-            AND l.loan_due_at < CURDATE() AND ' . LOAN_ITEM_IS_TOOL,
-        [],
-        0
-    );
+    return count($overdue);
 }
 
 /** True when a loan is still open and its due date has gone by. */
@@ -166,7 +165,7 @@ function toolReturnValue(array $loan, array $post): array
 
         if ($open && (int)$open['loan_id'] !== (int)$loan['loan_id']) {
             return ['error' => 'That tool is already signed out to '
-                . $open['loan_to'] . ', so this record cannot be reopened.'];
+                . escapeHtml($open['loan_to']) . ', so this record cannot be reopened.'];
         }
 
         return ['value' => null];

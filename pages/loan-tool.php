@@ -23,6 +23,10 @@ if ($item && isset($_POST['sign_out_submit'])) {
     if ($error) {
         $values = $_POST;
         $formMessage = errorMessage($error);
+
+        // One reason to be here is that it went out from somewhere else while
+        // this form was open, so what is on screen is read again.
+        $loan = fetchOpenToolLoan($itemId);
     } else {
         redirectWith($itemUrl, successMessage('Signed out to '
             . escapeHtml($result['values']['loan_to']) . '.'));
@@ -55,9 +59,7 @@ if (!isTool($item)) {
 echo '<p><strong>Tool:</strong> ' . escapeHtml($item['item_name'])
     . ' - kept in ' . escapeHtml($item['loc_name'] ?? 'no location') . '</p>' . "\n";
 
-// Reloaded after a redirect, so this is the state as saved.
-$loan = fetchOpenToolLoan($itemId);
-
+// A save redirects, so anything reaching here left the loan as it was found.
 if ($loan) {
     $overdue = loanIsOverdue($loan['loan_due_at']);
 

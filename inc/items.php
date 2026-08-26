@@ -36,20 +36,27 @@ function isTool(array $item): bool
     return itemTypeOf($item) === 'tool';
 }
 
+/** The listing page showing one kind of thing, or the mixed one for null. */
+function itemTypePage(?string $type): string
+{
+    return $type === null ? 'items' : strtolower(ITEM_TYPE_PLURALS[$type]);
+}
+
 /**
  * Form field => message shown when it has not been filled in. The name must be
  * non-empty; the rest are dropdowns, where anything below 1 means "Select".
  */
 const ITEM_REQUIRED_FIELDS = [
-    'item_name'             => 'Item name cannot be empty',
-    'item_measurement_unit' => 'You must select a measurement unit',
-    'item_brand'            => 'You must select a manufacturer',
-    'item_location'         => 'You must select a location',
-    'item_status'           => 'You must select a status',
+    'item_name'     => 'Item name cannot be empty',
+    'item_brand'    => 'You must select a manufacturer',
+    'item_location' => 'You must select a location',
+    'item_status'   => 'You must select a status',
 ];
 
-/** The fields a tool has no use for, so they are neither shown nor checked. */
-const PART_ONLY_FIELDS = ['item_quantity', 'item_min_quantity', 'item_measurement_unit'];
+/** Asked for on top of those, but only of a part: a tool has no stock. */
+const PART_REQUIRED_FIELDS = [
+    'item_measurement_unit' => 'You must select a measurement unit',
+];
 
 /**
  * The first validation failure for submitted item data, or null when it is
@@ -57,11 +64,11 @@ const PART_ONLY_FIELDS = ['item_quantity', 'item_min_quantity', 'item_measuremen
  */
 function validateItem(array $post, string $type): ?string
 {
-    foreach (ITEM_REQUIRED_FIELDS as $field => $message) {
-        if ($type === 'tool' && in_array($field, PART_ONLY_FIELDS, true)) {
-            continue;
-        }
+    $required = ($type === 'part')
+        ? ITEM_REQUIRED_FIELDS + PART_REQUIRED_FIELDS
+        : ITEM_REQUIRED_FIELDS;
 
+    foreach ($required as $field => $message) {
         $value = $post[$field] ?? '';
         $missing = ($field === 'item_name') ? (trim((string)$value) === '') : ($value < 1);
 
@@ -79,9 +86,7 @@ function validateItem(array $post, string $type): ?string
     // Categories are what make an item a part or a tool, so they all have to
     // agree. The form only offers one kind, so this catches a stale form or a
     // category that changed under it.
-    $types = categoryTypesFor($categoryIds);
-
-    if ($types !== [$type]) {
+    if (categoryTypesFor($categoryIds) !== [$type]) {
         return 'Every category must be a ' . strtolower(ITEM_TYPES[$type]) . ' category.';
     }
 
@@ -192,24 +197,7 @@ function renderItemForm(array $values, string $submitName, string $type, $formMe
     }
 
     foreach (taxonomies() as $key => $tax) {
-        $name = 'item_' . $key;
-        $multiple = !empty($tax['multiple']);
-        $label = ($key === 'category' ? ITEM_TYPES[$type] . ' ' . $tax['label'] : $tax['label']);
-
-        formRow($name, $label . ($multiple ? ' (choose one or more)' : ''),
-            '<div class="searchable-select-row">'
-            . '<div class="searchable-select">'
-            . '<select name="' . $name . ($multiple ? '[]' : '') . '" id="' . $name . '"'
-            . ' data-item-type="' . $type . '"'
-            . ($multiple ? ' multiple data-placeholder="Select..."' : '') . '>'
-            . ($multiple ? '' : '<option value="0">Select</option>')
-            . selectOptions($options[$name], $values[$name] ?? null)
-            . '</select>'
-            . '</div>'
-            . '<button type="button" class="add-new-attribute-value" id="add_new_' . $key . '"'
-            . ' data-item-type="' . $type . '"'
-            . ' title="Add new ' . $tax['label'] . '">+</button>'
-            . '</div>');
+        itemTaxonomyField($key, $tax, $type, $options['item_' . $key], $values['item_' . $key] ?? null);
     }
 
     if (!empty($values['duplicate_of'])) {
@@ -222,6 +210,46 @@ function renderItemForm(array $values, string $submitName, string $type, $formMe
 
     submitButton($submitName);
     echo '</form>' . "\n";
+}
+
+/**
+ * One taxonomy dropdown on the item form, with the "+" button that opens the
+ * add-new modal.
+ *
+ * The kind of item is put on both controls, because a category added from here
+ * has to file that kind and the refreshed options have to be narrowed to it;
+ * assets/js/app.js reads it back off them and inc/ajax.php acts on it.
+ */
+function itemTaxonomyField(string $key, array $tax, string $type, array $options, $selected): void
+{
+    $name = 'item_' . $key;
+    $multiple = !empty($tax['multiple']);
+
+    // Only categories differ between a part and a tool, so only they are
+    // labelled with which one is being edited.
+    $label = ($key === 'category') ? ITEM_TYPES[$type] . ' ' . $tax['label'] : $tax['label'];
+
+    formRow($name, $label . ($multiple ? ' (choose one or more)' : ''),
+        '<div class="searchable-select-row">'
+        . '<div class="searchable-select">'
+        . '<select name="' . $name . ($multiple ? '[]' : '') . '" id="' . $name . '"'
+        . ' data-item-type="' . $type . '"'
+        . ($multiple ? ' multiple data-placeholder="Select..."' : '') . '>'
+        . ($multiple ? '' : '<option value="0">Select</option>')
+        . selectOptions($options, $selected)
+        . '</select>'
+        . '</div>'
+        . '<button type="button" class="add-new-attribute-value" id="add_new_' . $key . '"'
+        . ' data-item-type="' . $type . '"'
+        . ' title="Add new ' . $tax['label'] . '">+</button>'
+        . '</div>');
+}
+
+/** The notes section at the foot of an item page, or a dash when there are none. */
+function renderItemNotes(array $item): void
+{
+    sectionHeader('Notes');
+    notesBox(trim((string)$item['item_notes']) !== '' ? $item['item_notes'] : '-');
 }
 
 /** Photo picker, showing what is already stored with the option to remove it. */
@@ -285,45 +313,15 @@ function itemsIndexPage(?string $type): void
 {
     // $kind is what the listing actually ended up narrowed to: $type on the
     // Parts and Tools pages, and whatever the mixed one was filtered by.
-    [$where, $params, $appliedFilters, $kind] = itemFilters($type);
+    [$where, $params, $applied, $kind] = itemFilters($type);
 
     $items = fetchItems($where, $params);
-    $itemCount = count($items);
-    $noun = $type === null ? 'Items' : ITEM_TYPE_PLURALS[$type];
-    $page = $type === null ? 'items' : strtolower(ITEM_TYPE_PLURALS[$type]);
-
-    $badges = [];
-    $query = '';
-
-    foreach ($appliedFilters as $key) {
-        $tax = taxonomy($key);
-        $name = taxonomyName($key, $params[$tax['param']]);
-
-        $badges[] = '<span>' . $tax['label'] . ': ' . escapeHtml($name ?? 'unknown') . '</span>';
-        $query .= '&amp;' . $tax['param'] . '=' . escapeHtml($params[$tax['param']]);
-    }
-
-    if (trim((string)queryParam('q')) !== '') {
-        $badges[] = '<span>Search: ' . escapeHtml(queryParam('q')) . '</span>';
-        $query .= '&amp;q=' . urlencode((string)queryParam('q'));
-    }
-
-    // On a page already called Parts or Tools the badge would only repeat the
-    // heading, so it is for the mixed listing.
-    if ($type === null && $kind !== null) {
-        $badges[] = '<span>Type: ' . ITEM_TYPES[$kind] . '</span>';
-    }
-
-    // Export and labels follow the filters, so they need the kind of thing
-    // being listed too. The labels page has a ?type= of its own, which is why
-    // the kind of item is never called that in a query string.
-    if ($kind !== null) {
-        $query .= '&amp;kind=' . $kind;
-    }
+    $noun = ($type === null) ? 'Items' : ITEM_TYPE_PLURALS[$type];
+    [$badges, $query] = itemFilterSummary($applied, $params, $type, $kind);
 
     $links = [];
 
-    if ($itemCount > 0) {
+    if ($items) {
         $links['Export'] = 'index.php?page=export-items' . $query;
         $links['Labels'] = 'index.php?page=labels&amp;type=item' . $query;
     }
@@ -332,66 +330,129 @@ function itemsIndexPage(?string $type): void
     $links['Add New ' . ($kind === null ? 'Item' : ITEM_TYPES[$kind])] =
         'index.php?page=add-item' . ($kind === null ? '' : '&amp;kind=' . $kind);
 
-    pageHeader($noun . countBadge($itemCount, $badges ? ' ' . implode(' ', $badges) : ''), $links);
+    pageHeader($noun . countBadge(count($items), $badges), $links);
 
     formMessage(takeFlash());
-    renderItemFilters($appliedFilters, $type, $page);
+    renderItemFilters($applied, $type, itemTypePage($type));
 
-    if ($itemCount === 0) {
+    if (!$items) {
         echo '<p>No ' . strtolower($noun) . ' match.</p>';
         return;
     }
 
-    renderTable(itemColumnHeadings($type), $items, function ($item) use ($type) {
-        return itemRowCells($item, $type);
+    $columns = itemListingColumns($type);
+
+    renderTable(array_keys($columns), $items, function (array $item) use ($columns) {
+        $cells = [];
+
+        foreach ($columns as $cell) {
+            $cells[] = $cell($item);
+        }
+
+        return $cells;
     }, [0 => 'col-thumb']);
 }
 
-/** Listing headings for one kind of thing. */
-function itemColumnHeadings(?string $type): array
+/**
+ * The filters in force, as the badges shown beside the heading and the query
+ * string that carries them on to export and labels.
+ *
+ * $pinnedKind is the kind the page is fixed to. On Parts or Tools the kind
+ * badge would only repeat the heading, so it is left to the mixed listing.
+ */
+function itemFilterSummary(array $applied, array $params, ?string $pinnedKind, ?string $kind): array
 {
-    if ($type === 'tool') {
-        return ['', 'Name', 'Location', 'Status', 'Signed Out To', 'Due Back', 'Edit'];
+    $badges = [];
+    $query = '';
+
+    foreach ($applied as $key) {
+        $tax = taxonomy($key);
+        $id = (string)$params[$tax['param']];
+
+        // The badge names the row, but the link has to carry its id.
+        $badges[] = '<span>' . $tax['label'] . ': '
+            . escapeHtml(taxonomyName($key, $id) ?? 'unknown') . '</span>';
+        $query .= '&amp;' . $tax['param'] . '=' . escapeHtml(urlencode($id));
     }
 
-    if ($type === 'part') {
-        return ['', 'Name', 'Location', 'Status', 'Allocated', 'Free', 'Edit'];
+    $search = trim((string)queryParam('q'));
+
+    if ($search !== '') {
+        $badges[] = '<span>Search: ' . escapeHtml($search) . '</span>';
+        $query .= '&amp;q=' . urlencode($search);
     }
 
-    return ['', 'Name', 'Type', 'Location', 'Status', 'Availability', 'Edit'];
+    if ($kind !== null) {
+        if ($pinnedKind === null) {
+            $badges[] = '<span>Type: ' . ITEM_TYPES[$kind] . '</span>';
+        }
+
+        // The labels page has a ?type= of its own, which is why the kind of
+        // item is never called that in a query string.
+        $query .= '&amp;kind=' . $kind;
+    }
+
+    return [$badges ? ' ' . implode(' ', $badges) : '', $query];
 }
 
-/** The cells under those headings. */
-function itemRowCells(array $item, ?string $type): array
+/**
+ * The listing columns for one kind of thing, as heading => a function giving
+ * that heading's cell for a row.
+ *
+ * Headings and cells are one definition so they cannot drift apart, and
+ * renderTable() takes the keys and the values separately.
+ */
+function itemListingColumns(?string $type): array
 {
-    $cells = [
-        itemThumb($item['item_image'], $item['item_name']),
-        '<a href="index.php?page=view-item&item_id=' . $item['item_id'] . '">'
-            . escapeHtml($item['item_name']) . '</a>'
-            . ($item['cat_names'] ? '<small class="row-note">' . escapeHtml($item['cat_names']) . '</small>' : ''),
+    $columns = [
+        '' => function (array $item) {
+            return itemThumb($item['item_image'], $item['item_name']);
+        },
+        'Name' => function (array $item) {
+            return '<a href="index.php?page=view-item&item_id=' . $item['item_id'] . '">'
+                . escapeHtml($item['item_name']) . '</a>'
+                . ($item['cat_names']
+                    ? '<small class="row-note">' . escapeHtml($item['cat_names']) . '</small>'
+                    : '');
+        },
     ];
 
     if ($type === null) {
-        $cells[] = ITEM_TYPES[itemTypeOf($item)];
+        $columns['Type'] = function (array $item) {
+            return ITEM_TYPES[itemTypeOf($item)];
+        };
     }
 
-    $cells[] = isset($item['loc_name']) ? escapeHtml($item['loc_name']) : '<i>Deleted</i>';
-    $cells[] = isset($item['status_name']) ? escapeHtml($item['status_name']) : '<i>Deleted</i>';
+    $columns['Location'] = function (array $item) {
+        return nameOrDeleted($item['loc_name'] ?? null);
+    };
+
+    $columns['Status'] = function (array $item) {
+        return nameOrDeleted($item['status_name'] ?? null);
+    };
 
     if ($type === 'tool') {
-        $cells[] = toolBorrowerCell($item);
-        $cells[] = toolDueCell($item);
+        $columns['Signed Out To'] = 'toolBorrowerCell';
+        $columns['Due Back'] = 'toolDueCell';
     } elseif ($type === 'part') {
-        $cells[] = formatQuantity($item['item_allocated_count']);
-        $cells[] = stockCell($item);
+        $columns['Allocated'] = function (array $item) {
+            return formatQuantity($item['item_allocated_count']);
+        };
+        $columns['Free'] = 'stockCell';
     } else {
-        $cells[] = isTool($item) ? toolBorrowerCell($item) : stockCell($item);
+        // The mixed listing has one column for both, since what "available"
+        // means depends on which kind the row is.
+        $columns['Availability'] = function (array $item) {
+            return isTool($item) ? toolBorrowerCell($item) : stockCell($item);
+        };
     }
 
-    $cells[] = '<a href="index.php?page=edit-item&item_id=' . $item['item_id'] . '">Edit</a>'
-        . ' / <a href="index.php?page=add-item&duplicate=' . $item['item_id'] . '">Duplicate</a>';
+    $columns['Edit'] = function (array $item) {
+        return '<a href="index.php?page=edit-item&item_id=' . $item['item_id'] . '">Edit</a>'
+            . ' / <a href="index.php?page=add-item&duplicate=' . $item['item_id'] . '">Duplicate</a>';
+    };
 
-    return $cells;
+    return $columns;
 }
 
 /**
@@ -410,12 +471,12 @@ function itemKindChangeError(array $item, string $newType): ?string
         return null;
     }
 
-    if ($current === 'part' && fetchItemAssemblyUsage($item['item_id'])) {
+    if ($current === 'part' && itemIsOnAnAssembly($item['item_id'])) {
         return 'This part is on a project assembly, so it cannot become a tool.'
             . ' Take it off the assembly first.';
     }
 
-    if ($current === 'tool' && fetchToolLoans($item['item_id'])) {
+    if ($current === 'tool' && toolHasBeenSignedOut($item['item_id'])) {
         return 'This tool has been signed out before, so it cannot become a part.'
             . ' Its history would have nothing to belong to.';
     }

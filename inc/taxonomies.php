@@ -205,10 +205,14 @@ function categoryTypesFor(array $categoryIds): array
         return [];
     }
 
-    return array_values(array_unique(array_column(dbAll(
+    // The ids are cast to integers above, so they are safe to inline; a bound
+    // parameter cannot stand in for a list.
+    return array_column(dbAll(
         'SELECT DISTINCT cat_type FROM inv_categories
-         WHERE cat_id IN (' . implode(',', $categoryIds) . ')'
-    ), 'cat_type')));
+         WHERE cat_id IN (' . implode(',', $categoryIds) . ')
+         ORDER BY cat_type',
+        []
+    ), 'cat_type');
 }
 
 /** The name of one row, used for filter labels. Null when it no longer exists. */

@@ -73,17 +73,16 @@ if ($item && isset($_POST['edit_item_submit'])) {
     dbRun('DELETE FROM inv_items WHERE item_id = :edit_id LIMIT 1', ['edit_id' => $editId]);
 
     redirectWith(
-        'index.php?page=' . strtolower(ITEM_TYPE_PLURALS[itemTypeOf($item)]),
+        'index.php?page=' . itemTypePage(itemTypeOf($item)),
         successMessage(ITEM_TYPES[itemTypeOf($item)] . ' deleted!')
     );
 }
 
-$plural = ITEM_TYPE_PLURALS[$type];
 $other = ($type === 'part') ? 'tool' : 'part';
 
 pageHeader('Edit ' . ITEM_TYPES[$type], $item ? [
-    'View ' . ITEM_TYPES[$type] => 'index.php?page=view-item&item_id=' . $item['item_id'],
-    'Back to ' . $plural        => 'index.php?page=' . strtolower($plural),
+    'View ' . ITEM_TYPES[$type]           => 'index.php?page=view-item&item_id=' . $item['item_id'],
+    'Back to ' . ITEM_TYPE_PLURALS[$type] => 'index.php?page=' . itemTypePage($type),
     'Make it a ' . ITEM_TYPES[$other] => 'index.php?page=edit-item&item_id=' . $item['item_id']
         . '&amp;kind=' . $other,
 ] : []);

@@ -191,6 +191,15 @@ function selectOptions(array $options, $selected): string
 }
 
 /**
+ * A name read through a LEFT JOIN. Rows can outlive the manufacturer or
+ * location they point at, so a missing one is said rather than left blank.
+ */
+function nameOrDeleted($name): string
+{
+    return isset($name) ? escapeHtml($name) : '<i>Deleted</i>';
+}
+
+/**
  * Notes/description block with links made clickable.
  */
 function notesBox($text): void

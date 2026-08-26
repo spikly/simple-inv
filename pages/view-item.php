@@ -3,13 +3,16 @@
 $itemId = queryParam('item_id');
 $item = $itemId ? fetchSingleItem($itemId) : false;
 $type = $item ? itemTypeOf($item) : 'part';
-$loan = ($item && $type === 'tool') ? fetchOpenToolLoan($itemId) : null;
+
+// The item row already carries whichever sign-out is still open, if any.
+$isOut = $item && $type === 'tool' && !empty($item['loan_to']);
+$signLink = $isOut ? 'Sign In' : 'Sign Out';
 
 $links = [];
 
 if ($item) {
     if ($type === 'tool') {
-        $links[$loan ? 'Sign In' : 'Sign Out'] = 'index.php?page=loan-tool&item_id=' . $item['item_id'];
+        $links[$signLink] = 'index.php?page=loan-tool&item_id=' . $item['item_id'];
     }
 
     $links['Edit ' . ITEM_TYPES[$type]] = 'index.php?page=edit-item&item_id=' . $item['item_id'];
@@ -26,8 +29,6 @@ if (!$item) {
     return;
 }
 
-$assemblyUsage = fetchItemAssemblyUsage($itemId);
-$utilisation = calculatePercentage($item['item_quantity'], $item['item_allocated_count']);
 $categories = fetchItemCategoryIds($itemId);
 
 // Headings for the taxonomies shown as item properties, in display order.
@@ -60,19 +61,19 @@ $properties = [
     if ($type === 'tool') {
         // A tool is one object, so the only quantity worth showing is whether
         // it is here or with somebody.
-        $overdue = $loan && loanIsOverdue($loan['loan_due_at']);
+        $overdue = $isOut && loanIsOverdue($item['loan_due_at']);
 
         itemProperty(
             'Signed Out To',
-            '<p>' . ($loan ? escapeHtml($loan['loan_to']) : 'Nobody, it is here') . '</p>',
-            $loan ? ($overdue ? 'red' : 'amber') : 'green'
+            '<p>' . ($isOut ? escapeHtml($item['loan_to']) : 'Nobody, it is here') . '</p>',
+            $isOut ? ($overdue ? 'red' : 'amber') : 'green'
         );
 
-        if ($loan) {
-            itemProperty('Out Since', '<p>' . escapeHtml(formatDate($loan['loan_out_at'])) . '</p>');
+        if ($isOut) {
+            itemProperty('Out Since', '<p>' . escapeHtml(formatDate($item['loan_out_at'])) . '</p>');
             itemProperty(
                 'Due Back',
-                '<p>' . ($loan['loan_due_at'] ? escapeHtml(formatDate($loan['loan_due_at'])) : 'No date set')
+                '<p>' . ($item['loan_due_at'] ? escapeHtml(formatDate($item['loan_due_at'])) : 'No date set')
                     . ($overdue ? ' (overdue)' : '') . '</p>',
                 $overdue ? 'red' : ''
             );
@@ -83,6 +84,8 @@ $properties = [
         itemProperty('Reserved for Projects', '<p>' . formatQuantity($item['item_allocated_count'])
             . escapeHtml($item['unit_symbol']) . '</p>');
         itemProperty('Free', '<p>' . stockCell($item) . '</p>');
+
+        $utilisation = calculatePercentage($item['item_quantity'], $item['item_allocated_count']);
         itemProperty('Utilisation', $utilisation . '&percnt;', utilisationBg($utilisation));
 
         if ((int)$item['item_min_quantity'] > 0) {
@@ -110,14 +113,14 @@ $properties = [
     }
 
     if ($categories) {
-        $links = [];
+        $categoryLinks = [];
 
         foreach ($categories as $categoryId) {
-            $links[] = '<a href="index.php?page=items&category_id=' . $categoryId . '">'
+            $categoryLinks[] = '<a href="index.php?page=items&category_id=' . $categoryId . '">'
                 . escapeHtml(taxonomyName('category', $categoryId) ?? 'Deleted') . '</a>';
         }
 
-        itemProperty('Categories', '<p>' . implode(', ', $links) . '</p>');
+        itemProperty('Categories', '<p>' . implode(', ', $categoryLinks) . '</p>');
     }
 
     ?>
@@ -126,13 +129,11 @@ $properties = [
 
 if ($type === 'tool') {
     sectionHeader('Sign-Out History', [
-        ($loan ? 'Sign In' : 'Sign Out') => 'index.php?page=loan-tool&item_id=' . $item['item_id'],
+        $signLink => 'index.php?page=loan-tool&item_id=' . $item['item_id'],
     ]);
 
     renderToolLoans(fetchToolLoans($itemId));
-
-    sectionHeader('Notes');
-    notesBox(strlen((string)$item['item_notes']) > 0 ? $item['item_notes'] : '-');
+    renderItemNotes($item);
 
     return;
 }
@@ -142,6 +143,8 @@ if ((float)$item['item_free_count'] < 0) {
 }
 
 sectionHeader('Reserved for Assemblies');
+
+$assemblyUsage = fetchItemAssemblyUsage($itemId);
 
 if ($assemblyUsage) {
     echo '<p>Stock set aside for these assemblies is held back from the free quantity above.'
@@ -172,5 +175,4 @@ if ($assemblyUsage) {
     echo '<p>This part is not on any assembly.</p>' . "\n";
 }
 
-sectionHeader('Notes');
-notesBox(strlen((string)$item['item_notes']) > 0 ? $item['item_notes'] : '-');
+renderItemNotes($item);

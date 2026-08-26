@@ -97,24 +97,25 @@ function parseItemCsv(array $upload): array
     return ['rows' => $rows];
 }
 
-/** Existing taxonomy names, lowercased, so new ones can be spotted up front. */
+/**
+ * What already exists, lowercased, so a row can be judged before anything is
+ * written.
+ *
+ * Categories are kept as name => the kind it files, which answers both whether
+ * one exists and whether it agrees with the row naming it. The rest are plain
+ * lists of names.
+ */
 function importKnownNames(): array
 {
-    $known = [];
+    $known = ['category' => []];
 
-    foreach (array_merge(array_keys(IMPORT_TAXONOMY_COLUMNS), ['category']) as $key) {
+    foreach (array_keys(IMPORT_TAXONOMY_COLUMNS) as $key) {
         $known[$key] = array_map('strtolower', array_map('strval', taxonomyOptions($key)));
     }
 
-    // Which kind each existing category files, so a row can be checked against
-    // the categories it names before anything is written.
-    $known['category_types'] = array_column(
-        array_map(function ($row) {
-            return ['name' => strtolower($row['cat_name']), 'type' => $row['cat_type']];
-        }, dbAll('SELECT cat_name, cat_type FROM inv_categories')),
-        'type',
-        'name'
-    );
+    foreach (dbAll('SELECT cat_name, cat_type FROM inv_categories') as $row) {
+        $known['category'][strtolower($row['cat_name'])] = $row['cat_type'];
+    }
 
     return $known;
 }
@@ -194,18 +195,19 @@ function importRow(array $record, array $columns, array $known, int $line): arra
     // Categories decide whether the item is a part or a tool, so an existing
     // one filing the other kind is a contradiction rather than a detail.
     foreach ($categories as $category) {
-        $existing = $known['category_types'][strtolower($category)] ?? null;
+        $files = $known['category'][strtolower($category)] ?? null;
 
-        if ($existing !== null && $existing !== $row['type']) {
+        if ($files === null) {
+            $row['creates'][] = ITEM_TYPES[$row['type']] . ' Category: ' . $category;
+            continue;
+        }
+
+        if ($files !== $row['type']) {
             $row['error'] = 'Category "' . $category . '" files '
-                . strtolower(ITEM_TYPE_PLURALS[$existing]) . ', but this row is a '
+                . strtolower(ITEM_TYPE_PLURALS[$files]) . ', but this row is a '
                 . strtolower(ITEM_TYPES[$row['type']]) . '.';
 
             return $row;
-        }
-
-        if (!in_array(strtolower($category), $known['category'], true)) {
-            $row['creates'][] = ITEM_TYPES[$row['type']] . ' Category: ' . $category;
         }
     }
 
