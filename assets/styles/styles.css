@@ -759,6 +759,83 @@ form input[type="submit"].delete:hover {
     border: 1px solid var(--color-success-border);
 }
 
+/* A submission with more than one thing wrong lists them all, so the form can
+   be put right in one pass. */
+
+.form-message p {
+    margin: 0;
+    font-weight: 600;
+}
+
+.form-message ul {
+    /* The reset strips list markers, and this is a list worth counting. */
+    list-style: disc;
+    margin: 8px 0 0;
+    padding: 0 0 0 20px;
+}
+
+.form-message li {
+    margin: 0 0 4px;
+}
+
+.form-message li:last-child {
+    margin: 0;
+}
+
+/* =========================================================
+   Field Errors
+   ========================================================= */
+
+/* The message from the summary above, repeated against the control it belongs
+   to so it is answered where it is fixed. */
+
+.field-error {
+    display: block;
+    margin: 6px 0 0;
+    color: #991b1b;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+/* Direct child only: the photo row has a checkbox with a label of its own. */
+
+.field-invalid > label {
+    color: #991b1b;
+}
+
+/* The taxonomy dropdowns are a button standing in for a hidden select, and the
+   mark is on their row rather than the paragraph, see invalidClass(). */
+
+.field-invalid .searchable-select.is-open .searchable-select__button {
+    border-color: var(--color-danger);
+    background: var(--color-danger-bg);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
+form .field-invalid input[type="text"],
+form .field-invalid input[type="number"],
+form .field-invalid input[type="url"],
+form .field-invalid input[type="date"],
+form .field-invalid input[type="datetime-local"],
+form .field-invalid select,
+form .field-invalid textarea,
+.field-invalid .searchable-select__button {
+    border-color: var(--color-danger);
+    background: var(--color-danger-bg);
+}
+
+form .field-invalid input[type="text"]:focus,
+form .field-invalid input[type="number"]:focus,
+form .field-invalid input[type="url"]:focus,
+form .field-invalid input[type="date"]:focus,
+form .field-invalid input[type="datetime-local"]:focus,
+form .field-invalid select:focus,
+form .field-invalid textarea:focus,
+.field-invalid .searchable-select__button:focus {
+    border-color: var(--color-danger);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+}
+
 /* =========================================================
    Notes
    ========================================================= */

@@ -14,15 +14,19 @@ $formMessage = takeFlash();
 if (isset($_POST['add_assembly_item_submit'])) {
     $columns = assemblyItemColumns($_POST);
     $itemId = (int)($_POST['item_id'] ?? 0);
-    $error = empty($itemId) ? 'Please select an item.' : validateAssemblyItem($columns);
+    $errors = validateAssemblyItem($columns);
 
-    if (!$error) {
-        $error = validateAssemblyInstall($itemId, 0, $columns['quantity_installed'], 0);
+    if (empty($itemId)) {
+        $errors = ['item_id' => 'Please select an item.'] + $errors;
+    } elseif (!isset($errors['quantity_installed'])) {
+        // What is free to install is only worth working out once the figure
+        // asking for it makes sense on its own.
+        $errors += validateAssemblyInstall($itemId, 0, $columns['quantity_installed'], 0);
     }
 
-    if ($error) {
+    if ($errors) {
         $values = $columns + ['item_id' => $itemId];
-        $formMessage = errorMessage($error);
+        $formMessage = errorMessage($errors);
     } else {
         // The part is stored holding nothing, then settling the stock reserves
         // what it can spare for it and takes anything installed out of stock.

@@ -13,11 +13,12 @@ $loan = dbRow('SELECT * FROM inv_tool_loans WHERE loan_id = :loan_id', ['loan_id
 
 if ($loan && isset($_POST['edit_loan_submit'])) {
     $result = toolLoanValues($_POST);
-
     $returned = toolReturnValue($loan, $_POST);
 
-    if (isset($result['error']) || isset($returned['error'])) {
-        $formMessage = errorMessage($result['error'] ?? $returned['error']);
+    $errors = ($result['errors'] ?? []) + ($returned['errors'] ?? []);
+
+    if ($errors) {
+        $formMessage = errorMessage($errors);
     } else {
         dbRun(
             'UPDATE inv_tool_loans

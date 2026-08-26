@@ -6,7 +6,7 @@ $formMessage = takeFlash();
 if (isset($_POST['add_project'])) {
     if (trim($_POST['project_name']) === '') {
         $values = $_POST;
-        $formMessage = errorMessage('Project name cannot be empty');
+        $formMessage = errorMessage(['project_name' => 'Project name cannot be empty']);
     } else {
         $projectId = dbInsert(
             'INSERT INTO inv_projects

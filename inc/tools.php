@@ -107,20 +107,27 @@ function loanIsOverdue(?string $dueAt, ?string $inAt = null): bool
 }
 
 /**
- * The submitted sign-out data as the columns to write, or an error message.
+ * The submitted sign-out data as the columns to write, or ['errors' => [...]]
+ * keyed by the field each message belongs to. Both fields are checked, so a
+ * form with two things wrong says both.
  */
 function toolLoanValues(array $post): array
 {
+    $errors = [];
     $to = trim((string)($post['loan_to'] ?? ''));
 
     if ($to === '') {
-        return ['error' => 'Say who or where the tool is going to.'];
+        $errors['loan_to'] = 'Say who or where the tool is going to.';
     }
 
     $due = trim((string)($post['loan_due_at'] ?? ''));
 
     if ($due !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $due)) {
-        return ['error' => 'The due date must be a date.'];
+        $errors['loan_due_at'] = 'The due date must be a date.';
+    }
+
+    if ($errors) {
+        return ['errors' => $errors];
     }
 
     return ['values' => [
@@ -161,7 +168,7 @@ function signToolIn($loan_id): void
 
 /**
  * The returned-at value submitted on the edit form, as something the database
- * will take, or ['error' => message].
+ * will take, or ['errors' => [...]] keyed by the field.
  *
  * Clearing it puts the tool back out with whoever had it, which only works
  * while nothing else has it.
@@ -174,19 +181,19 @@ function toolReturnValue(array $loan, array $post): array
         $open = fetchOpenToolLoan($loan['loan_item_id']);
 
         if ($open && (int)$open['loan_id'] !== (int)$loan['loan_id']) {
-            return ['error' => 'That tool is already signed out to '
-                . escapeHtml($open['loan_to']) . ', so this record cannot be reopened.'];
+            return ['errors' => ['loan_in_at' => 'That tool is already signed out to '
+                . escapeHtml($open['loan_to']) . ', so this record cannot be reopened.']];
         }
 
         return ['value' => null];
     }
 
     if (!preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/', $returned)) {
-        return ['error' => 'The returned date must be a date and time.'];
+        return ['errors' => ['loan_in_at' => 'The returned date must be a date and time.']];
     }
 
     if ($returned < $loan['loan_out_at']) {
-        return ['error' => 'A tool cannot come back before it went out.'];
+        return ['errors' => ['loan_in_at' => 'A tool cannot come back before it went out.']];
     }
 
     return ['value' => $returned];

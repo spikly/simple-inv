@@ -22,7 +22,7 @@ if (isset($_POST['import_upload'])) {
     if (isset($result['error'])) {
         clearImportPreview();
         $rows = [];
-        $formMessage = errorMessage($result['error']);
+        $formMessage = errorMessage(['csv_file' => $result['error']]);
     } else {
         $rows = $result['rows'];
         storeImportPreview($rows);
@@ -80,10 +80,9 @@ if (!$rows):
     files the other kind is skipped. The Allocated column is ignored, because that comes from projects.
 </p>
 <form method="post" enctype="multipart/form-data">
-    <p>
-        <label for="csv_file">CSV File</label>
-        <input type="file" name="csv_file" id="csv_file" accept=".csv,text/csv" required>
-    </p>
+<?php formRow('csv_file', 'CSV File',
+    '<input type="file" name="csv_file" id="csv_file" accept=".csv,text/csv" required'
+    . invalidAttributes('csv_file') . '>'); ?>
     <p>
         <input type="submit" name="import_upload" value="Preview Import">
     </p>

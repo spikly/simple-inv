@@ -13,7 +13,7 @@ $formMessage = takeFlash();
 if (isset($_POST['edit_assembly_submit'])) {
     if (trim($_POST['assembly_name']) === '') {
         $assembly = $_POST + $assembly;
-        $formMessage = errorMessage('Assembly name cannot be empty');
+        $formMessage = errorMessage(['assembly_name' => 'Assembly name cannot be empty']);
     } else {
         dbRun(
             'UPDATE inv_project_assemblies SET

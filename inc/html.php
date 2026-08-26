@@ -46,13 +46,89 @@ function countBadge(int $count, string $suffix = ''): string
 }
 
 /**
+ * The messages waiting against each named form field, so the controls can be
+ * marked up as wrong as they are drawn.
+ *
+ * formMessage() fills this in from the errors it renders, which is why it is
+ * called at the top of a form rather than below the fields it applies to.
+ * Passing an array replaces what is held; passing nothing reads it back.
+ */
+function formFieldErrors(?array $errors = null): array
+{
+    static $fields = [];
+
+    if ($errors !== null) {
+        $fields = $errors;
+    }
+
+    return $fields;
+}
+
+/** The message against one field, or '' when nothing is wrong with it. */
+function fieldError(string $name): string
+{
+    return formFieldErrors()[$name] ?? '';
+}
+
+/**
+ * Attributes marking a control as the one at fault, so the highlight formRow()
+ * draws is announced rather than only seen. The id is the one formRow() gives
+ * the message it puts below the control.
+ */
+function invalidAttributes(string $name): string
+{
+    return fieldError($name)
+        ? ' aria-invalid="true" aria-describedby="' . $name . '_error"'
+        : '';
+}
+
+/**
+ * ' field-invalid' for a control that has to carry the mark itself.
+ *
+ * A browser closes a paragraph as soon as it parses a block element inside it,
+ * so a control built from a <div> ends up beside the row formRow() marked
+ * rather than within it, and the mark does not reach it.
+ */
+function invalidClass(string $name): string
+{
+    return fieldError($name) ? ' field-invalid' : '';
+}
+
+/**
  * Render a form status message created by successMessage()/errorMessage().
+ *
+ * Every error is listed, not just the first, and the ones naming a field are
+ * handed to formFieldErrors() so the field itself is marked too.
  */
 function formMessage($formMessage): void
 {
-    if ($formMessage) {
-        echo '<p class="form-message form-' . $formMessage['status'] . '">' . $formMessage['message'] . '</p>';
+    $messages = is_array($formMessage) ? ($formMessage['messages'] ?? []) : [];
+    $status = (is_array($formMessage) ? ($formMessage['status'] ?? '') : '') ?: 'error';
+
+    // Only an error belongs to a field; a success message is about the page.
+    formFieldErrors($status === 'error'
+        ? array_filter($messages, 'is_string', ARRAY_FILTER_USE_KEY)
+        : []);
+
+    if (!$messages) {
+        return;
     }
+
+    if (count($messages) === 1) {
+        echo '<p class="form-message form-' . $status . '">' . reset($messages) . '</p>' . "\n";
+        return;
+    }
+
+    echo '<div class="form-message form-' . $status . '">' . "\n";
+    echo '    <p>There are ' . count($messages) . ' things to put right:</p>' . "\n";
+    echo '    <ul>' . "\n";
+
+    foreach ($messages as $message) {
+        echo '        <li>' . $message . '</li>' . "\n";
+    }
+
+    echo '    </ul>' . "\n";
+    echo '</div>' . "\n";
 }
 
 /**
@@ -220,12 +296,23 @@ function itemProperty(string $heading, string $body, string $class = ''): void
 
 /**
  * Labelled form control. $control is raw HTML.
+ *
+ * A field the last submission was rejected over is marked, and the reason is
+ * repeated below the control so it is answered where it is fixed rather than
+ * only in the summary at the top of the form.
  */
 function formRow(string $name, string $label, string $control): void
 {
-    echo '    <p>' . "\n";
+    $error = fieldError($name);
+
+    echo '    <p' . ($error ? ' class="field-invalid"' : '') . '>' . "\n";
     echo '        <label for="' . $name . '">' . $label . '</label>' . "\n";
     echo '        ' . $control . "\n";
+
+    if ($error) {
+        echo '        <span class="field-error" id="' . $name . '_error">' . $error . '</span>' . "\n";
+    }
+
     echo '    </p>' . "\n";
 }
 
@@ -235,12 +322,13 @@ function formRow(string $name, string $label, string $control): void
 function textField(string $name, string $label, $value = '', string $type = 'text', string $attributes = ''): void
 {
     formRow($name, $label, '<input type="' . $type . '" name="' . $name . '" id="' . $name . '"'
-        . ' value="' . escapeHtml($value) . '"' . $attributes . ' />');
+        . ' value="' . escapeHtml($value) . '"' . $attributes . invalidAttributes($name) . ' />');
 }
 
 function textareaField(string $name, string $label, $value = ''): void
 {
-    formRow($name, $label, '<textarea name="' . $name . '" id="' . $name . '">' . escapeHtml($value) . '</textarea>');
+    formRow($name, $label, '<textarea name="' . $name . '" id="' . $name . '"'
+        . invalidAttributes($name) . '>' . escapeHtml($value) . '</textarea>');
 }
 
 /**
@@ -254,7 +342,8 @@ function selectField(
     string $firstOption = '',
     string $attributes = ''
 ): void {
-    formRow($name, $label, '<select name="' . $name . '" id="' . $name . '"' . $attributes . '>'
+    formRow($name, $label, '<select name="' . $name . '" id="' . $name . '"' . $attributes
+        . invalidAttributes($name) . '>'
         . $firstOption . selectOptions($options, $selected) . '</select>');
 }
 

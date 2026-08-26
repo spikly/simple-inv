@@ -24,10 +24,10 @@ if ($item && !isTool($item) && (isset($_POST['add_stock_submit']) || isset($_POS
     // The buttons say which way it goes, so the amount is always typed in as a
     // plain number and never needs a minus sign.
     $delta = ctype_digit($amount) ? ((int)$amount * ($adding ? 1 : -1)) : 0;
-    $error = validateStockChange($item, $amount, $delta);
+    $errors = validateStockChange($item, $amount, $delta);
 
-    if ($error) {
-        $formMessage = errorMessage($error);
+    if ($errors) {
+        $formMessage = errorMessage($errors);
     } else {
         adjustItemStock($itemId, $delta, $note !== '' ? $note : null);
 

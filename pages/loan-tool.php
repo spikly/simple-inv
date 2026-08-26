@@ -18,11 +18,17 @@ $selfUrl = 'index.php?page=loan-tool&item_id=' . urlencode((string)$itemId);
 
 if ($item && isset($_POST['sign_out_submit'])) {
     $result = toolLoanValues($_POST);
-    $error = $result['error'] ?? signToolOut($itemId, $result['values'] ?? []);
+    $errors = $result['errors'] ?? [];
 
-    if ($error) {
+    if (!$errors) {
+        // Already being out is about the tool, not about a field on the form.
+        $alreadyOut = signToolOut($itemId, $result['values']);
+        $errors = ($alreadyOut !== null) ? [$alreadyOut] : [];
+    }
+
+    if ($errors) {
         $values = $_POST;
-        $formMessage = errorMessage($error);
+        $formMessage = errorMessage($errors);
 
         // One reason to be here is that it went out from somewhere else while
         // this form was open, so what is on screen is read again.

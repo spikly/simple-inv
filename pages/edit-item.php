@@ -25,16 +25,24 @@ if ($item && isset($_POST['edit_item_submit'])) {
     $values = $_POST;
     $values['item_type'] = $type;
 
-    $error = itemKindChangeError($item, $type) ?? validateItem($_POST, $type);
+    $blocked = itemKindChangeError($item, $type);
+
+    // Becoming the other kind is about the item rather than any one field, so
+    // that message goes in without one, ahead of the rest.
+    $errors = ($blocked !== null ? [$blocked] : []) + validateItem($_POST, $type);
     $photo = ['name' => $item['item_image']];
 
-    if (!$error) {
+    // Storing the upload moves the file, so it waits until the rest is sound.
+    if (!$errors) {
         $photo = resolveItemPhoto($item['item_image'], !empty($_POST['remove_photo']));
-        $error = $photo['error'] ?? null;
+
+        if (isset($photo['error'])) {
+            $errors['item_photo'] = $photo['error'];
+        }
     }
 
-    if ($error) {
-        $formMessage = errorMessage($error);
+    if ($errors) {
+        $formMessage = errorMessage($errors);
     } else {
         $heldBefore = (float)$item['item_quantity'];
 

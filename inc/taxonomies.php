@@ -281,8 +281,8 @@ function taxonomyUsageCounts(array $tax, array $ids): array
 }
 
 /**
- * Turn submitted input into the columns to write, or an error message when the
- * required name is missing.
+ * Turn submitted input into the columns to write, or ['errors' => [...]] keyed
+ * by the field, when the required name is missing.
  */
 function taxonomyValues(array $tax, array $input): array
 {
@@ -300,8 +300,10 @@ function taxonomyValues(array $tax, array $input): array
         $values[$column] = $value;
     }
 
-    if ($values[taxonomyNameField($tax)] === '') {
-        return ['error' => $tax['label'] . ' name cannot be empty'];
+    $nameField = taxonomyNameField($tax);
+
+    if ($values[$nameField] === '') {
+        return ['errors' => [$nameField => $tax['label'] . ' name cannot be empty']];
     }
 
     if (isset($tax['derived'])) {
@@ -311,14 +313,24 @@ function taxonomyValues(array $tax, array $input): array
     return ['values' => $values];
 }
 
+/**
+ * A failed insert in the shape both callers want: 'errors' keyed by field for
+ * the page form, and the same thing as one string for the modal, which has
+ * only the one place to put it.
+ */
+function taxonomyInsertFailure(array $errors): array
+{
+    return ['success' => false, 'errors' => $errors, 'error' => implode(' ', $errors)];
+}
+
 /** Insert a new row. Returns the AJAX response shape used by the modal forms. */
 function taxonomyInsert(string $key, array $input): array
 {
     $tax = taxonomy($key);
     $result = taxonomyValues($tax, $input);
 
-    if (isset($result['error'])) {
-        return ['success' => false, 'error' => $result['error']];
+    if (isset($result['errors'])) {
+        return taxonomyInsertFailure($result['errors']);
     }
 
     $columns = array_keys($result['values']);
@@ -330,7 +342,8 @@ function taxonomyInsert(string $key, array $input): array
             $result['values']
         );
     } catch (\PDOException $e) {
-        return ['success' => false, 'error' => $e->getMessage()];
+        // Most often a duplicate name, which is the field worth pointing at.
+        return taxonomyInsertFailure([taxonomyNameField($tax) => $e->getMessage()]);
     }
 
     return ['success' => true, 'newId' => $newId];
@@ -477,7 +490,7 @@ function taxonomyAddPage(string $key): void
         }
 
         $values = $_POST;
-        $formMessage = errorMessage($result['error']);
+        $formMessage = errorMessage($result['errors']);
     }
 
     pageHeader('Add ' . $tax['label'], [
@@ -505,8 +518,11 @@ function taxonomyEditPage(string $key): void
             ? $tax['guard']($editId, $result['values'])
             : null;
 
-        if (isset($result['error']) || $blocked !== null) {
-            $formMessage = errorMessage($result['error'] ?? $blocked);
+        // A guard is about the row as a whole, so it goes in without a field.
+        $errors = ($result['errors'] ?? []) + ($blocked !== null ? [$blocked] : []);
+
+        if ($errors) {
+            $formMessage = errorMessage($errors);
         } else {
             $assignments = [];
 

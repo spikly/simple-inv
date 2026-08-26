@@ -17,17 +17,21 @@ if (isset($_POST['add_item_submit'])) {
     $duplicateOf = (int)($_POST['duplicate_of'] ?? 0);
     $values['duplicate_of'] = $duplicateOf ?: null;
 
-    $error = validateItem($_POST, $type);
+    $errors = validateItem($_POST, $type);
     $photo = ['name' => null];
 
-    if (!$error) {
+    // Storing the upload moves the file, so it waits until the rest is sound.
+    if (!$errors) {
         $source = $duplicateOf ? fetchSingleItem($duplicateOf) : false;
         $photo = resolveItemPhoto($source ? $source['item_image'] : null, false, (bool)$source);
-        $error = $photo['error'] ?? null;
+
+        if (isset($photo['error'])) {
+            $errors['item_photo'] = $photo['error'];
+        }
     }
 
-    if ($error) {
-        $formMessage = errorMessage($error);
+    if ($errors) {
+        $formMessage = errorMessage($errors);
     } else {
         $itemId = dbTransaction(function () use ($photo, $type) {
             $id = dbInsert(

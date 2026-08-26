@@ -94,12 +94,21 @@ function formatDate($value, string $format = 'j M Y'): string
 
 function successMessage(string $message): array
 {
-    return ['status' => 'success', 'message' => $message];
+    return ['status' => 'success', 'messages' => [$message]];
 }
 
-function errorMessage(string $message): array
+/**
+ * A form result carrying every problem with a submission rather than only the
+ * first, so a form can be put right in one go instead of once per attempt.
+ *
+ * $messages is a list, or a map keyed by the form field each message belongs
+ * to. A field name is what lets formRow() highlight the control at fault, so
+ * key by it whenever there is one to blame; anything about the submission as a
+ * whole goes in without a key. A lone string is taken as one such message.
+ */
+function errorMessage($messages): array
 {
-    return ['status' => 'error', 'message' => $message];
+    return ['status' => 'error', 'messages' => is_array($messages) ? $messages : [$messages]];
 }
 
 /**

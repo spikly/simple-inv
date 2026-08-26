@@ -62,42 +62,48 @@ const PART_REQUIRED_FIELDS = [
 ];
 
 /**
- * The first validation failure for submitted item data, or null when it is
- * fine. $type is the kind the form was filled in as.
+ * Everything wrong with submitted item data, keyed by the field it belongs to,
+ * or an empty array when it is fine. $type is the kind the form was filled in
+ * as.
+ *
+ * Every field is checked rather than stopping at the first, so a half filled
+ * form comes back saying all of what it needs at once.
  */
-function validateItem(array $post, string $type): ?string
+function validateItem(array $post, string $type): array
 {
     $required = ($type === 'part')
         ? ITEM_REQUIRED_FIELDS + PART_REQUIRED_FIELDS
         : ITEM_REQUIRED_FIELDS;
+
+    $errors = [];
 
     foreach ($required as $field => $message) {
         $value = $post[$field] ?? '';
         $missing = ($field === 'item_name') ? (trim((string)$value) === '') : ($value < 1);
 
         if ($missing) {
-            return $message;
+            $errors[$field] = $message;
         }
     }
 
     $categoryIds = array_filter(itemCategoryIds($post));
 
     if (!$categoryIds) {
-        return 'You must select at least one ' . strtolower(ITEM_TYPES[$type]) . ' category';
-    }
-
-    // Categories are what make an item a part or a tool, so they all have to
-    // agree. The form only offers one kind, so this catches a stale form or a
-    // category that changed under it.
-    if (categoryTypesFor($categoryIds) !== [$type]) {
-        return 'Every category must be a ' . strtolower(ITEM_TYPES[$type]) . ' category.';
+        $errors['item_category'] = 'You must select at least one '
+            . strtolower(ITEM_TYPES[$type]) . ' category';
+    } elseif (categoryTypesFor($categoryIds) !== [$type]) {
+        // Categories are what make an item a part or a tool, so they all have
+        // to agree. The form only offers one kind, so this catches a stale
+        // form or a category that changed under it.
+        $errors['item_category'] = 'Every category must be a '
+            . strtolower(ITEM_TYPES[$type]) . ' category.';
     }
 
     if ($type === 'part' && (int)($post['item_min_quantity'] ?? 0) < 0) {
-        return 'The reorder level cannot be negative';
+        $errors['item_min_quantity'] = 'The reorder level cannot be negative';
     }
 
-    return null;
+    return $errors;
 }
 
 /** Submitted categories, always as a list of ids. */
@@ -233,10 +239,10 @@ function itemTaxonomyField(string $key, array $tax, string $type, array $options
     $label = ($key === 'category') ? ITEM_TYPES[$type] . ' ' . $tax['label'] : $tax['label'];
 
     formRow($name, $label . ($multiple ? ' (choose one or more)' : ''),
-        '<div class="searchable-select-row">'
+        '<div class="searchable-select-row' . invalidClass($name) . '">'
         . '<div class="searchable-select">'
         . '<select name="' . $name . ($multiple ? '[]' : '') . '" id="' . $name . '"'
-        . ' data-item-type="' . $type . '"'
+        . ' data-item-type="' . $type . '"' . invalidAttributes($name)
         . ($multiple ? ' multiple data-placeholder="Select..."' : '') . '>'
         . ($multiple ? '' : '<option value="0">Select</option>')
         . selectOptions($options, $selected)
@@ -249,33 +255,33 @@ function itemTaxonomyField(string $key, array $tax, string $type, array $options
 }
 
 /**
- * Why an amount typed into the add/remove stock form cannot be used, or null.
+ * Why an amount typed into the add/remove stock form cannot be used, keyed by
+ * the field, or an empty array when it can.
+ *
+ * There is only one field to be wrong about, and each check here needs the one
+ * before it to have passed, so this stops at the first thing it finds.
  *
  * $delta is the amount as a change: what was typed, made negative when the
  * remove button was the one pressed.
  */
-function validateStockChange(array $item, string $amount, int $delta): ?string
+function validateStockChange(array $item, string $amount, int $delta): array
 {
-    if ($amount === '' || !ctype_digit($amount)) {
-        return 'Enter how much stock to add or remove, as a whole number.';
-    }
-
-    if ((int)$amount < 1) {
-        return 'Enter an amount greater than zero.';
-    }
-
     $held = (int)$item['item_quantity'];
 
-    if ($held + $delta < 0) {
-        return 'You only hold ' . $held . escapeHtml($item['unit_symbol'])
+    if ($amount === '' || !ctype_digit($amount)) {
+        $message = 'Enter how much stock to add or remove, as a whole number.';
+    } elseif ((int)$amount < 1) {
+        $message = 'Enter an amount greater than zero.';
+    } elseif ($held + $delta < 0) {
+        $message = 'You only hold ' . $held . escapeHtml($item['unit_symbol'])
             . ', so ' . abs($delta) . escapeHtml($item['unit_symbol']) . ' cannot be removed.';
+    } elseif ($held + $delta > MAX_ITEM_QUANTITY) {
+        $message = 'That is more stock than this can hold.';
+    } else {
+        return [];
     }
 
-    if ($held + $delta > MAX_ITEM_QUANTITY) {
-        return 'That is more stock than this can hold.';
-    }
-
-    return null;
+    return ['stock_amount' => $message];
 }
 
 /**
@@ -310,7 +316,8 @@ function renderItemNotes(array $item): void
 /** Photo picker, showing what is already stored with the option to remove it. */
 function renderItemPhotoField(?string $image): void
 {
-    $control = '<input type="file" name="item_photo" id="item_photo" accept="image/jpeg,image/png,image/gif,image/webp">';
+    $control = '<input type="file" name="item_photo" id="item_photo"'
+        . ' accept="image/jpeg,image/png,image/gif,image/webp"' . invalidAttributes('item_photo') . '>';
 
     if ($image) {
         $control = '<span class="photo-field">'

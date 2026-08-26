@@ -15,10 +15,12 @@ $installedBefore = (float)$assemblyItem['quantity_installed'];
 
 if (isset($_POST['edit_assembly_item_submit'])) {
     $values = assemblyItemColumns($_POST);
-    $error = validateAssemblyItem($values);
+    $errors = validateAssemblyItem($values);
 
-    if (!$error) {
-        $error = validateAssemblyInstall(
+    // What is free to install is only worth working out once the figure asking
+    // for it makes sense on its own.
+    if (!isset($errors['quantity_installed'])) {
+        $errors += validateAssemblyInstall(
             $assemblyItem['item_id'],
             $assemblyItemId,
             $values['quantity_installed'],
@@ -26,8 +28,8 @@ if (isset($_POST['edit_assembly_item_submit'])) {
         );
     }
 
-    if ($error) {
-        $formMessage = errorMessage($error);
+    if ($errors) {
+        $formMessage = errorMessage($errors);
     } else {
         $stock = dbTransaction(function () use ($values, $assemblyItemId, $installedBefore) {
             dbRun(

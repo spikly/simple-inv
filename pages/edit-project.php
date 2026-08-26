@@ -15,7 +15,7 @@ if (isset($_POST['edit_project_submit'])) {
     $values = $_POST;
 
     if (trim($_POST['project_name']) === '') {
-        $formMessage = errorMessage('Project name cannot be empty');
+        $formMessage = errorMessage(['project_name' => 'Project name cannot be empty']);
     } else {
         dbRun(
             'UPDATE inv_projects SET

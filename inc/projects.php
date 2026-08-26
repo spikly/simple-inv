@@ -82,21 +82,27 @@ function assemblyItemColumns(array $post): array
     ];
 }
 
-function validateAssemblyItem(array $columns): ?string
+/**
+ * Everything wrong with submitted assembly part data, keyed by the field it
+ * belongs to, or an empty array when it is fine.
+ */
+function validateAssemblyItem(array $columns): array
 {
+    $errors = [];
+
     if ($columns['quantity_required'] <= 0) {
-        return 'Quantity required must be greater than zero.';
+        $errors['quantity_required'] = 'Quantity required must be greater than zero.';
     }
 
     if ($columns['quantity_installed'] < 0) {
-        return 'Installed quantity cannot be negative.';
+        $errors['quantity_installed'] = 'Installed quantity cannot be negative.';
+    } elseif (!$errors && $columns['quantity_installed'] > $columns['quantity_required']) {
+        // Only worth saying once the required quantity is a figure the
+        // installed one could sensibly be measured against.
+        $errors['quantity_installed'] = 'Installed quantity cannot exceed the quantity required.';
     }
 
-    if ($columns['quantity_installed'] > $columns['quantity_required']) {
-        return 'Installed quantity cannot exceed the quantity required.';
-    }
-
-    return null;
+    return $errors;
 }
 
 /**
@@ -104,21 +110,22 @@ function validateAssemblyItem(array $columns): ?string
  * save has to be covered by what the item has left once the other assemblies
  * have had their share.
  */
-function validateAssemblyInstall($item_id, $assembly_item_id, float $installed, float $installedBefore): ?string
+function validateAssemblyInstall($item_id, $assembly_item_id, float $installed, float $installedBefore): array
 {
     $delta = $installed - $installedBefore;
 
     if ($delta <= 0) {
-        return null;
+        return [];
     }
 
     $available = itemStockAvailable($item_id, $assembly_item_id);
 
     if ($delta > $available) {
-        return 'Only ' . formatQuantity($available) . ' of this item is free to install.';
+        return ['quantity_installed' => 'Only ' . formatQuantity($available)
+            . ' of this item is free to install.'];
     }
 
-    return null;
+    return [];
 }
 
 /**
