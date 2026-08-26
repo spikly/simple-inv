@@ -102,17 +102,24 @@ function formMessage($formMessage): void
         return;
     }
 
+    // Naming the field a message belongs to lets assets/js/app.js take the
+    // message away again once that field has been dealt with.
+    $field = function ($key) {
+        return is_string($key) ? ' data-field="' . $key . '"' : '';
+    };
+
     if (count($messages) === 1) {
-        echo '<p class="form-message form-' . $status . '">' . reset($messages) . '</p>' . "\n";
+        echo '<p class="form-message form-' . $status . '"' . $field(array_key_first($messages))
+            . '>' . reset($messages) . '</p>' . "\n";
         return;
     }
 
     echo '<div class="form-message form-' . $status . '">' . "\n";
-    echo '    <p>There are ' . count($messages) . ' things to put right:</p>' . "\n";
+    echo '    <p>Please put these right:</p>' . "\n";
     echo '    <ul>' . "\n";
 
-    foreach ($messages as $message) {
-        echo '        <li>' . $message . '</li>' . "\n";
+    foreach ($messages as $key => $message) {
+        echo '        <li' . $field($key) . '>' . $message . '</li>' . "\n";
     }
 
     echo '    </ul>' . "\n";
@@ -301,7 +308,13 @@ function formRow(string $name, string $label, string $control, bool $hasControl 
 {
     $error = fieldError($name);
 
-    echo '    <div class="form-row' . ($error ? ' field-invalid' : '') . '">' . "\n";
+    // The field is named on the row as well as in the message, so the script
+    // that clears the mark knows which message went with it.
+    $rowAttributes = ($error === '')
+        ? ' class="form-row"'
+        : ' class="form-row field-invalid" data-field="' . $name . '"';
+
+    echo '    <div' . $rowAttributes . '>' . "\n";
     echo '        <label' . ($hasControl ? ' for="' . $name . '"' : '') . '>' . $label . '</label>' . "\n";
     echo '        ' . $control . "\n";
 

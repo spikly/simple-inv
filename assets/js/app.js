@@ -37,7 +37,82 @@ document.addEventListener("DOMContentLoaded", function()
             window.print();
         });
     });
+
+    // Both events, because typing settles a text field and choosing settles a
+    // dropdown, and the rows carry either kind. Delegated from the document so
+    // a control the searchable select builds later is covered too.
+    document.addEventListener("input", clearFieldError);
+    document.addEventListener("change", clearFieldError);
 });
+
+/**
+ * Take the mark off a field as soon as its control is used.
+ *
+ * Nothing is re-checked here; the server is what decides whether a value will
+ * do. The red goes because the person is dealing with that field, and leaving
+ * it there while they type reads as though the value they just entered has
+ * already been rejected. Saving says whether they got it right.
+ */
+function clearFieldError(event)
+{
+    // Searching within a dropdown is not yet a choice, so it settles nothing.
+    if (event.target.classList.contains("searchable-select__search")) {
+        return;
+    }
+
+    const row = event.target.closest(".form-row.field-invalid");
+
+    if (!row) {
+        return;
+    }
+
+    row.classList.remove("field-invalid");
+
+    const message = row.querySelector(".field-error");
+
+    if (message) {
+        message.remove();
+    }
+
+    // The message it pointed at has gone, so the controls stop pointing at it.
+    row.querySelectorAll("[aria-invalid]").forEach(control => {
+        control.removeAttribute("aria-invalid");
+        control.removeAttribute("aria-describedby");
+    });
+
+    clearSummaryEntry(row.dataset.field);
+}
+
+/**
+ * Drop a field's line from the summary at the top of the form, and the summary
+ * itself once it has nothing left to list.
+ */
+function clearSummaryEntry(field)
+{
+    if (!field) {
+        return;
+    }
+
+    document.querySelectorAll(".form-message").forEach(summary => {
+        // A summary of one message is the message, so it goes as a whole.
+        if (summary.dataset.field === field) {
+            summary.remove();
+            return;
+        }
+
+        const entry = summary.querySelector('li[data-field="' + field + '"]');
+
+        if (entry) {
+            entry.remove();
+        }
+
+        const list = summary.querySelector("ul");
+
+        if (list && !list.querySelector("li")) {
+            summary.remove();
+        }
+    });
+}
 
 /**
  * Click a heading to sort the rows under it. The first row holds the headings
