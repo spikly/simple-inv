@@ -14,6 +14,7 @@ const IMPORT_COLUMNS = [
     'categories'   => true,
     'location'     => true,
     'status'       => true,
+    'type'         => false,
     'quantity'     => false,
     'min quantity' => false,
     'unit'         => false,
@@ -105,6 +106,16 @@ function importKnownNames(): array
         $known[$key] = array_map('strtolower', array_map('strval', taxonomyOptions($key)));
     }
 
+    // Which kind each existing category files, so a row can be checked against
+    // the categories it names before anything is written.
+    $known['category_types'] = array_column(
+        array_map(function ($row) {
+            return ['name' => strtolower($row['cat_name']), 'type' => $row['cat_type']];
+        }, dbAll('SELECT cat_name, cat_type FROM inv_categories')),
+        'type',
+        'name'
+    );
+
     return $known;
 }
 
@@ -128,6 +139,7 @@ function importRow(array $record, array $columns, array $known, int $line): arra
         'categories'   => $categories,
         'location'     => $value('location'),
         'status'       => $value('status'),
+        'type'         => itemType($value('type')),
         'quantity'     => $value('quantity'),
         'min_quantity' => $value('min quantity'),
         'unit'         => $value('unit'),
@@ -179,9 +191,21 @@ function importRow(array $record, array $columns, array $known, int $line): arra
         }
     }
 
+    // Categories decide whether the item is a part or a tool, so an existing
+    // one filing the other kind is a contradiction rather than a detail.
     foreach ($categories as $category) {
+        $existing = $known['category_types'][strtolower($category)] ?? null;
+
+        if ($existing !== null && $existing !== $row['type']) {
+            $row['error'] = 'Category "' . $category . '" files '
+                . strtolower(ITEM_TYPE_PLURALS[$existing]) . ', but this row is a '
+                . strtolower(ITEM_TYPES[$row['type']]) . '.';
+
+            return $row;
+        }
+
         if (!in_array(strtolower($category), $known['category'], true)) {
-            $row['creates'][] = 'Category: ' . $category;
+            $row['creates'][] = ITEM_TYPES[$row['type']] . ' Category: ' . $category;
         }
     }
 
@@ -205,8 +229,12 @@ function resolveUnitId(?string $value): ?int
     return ($id === null) ? null : (int)$id;
 }
 
-/** Find a taxonomy row by name, creating it when asked to. */
-function resolveTaxonomyId(string $key, string $name, bool $create): ?int
+/**
+ * Find a taxonomy row by name, creating it when asked to. $extra is written
+ * onto anything created, which is how an imported category ends up filing the
+ * kind of thing the row said it was.
+ */
+function resolveTaxonomyId(string $key, string $name, bool $create, array $extra = []): ?int
 {
     $name = trim($name);
 
@@ -230,7 +258,7 @@ function resolveTaxonomyId(string $key, string $name, bool $create): ?int
         return null;
     }
 
-    $result = taxonomyInsert($key, [taxonomyNameField($tax) => $name]);
+    $result = taxonomyInsert($key, $extra + [taxonomyNameField($tax) => $name]);
 
     return $result['success'] ? (int)$result['newId'] : null;
 }
@@ -268,9 +296,17 @@ function importItemRows(array $rows): array
                 [
                     'item_name'             => $row['name'],
                     'item_part_no'          => $row['part_no'] !== '' ? $row['part_no'] : null,
-                    'item_quantity'         => $row['quantity'] !== '' ? $row['quantity'] : 1,
-                    'item_min_quantity'     => $row['min_quantity'] !== '' ? (int)$row['min_quantity'] : 0,
-                    'item_measurement_unit' => resolveUnitId($row['unit']),
+                    // A tool is one object with no stock behind it, whatever
+                    // the spreadsheet happened to say.
+                    'item_quantity'         => $row['type'] === 'tool'
+                        ? 1
+                        : ($row['quantity'] !== '' ? $row['quantity'] : 1),
+                    'item_min_quantity'     => $row['type'] === 'tool'
+                        ? 0
+                        : ($row['min_quantity'] !== '' ? (int)$row['min_quantity'] : 0),
+                    'item_measurement_unit' => $row['type'] === 'tool'
+                        ? pieceUnitId()
+                        : resolveUnitId($row['unit']),
                     'item_brand'            => $ids['brand'],
                     'item_supplier'         => $ids['supplier'],
                     'item_location'         => $ids['location'],
@@ -282,7 +318,7 @@ function importItemRows(array $rows): array
             $categoryIds = [];
 
             foreach ($row['categories'] as $category) {
-                $categoryIds[] = resolveTaxonomyId('category', $category, true);
+                $categoryIds[] = resolveTaxonomyId('category', $category, true, ['cat_type' => $row['type']]);
             }
 
             saveItemCategories($itemId, array_filter($categoryIds));

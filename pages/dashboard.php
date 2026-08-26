@@ -4,18 +4,26 @@ $totals = fetchDashboardTotals();
 $lowStock = fetchStockWarnings('low', 10);
 $overCommitted = fetchStockWarnings('over', 10);
 $projects = fetchProjects();
+$toolsOut = fetchOpenToolLoans(10);
+$overdue = countOverdueToolLoans();
 
 pageHeader('Dashboard', [
-    'Add Item'    => 'index.php?page=add-item',
+    'Add Part'    => 'index.php?page=add-item&kind=part',
+    'Add Tool'    => 'index.php?page=add-item&kind=tool',
     'Add Project' => 'index.php?page=add-project',
 ]);
 
 formMessage(takeFlash());
 
 echo '<div class="item-property-container">' . "\n";
-itemProperty('Items', '<p><a href="index.php?page=items">' . (int)$totals['item_count'] . '</a></p>');
+itemProperty('Parts', '<p><a href="index.php?page=parts">' . (int)$totals['part_count'] . '</a></p>');
 itemProperty('Total Quantity', '<p>' . formatQuantity($totals['total_quantity']) . '</p>');
-itemProperty('Deployments', '<p>' . (int)$totals['deployment_count'] . '</p>');
+itemProperty('Tools', '<p><a href="index.php?page=tools">' . (int)$totals['tool_count'] . '</a></p>');
+itemProperty(
+    'Tools Out',
+    '<p>' . count($toolsOut) . '</p>',
+    $overdue > 0 ? 'red' : ($toolsOut ? 'amber' : 'green')
+);
 itemProperty('Open Projects', '<p><a href="index.php?page=projects">'
     . (int)$totals['open_project_count'] . '</a></p>');
 itemProperty(
@@ -59,8 +67,34 @@ if ($lowStock) {
 
 if ($overCommitted) {
     sectionHeader('Over Committed');
-    echo '<p>More of these are deployed and allocated to projects than actually held in stock.</p>' . "\n";
+    echo '<p>More of these are reserved for projects than actually held in stock.</p>' . "\n";
     $stockTable($overCommitted);
+}
+
+sectionHeader('Tools Out', ['All Tools' => 'index.php?page=tools']);
+
+if ($toolsOut) {
+    renderTable(
+        ['Tool', 'Signed Out To', 'Out Since', 'Due Back', 'Kept In'],
+        $toolsOut,
+        function ($loan) {
+            $late = loanIsOverdue($loan['loan_due_at']);
+
+            return [
+                '<a href="index.php?page=view-item&item_id=' . (int)$loan['loan_item_id'] . '">'
+                    . escapeHtml($loan['item_name']) . '</a>',
+                escapeHtml($loan['loan_to']),
+                escapeHtml(formatDate($loan['loan_out_at'])),
+                $loan['loan_due_at']
+                    ? '<span class="stock ' . ($late ? 'stock-over' : 'stock-ok') . '">'
+                        . escapeHtml(formatDate($loan['loan_due_at'])) . '</span>'
+                    : '-',
+                escapeHtml($loan['loc_name'] ?? ''),
+            ];
+        }
+    );
+} else {
+    echo '<p>Every tool is where it should be.</p>' . "\n";
 }
 
 sectionHeader('Open Projects', ['All Projects' => 'index.php?page=projects']);
@@ -98,42 +132,21 @@ $recent = fetchRecentItems('created', 6);
 
 if ($recent) {
     renderTable(
-        ['', 'Item', 'Location', 'Status', 'Added'],
+        ['', 'Item', 'Type', 'Location', 'Status', 'Added'],
         $recent,
         function ($item) {
             return [
                 itemThumb($item['item_image'], $item['item_name']),
                 '<a href="index.php?page=view-item&item_id=' . $item['item_id'] . '">'
                     . escapeHtml($item['item_name']) . '</a>',
+                ITEM_TYPES[itemTypeOf($item)],
                 escapeHtml($item['loc_name'] ?? ''),
                 escapeHtml($item['status_name'] ?? ''),
-                escapeHtml($item['item_created_at']),
+                escapeHtml(formatDate($item['item_created_at'])),
             ];
         },
         [0 => 'col-thumb']
     );
 } else {
-    echo '<p>No items yet. <a href="index.php?page=add-item">Add your first one.</a></p>' . "\n";
-}
-
-sectionHeader('Recent Deployments');
-
-$deployments = fetchRecentDeployments(6);
-
-if ($deployments) {
-    renderTable(
-        ['Item', 'Description', 'Quantity', 'Date'],
-        $deployments,
-        function ($deployment) {
-            return [
-                '<a href="index.php?page=view-item&item_id=' . $deployment['dep_item_id'] . '">'
-                    . escapeHtml($deployment['item_name']) . '</a>',
-                escapeHtml($deployment['dep_description']),
-                escapeHtml($deployment['dep_quantity']) . escapeHtml($deployment['unit_symbol']),
-                escapeHtml($deployment['dep_timestamp']),
-            ];
-        }
-    );
-} else {
-    echo '<p>Nothing has been deployed yet.</p>' . "\n";
+    echo '<p>Nothing yet. <a href="index.php?page=add-item">Add your first part.</a></p>' . "\n";
 }

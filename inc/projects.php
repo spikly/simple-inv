@@ -101,8 +101,8 @@ function validateAssemblyItem(array $columns): ?string
 
 /**
  * Installing takes units out of stock for good, so the increase since the last
- * save has to be covered by what the item has left once deployments and the
- * other assemblies have had their share.
+ * save has to be covered by what the item has left once the other assemblies
+ * have had their share.
  */
 function validateAssemblyInstall($item_id, $assembly_item_id, float $installed, float $installedBefore): ?string
 {

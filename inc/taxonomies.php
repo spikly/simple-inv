@@ -47,6 +47,9 @@ function taxonomies(): array
             ],
             'columns'    => ['Website' => 'supplierWebsiteCell'],
         ],
+        // The one taxonomy that changes how its items behave: a category files
+        // either parts or tools, and an item takes its kind from the
+        // categories it is in. See itemType() in inc/items.php.
         'category' => [
             'label'      => 'Category',
             'plural'     => 'Categories',
@@ -59,8 +62,18 @@ function taxonomies(): array
             'multiple'   => true,
             'submit'     => 'cat',
             'routes'     => ['index' => 'categories', 'add' => 'add-cat', 'edit' => 'edit-cat'],
-            'fields'     => ['cat_name' => 'Category Name'],
+            'fields'     => [
+                'cat_name' => 'Category Name',
+                'cat_type' => [
+                    'label'   => 'This Category Files',
+                    'type'    => 'select',
+                    'options' => ITEM_TYPE_PLURALS,
+                    'default' => 'part',
+                ],
+            ],
+            'columns'    => ['Files' => 'categoryTypeCell'],
             'derived'    => 'categorySlug',
+            'guard'      => 'categoryTypeGuard',
         ],
         'location' => [
             'label'      => 'Location',
@@ -92,6 +105,36 @@ function taxonomies(): array
 function taxonomy(string $key): array
 {
     return taxonomies()[$key];
+}
+
+/** Extra listing column for categories. */
+function categoryTypeCell(array $row): string
+{
+    return escapeHtml(ITEM_TYPE_PLURALS[$row['cat_type']] ?? $row['cat_type']);
+}
+
+/**
+ * A category's kind decides how everything filed under it behaves, so it can
+ * only be changed while nothing is filed under it.
+ */
+function categoryTypeGuard($id, array $values): ?string
+{
+    $current = dbValue('SELECT cat_type FROM inv_categories WHERE cat_id = :id', ['id' => $id]);
+
+    if ($current === null || $current === $values['cat_type']) {
+        return null;
+    }
+
+    $inUse = taxonomyUsageCount(taxonomy('category'), $id);
+
+    if ($inUse === 0) {
+        return null;
+    }
+
+    return 'This category files ' . strtolower(ITEM_TYPE_PLURALS[$current]) . ' and '
+        . $inUse . ' ' . ($inUse === 1 ? 'item is' : 'items are') . ' in it, so it cannot be'
+        . ' switched to ' . strtolower(ITEM_TYPE_PLURALS[$values['cat_type']]) . '.'
+        . ' Move ' . ($inUse === 1 ? 'it' : 'them') . ' to another category first.';
 }
 
 /** Extra listing column for suppliers. */
@@ -137,6 +180,37 @@ function taxonomyOptions(string $key): array
     return array_column(taxonomyRows($tax), taxonomyNameField($tax), $tax['id']);
 }
 
+/**
+ * Category rows as a value => label map, optionally only those filing one kind
+ * of thing. The item form offers just the kind the item being edited is.
+ */
+function categoryOptions(?string $type = null): array
+{
+    $where = ($type === null) ? '' : ' WHERE cat_type = :cat_type';
+    $params = ($type === null) ? [] : ['cat_type' => $type];
+
+    return array_column(
+        dbAll('SELECT cat_id, cat_name FROM inv_categories' . $where . ' ORDER BY cat_name asc', $params),
+        'cat_name',
+        'cat_id'
+    );
+}
+
+/** The kinds of thing the categories an item is in file, as a unique list. */
+function categoryTypesFor(array $categoryIds): array
+{
+    $categoryIds = array_filter(array_map('intval', $categoryIds));
+
+    if (!$categoryIds) {
+        return [];
+    }
+
+    return array_values(array_unique(array_column(dbAll(
+        'SELECT DISTINCT cat_type FROM inv_categories
+         WHERE cat_id IN (' . implode(',', $categoryIds) . ')'
+    ), 'cat_type')));
+}
+
 /** The name of one row, used for filter labels. Null when it no longer exists. */
 function taxonomyName(string $key, $id): ?string
 {
@@ -165,7 +239,15 @@ function taxonomyValues(array $tax, array $input): array
     $values = [];
 
     foreach ($tax['fields'] as $column => $field) {
-        $values[$column] = trim($input[$column] ?? '');
+        $value = trim((string)($input[$column] ?? ''));
+
+        // A field offering a fixed set of choices only ever stores one of
+        // them, whatever was posted.
+        if (is_array($field) && isset($field['options']) && !isset($field['options'][$value])) {
+            $value = $field['default'] ?? array_key_first($field['options']);
+        }
+
+        $values[$column] = $value;
     }
 
     if ($values[taxonomyNameField($tax)] === '') {
@@ -207,38 +289,61 @@ function taxonomyInsert(string $key, array $input): array
 /**
  * The <p><label><input></p> blocks for a taxonomy's fields.
  */
-function taxonomyFields(array $tax, array $values = []): void
+function taxonomyFields(array $tax, array $values = [], array $locked = []): void
 {
     foreach ($tax['fields'] as $column => $field) {
-        textField(
-            $column,
-            is_array($field) ? $field['label'] : $field,
-            $values[$column] ?? '',
-            is_array($field) ? $field['type'] : 'text'
-        );
+        $label = is_array($field) ? $field['label'] : $field;
+        $value = $values[$column] ?? (is_array($field) ? ($field['default'] ?? '') : '');
+
+        // Fixed to one choice by the page that asked for the form, so it is
+        // shown as a statement rather than a control.
+        if (array_key_exists($column, $locked)) {
+            formRow($column, $label, '<span class="locked-field">'
+                . escapeHtml($field['options'][$locked[$column]] ?? $locked[$column]) . '</span>'
+                . '<input type="hidden" name="' . $column . '" value="'
+                . escapeHtml($locked[$column]) . '">');
+            continue;
+        }
+
+        if (is_array($field) && ($field['type'] ?? '') === 'select') {
+            selectField($column, $label, $field['options'], $value);
+            continue;
+        }
+
+        textField($column, $label, $value, is_array($field) ? $field['type'] : 'text');
     }
 }
 
 /**
  * Add/edit form: fields plus a save button.
  */
-function taxonomyForm(array $tax, string $action, array $values = [], $formMessage = false): void
-{
+function taxonomyForm(
+    array $tax,
+    string $action,
+    array $values = [],
+    $formMessage = false,
+    array $locked = []
+): void {
     echo '<form method="post">' . "\n";
     formMessage($formMessage);
-    taxonomyFields($tax, $values);
+    taxonomyFields($tax, $values, $locked);
     submitButton($action . '_' . $tax['submit'] . '_submit');
     echo '</form>' . "\n";
 }
 
-/** The form loaded into the "add new" modal on the item pages. */
-function taxonomyModalForm(string $key): string
+/**
+ * The form loaded into the "add new" modal on the item pages.
+ *
+ * $locked pins a field to one value: a category added from the item form has
+ * to file the kind of thing that item is, so there is nothing to choose.
+ */
+function taxonomyModalForm(string $key, array $locked = []): string
 {
     $tax = taxonomy($key);
 
     ob_start();
     echo '<h2>Add New ' . $tax['label'] . '</h2>' . "\n";
-    taxonomyForm($tax, 'add');
+    taxonomyForm($tax, 'add', [], false, $locked);
 
     return ob_get_clean();
 }
@@ -340,8 +445,12 @@ function taxonomyEditPage(string $key): void
     if (isset($_POST['edit_' . $tax['submit'] . '_submit'])) {
         $result = taxonomyValues($tax, $_POST);
 
-        if (isset($result['error'])) {
-            $formMessage = errorMessage($result['error']);
+        $blocked = isset($result['values']) && isset($tax['guard'])
+            ? $tax['guard']($editId, $result['values'])
+            : null;
+
+        if (isset($result['error']) || $blocked !== null) {
+            $formMessage = errorMessage($result['error'] ?? $blocked);
         } else {
             $assignments = [];
 

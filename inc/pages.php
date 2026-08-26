@@ -2,6 +2,10 @@
 
 return [
     'dashboard' => 'dashboard',
+    'parts' => 'all-parts',
+    'tools' => 'all-tools',
+    // Both kinds at once. Not in the main nav; it is where drilling into a
+    // location or a manufacturer lands, since either may hold both.
     'items' => 'all-items',
     'import-items' => 'import-items',
     'labels' => 'labels',
@@ -28,8 +32,8 @@ return [
     'statuses' => 'all-statuses',
     'add-status' => 'add-status',
     'edit-status' => 'edit-status',
-    'add-deployment' => 'add-deployment',
-    'edit-deployment' => 'edit-deployment',
+    'loan-tool' => 'loan-tool',
+    'edit-loan' => 'edit-loan',
     'export-items' => 'export-items',
     'projects' => 'all-projects',
     'add-project' => 'add-project',

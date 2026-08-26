@@ -20,39 +20,59 @@ const ITEM_JOINS = '
     LEFT JOIN categories_items ci ON ci.item_id = i.item_id
     LEFT JOIN inv_categories c ON c.cat_id = ci.cat_id
     LEFT JOIN (
-        SELECT dep_item_id, SUM(dep_quantity) AS total
-        FROM inv_deployments
-        GROUP BY dep_item_id
-    ) dep ON dep.dep_item_id = i.item_id
-    LEFT JOIN (
         SELECT item_id, SUM(quantity_allocated) AS total
         FROM inv_assembly_items
         GROUP BY item_id
     ) alloc ON alloc.item_id = i.item_id
+    LEFT JOIN inv_tool_loans loan
+        ON loan.loan_item_id = i.item_id AND loan.loan_in_at IS NULL
 ';
 
 /**
- * Stock figures every item listing exposes.
+ * The figures every item listing exposes.
  *
- * deployed  quantity signed out through the deployment pages
- * allocated quantity set aside for project assemblies
- * committed the two added together
- * free      what is left of item_quantity once both are taken off
+ * is_tool    whether the categories it is filed under file tools
+ * allocated  quantity set aside for project assemblies
+ * free       what is left of item_quantity once that is taken off
+ * loan_*     the open sign-out a tool is on, null while it is here
+ *
+ * A tool has only ever one open loan, so MAX over the join picks that row out
+ * without the category join multiplying it.
  */
 const ITEM_STOCK_COLUMNS = '
-    COALESCE(MAX(dep.total), 0) AS item_deployed_count,
+    COALESCE(MAX(c.cat_type = \'tool\'), 0) AS item_is_tool,
     COALESCE(MAX(alloc.total), 0) AS item_allocated_count,
-    COALESCE(MAX(dep.total), 0) + COALESCE(MAX(alloc.total), 0) AS item_committed_count,
-    i.item_quantity - COALESCE(MAX(dep.total), 0) - COALESCE(MAX(alloc.total), 0) AS item_free_count,
+    i.item_quantity - COALESCE(MAX(alloc.total), 0) AS item_free_count,
+    MAX(loan.loan_id) AS loan_id,
+    MAX(loan.loan_to) AS loan_to,
+    MAX(loan.loan_out_at) AS loan_out_at,
+    MAX(loan.loan_due_at) AS loan_due_at,
     GROUP_CONCAT(DISTINCT c.cat_name ORDER BY c.cat_name SEPARATOR \', \') AS cat_names
 ';
 
 /**
+ * Narrows a listing to one kind of thing. An item is a tool when it is filed
+ * under tool categories, so the kind is a question about its categories.
+ */
+const ITEM_KIND_FILTER = 'EXISTS (SELECT 1 FROM categories_items kci
+    INNER JOIN inv_categories kc ON kc.cat_id = kci.cat_id
+    WHERE kci.item_id = i.item_id AND kc.cat_type = :item_kind)';
+
+/** The same, fixed to parts, for the queries that only ever want stock. */
+const ITEM_IS_PART = "NOT EXISTS (SELECT 1 FROM categories_items pci
+    INNER JOIN inv_categories pc ON pc.cat_id = pci.cat_id
+    WHERE pci.item_id = i.item_id AND pc.cat_type = 'tool')";
+
+/**
  * The ?brand_id=1 style filters present in the query string.
  *
- * Returns [sql fragment, bound params, taxonomy keys applied].
+ * $pinnedKind fixes the listing to parts or tools whatever the query string
+ * says, which is how the Parts and Tools pages differ from each other; the
+ * mixed Items listing leaves it to the ?kind= filter instead.
+ *
+ * Returns [sql fragment, bound params, taxonomy keys applied, kind or null].
  */
-function itemFilters(): array
+function itemFilters(?string $pinnedKind = null): array
 {
     $clauses = [];
     $params = [];
@@ -70,6 +90,14 @@ function itemFilters(): array
         $applied[] = $key;
     }
 
+    $requested = (string)queryParam('kind');
+    $kind = $pinnedKind ?? (isset(ITEM_TYPES[$requested]) ? $requested : null);
+
+    if ($kind !== null) {
+        $clauses[] = ITEM_KIND_FILTER;
+        $params['item_kind'] = $kind;
+    }
+
     $search = trim((string)queryParam('q'));
 
     if ($search !== '') {
@@ -79,7 +107,7 @@ function itemFilters(): array
         $params['search'] = '%' . $search . '%';
     }
 
-    return [$clauses ? ' WHERE ' . implode(' AND ', $clauses) : '', $params, $applied];
+    return [$clauses ? ' WHERE ' . implode(' AND ', $clauses) : '', $params, $applied, $kind];
 }
 
 /** Items for the listing page, honouring the query string filters. */
@@ -109,7 +137,7 @@ function fetchItemsForExport(string $where, array $params): array
                 i.item_quantity AS `Quantity`,
                 i.item_min_quantity AS `Min Quantity`,
                 mu.unit_symbol AS `Unit`,
-                COALESCE(MAX(dep.total), 0) AS `Deployed`,
+                IF(MAX(c.cat_type = \'tool\'), \'Tool\', \'Part\') AS `Type`,
                 COALESCE(MAX(alloc.total), 0) AS `Allocated`,
                 i.item_notes AS `Notes`'
         . ITEM_JOINS . $where
@@ -163,7 +191,7 @@ function saveItemCategories($item_id, array $categoryIds): void
  * Dropdown options for the item add/edit form, keyed by form field name.
  * Measurement units are grouped by the unit type stored against them.
  */
-function fetchItemFormOptions(): array
+function fetchItemFormOptions(string $type = 'part'): array
 {
     $units = [];
 
@@ -175,7 +203,11 @@ function fetchItemFormOptions(): array
     $options = ['item_measurement_unit' => $units];
 
     foreach (array_keys(taxonomies()) as $key) {
-        $options['item_' . $key] = taxonomyOptions($key);
+        // Categories are what decide whether an item is a part or a tool, so
+        // the form only offers the ones that agree with what it is editing.
+        $options['item_' . $key] = ($key === 'category')
+            ? categoryOptions($type)
+            : taxonomyOptions($key);
     }
 
     return $options;
@@ -190,9 +222,10 @@ function fetchDashboardTotals(): array
 {
     return dbRow('
         SELECT
-            (SELECT COUNT(*) FROM inv_items) AS item_count,
-            (SELECT COALESCE(SUM(item_quantity), 0) FROM inv_items) AS total_quantity,
-            (SELECT COUNT(*) FROM inv_deployments) AS deployment_count,
+            (SELECT COUNT(*) FROM inv_items i WHERE ' . ITEM_IS_PART . ') AS part_count,
+            (SELECT COUNT(*) FROM inv_items i WHERE NOT (' . ITEM_IS_PART . ')) AS tool_count,
+            (SELECT COALESCE(SUM(i.item_quantity), 0) FROM inv_items i
+                WHERE ' . ITEM_IS_PART . ') AS total_quantity,
             (SELECT COUNT(*) FROM inv_projects p
                 INNER JOIN inv_project_statuses ps ON ps.project_status_id = p.project_status_id
                 WHERE ps.project_status_name IN (\'Planning\', \'Active\', \'On Hold\')) AS open_project_count
@@ -216,6 +249,7 @@ function fetchStockWarnings(string $mode, int $limit = 0): array
                 mu.unit_symbol, l.loc_name, sp.sup_name,'
         . ITEM_STOCK_COLUMNS
         . ITEM_JOINS
+        . ' WHERE ' . ITEM_IS_PART
         . ' GROUP BY i.item_id HAVING ' . $having
         . ' ORDER BY item_free_count asc, i.item_name asc'
         . ($limit > 0 ? ' LIMIT ' . $limit : '')
@@ -229,49 +263,14 @@ function fetchRecentItems(string $column, int $limit = 6): array
 
     return dbAll(
         'SELECT i.item_id, i.item_name, i.item_image, i.item_created_at, i.item_updated_at,
-                l.loc_name, s.status_name
+                l.loc_name, s.status_name,
+                NOT (' . ITEM_IS_PART . ') AS item_is_tool
          FROM inv_items i
          LEFT JOIN inv_locations l ON l.loc_id = i.item_loc_id
          LEFT JOIN inv_statuses s ON s.status_id = i.item_status
          ORDER BY ' . $order . ' DESC, i.item_id DESC
          LIMIT ' . (int)$limit
     );
-}
-
-function fetchRecentDeployments(int $limit = 6): array
-{
-    return dbAll('
-        SELECT d.*, i.item_name, mu.unit_symbol
-        FROM inv_deployments d
-        INNER JOIN inv_items i ON i.item_id = d.dep_item_id
-        LEFT JOIN inv_measurement_units mu ON mu.unit_id = i.item_measurement_unit
-        ORDER BY d.dep_timestamp DESC, d.dep_id DESC
-        LIMIT ' . (int)$limit);
-}
-
-/*
- * Deployments
- */
-
-function fetchItemDeployments($item_id): array
-{
-    return dbAll(
-        'SELECT d.*, i.item_name
-         FROM inv_deployments d
-         LEFT JOIN inv_items i ON i.item_id = d.dep_item_id
-         WHERE d.dep_item_id = :item_id
-         ORDER BY d.dep_timestamp DESC',
-        ['item_id' => $item_id]
-    );
-}
-
-function countItemDeployments($item_id)
-{
-    return dbValue(
-        'SELECT SUM(dep_quantity) FROM inv_deployments WHERE dep_item_id = :item_id',
-        ['item_id' => $item_id],
-        0
-    ) ?? 0;
 }
 
 /*
@@ -347,7 +346,6 @@ function fetchProjectRequirements($project_id): array
             SUM(ai.quantity_allocated) AS allocated_quantity,
             SUM(ai.quantity_installed) AS installed_quantity,
             i.item_quantity
-                - COALESCE((SELECT SUM(dep_quantity) FROM inv_deployments WHERE dep_item_id = i.item_id), 0)
                 - COALESCE((SELECT SUM(quantity_allocated) FROM inv_assembly_items WHERE item_id = i.item_id), 0)
                 AS free_elsewhere
         FROM inv_assembly_items ai
@@ -446,14 +444,13 @@ function fetchAvailableItemsForAssembly($assembly_id): array
     return dbAll('
         SELECT i.item_id, i.item_name, i.item_quantity, mu.unit_symbol,
                i.item_quantity
-                   - COALESCE((SELECT SUM(dep_quantity) FROM inv_deployments
-                               WHERE dep_item_id = i.item_id), 0)
                    - COALESCE((SELECT SUM(quantity_allocated) FROM inv_assembly_items
                                WHERE item_id = i.item_id), 0)
                    AS item_free_count
         FROM inv_items i
         LEFT JOIN inv_measurement_units mu ON mu.unit_id = i.item_measurement_unit
-        WHERE NOT EXISTS (
+        WHERE ' . ITEM_IS_PART . '
+          AND NOT EXISTS (
             SELECT 1 FROM inv_assembly_items ai
             WHERE ai.assembly_id = :assembly_id AND ai.item_id = i.item_id
         )

@@ -16,7 +16,7 @@ $fileHandle = fopen($tempFile, 'w');
 $headings = $items
     ? array_keys($items[0])
     : ['Name', 'Part No', 'Manufacturer', 'Supplier', 'Categories', 'Location', 'Status',
-       'Quantity', 'Min Quantity', 'Unit', 'Deployed', 'Allocated', 'Notes'];
+       'Quantity', 'Min Quantity', 'Unit', 'Type', 'Allocated', 'Notes'];
 
 fputcsv($fileHandle, $headings, ',', '"', '\\');
 

@@ -17,6 +17,13 @@ function taxonomyFor(?string $control, string $prefix): ?string
     return isset(taxonomies()[$key]) ? $key : null;
 }
 
+/**
+ * The kind of item the form doing the asking is for. A category added from
+ * the item form has to file that kind, and the category dropdown only ever
+ * offers the categories that do.
+ */
+$requestedType = itemType($request['itemType'] ?? 'part');
+
 switch ($request['requestType'] ?? '') {
 
     case 'load-form':
@@ -29,17 +36,25 @@ switch ($request['requestType'] ?? '') {
 
         echo json_encode([
             'success'  => true,
-            'formHtml' => taxonomyModalForm($key),
+            'formHtml' => taxonomyModalForm(
+                $key,
+                $key === 'category' ? ['cat_type' => $requestedType] : []
+            ),
             'selectId' => 'item_' . $key,
         ]);
         break;
 
     case 'submit-form':
         $key = taxonomyFor($request['formId'] ?? null, 'item_');
+        $formData = $request['formData'] ?? [];
+
+        if ($key === 'category') {
+            $formData['cat_type'] = $requestedType;
+        }
 
         echo json_encode(
             $key
-                ? taxonomyInsert($key, $request['formData'] ?? [])
+                ? taxonomyInsert($key, $formData)
                 : ['success' => false, 'error' => 'Unknown form.']
         );
         break;
@@ -52,11 +67,22 @@ switch ($request['requestType'] ?? '') {
         $selected = $request['selected'] ?? [];
         $selected = is_array($selected) ? $selected : [$selected];
         $selected[] = $request['newId'] ?? null;
+        $selected = array_filter($selected, function ($value) {
+            return $value !== null && $value !== '';
+        });
+
+        $options = [];
+
+        if ($key === 'category') {
+            $options = categoryOptions($requestedType);
+        } elseif ($key) {
+            $options = taxonomyOptions($key);
+        }
 
         echo json_encode([
             'success'     => true,
             'optionsHtml' => ($multiple ? '' : '<option value="0">Select</option>')
-                . ($key ? selectOptions(taxonomyOptions($key), array_filter($selected, 'strlen')) : ''),
+                . selectOptions($options, $selected),
         ]);
         break;
 }

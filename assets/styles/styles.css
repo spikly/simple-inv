@@ -333,6 +333,8 @@ textarea {
 form input[type="text"],
 form input[type="number"],
 form input[type="url"],
+form input[type="date"],
+form input[type="datetime-local"],
 form textarea {
     width: 100%;
     max-width: 400px;
@@ -347,6 +349,18 @@ form textarea {
 
 form input[type="number"] {
     max-width: 120px;
+}
+
+/* Sized to what they hold, the way the number field is, rather than left to
+   stretch a long way past a date. Everything else about them is the same as
+   the text fields above, including the font the browser gives them. */
+
+form input[type="date"] {
+    max-width: 190px;
+}
+
+form input[type="datetime-local"] {
+    max-width: 240px;
 }
 
 form select {
@@ -366,6 +380,8 @@ form textarea {
 form input[type="text"]:focus,
 form input[type="number"]:focus,
 form input[type="url"]:focus,
+form input[type="date"]:focus,
+form input[type="datetime-local"]:focus,
 form select:focus,
 form textarea:focus {
     border-color: var(--color-primary);
@@ -1255,6 +1271,18 @@ table td.col-thumb .item-thumb {
 
 .photo-field .checkbox input {
     margin-right: 6px;
+}
+
+/* A field the page has already settled, shown in place of the control it
+   replaces: the kind a category files when it is added from the item form. */
+
+.locked-field {
+    display: inline-block;
+    padding: 4px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-surface-muted);
+    font-size: 1.4rem;
 }
 
 /* =========================================================

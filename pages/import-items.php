@@ -64,8 +64,10 @@ if (!$rows):
     by separating them with <code>|</code>. Manufacturers, suppliers, categories, locations and statuses that
     do not exist yet are created. A file exported before manufacturers were renamed still works: its
     <strong>Brand</strong> column is read as <strong>Manufacturer</strong>.
-    <strong>Unit</strong> must match a measurement unit's symbol or name. Deployed and Allocated columns are
-    ignored, because those come from deployments and projects.
+    <strong>Unit</strong> must match a measurement unit's symbol or name.
+    <strong>Type</strong> is <code>Part</code> or <code>Tool</code> and defaults to <code>Part</code>; it
+    decides which kind any categories the file creates will file, and a row naming a category that already
+    files the other kind is skipped. The Allocated column is ignored, because that comes from projects.
 </p>
 <form method="post" enctype="multipart/form-data">
     <p>
@@ -88,17 +90,18 @@ if (!$rows):
 
 <?php
 renderTable(
-    ['Line', 'Name', 'Manufacturer', 'Categories', 'Location', 'Status', 'Quantity', 'Result'],
+    ['Line', 'Name', 'Type', 'Manufacturer', 'Categories', 'Location', 'Status', 'Quantity', 'Result'],
     $rows,
     function ($row) {
         return [
             (int)$row['line'],
             escapeHtml($row['name']),
+            ITEM_TYPES[$row['type']],
             escapeHtml($row['manufacturer']),
             escapeHtml(implode(', ', $row['categories'])),
             escapeHtml($row['location']),
             escapeHtml($row['status']),
-            escapeHtml($row['quantity'] !== '' ? $row['quantity'] : '1'),
+            $row['type'] === 'tool' ? '-' : escapeHtml($row['quantity'] !== '' ? $row['quantity'] : '1'),
             $row['error']
                 ? '<span class="stock stock-over">' . escapeHtml($row['error']) . '</span>'
                 : '<span class="stock stock-ok">Will import</span>',

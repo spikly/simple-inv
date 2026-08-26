@@ -80,6 +80,18 @@ function textOrNull(array $source, string $name)
     return ($value === '') ? null : $value;
 }
 
+/**
+ * A stored date or timestamp as something readable. Anything unparseable is
+ * handed back untouched rather than turned into 1970.
+ */
+function formatDate($value, string $format = 'j M Y'): string
+{
+    $value = trim((string)$value);
+    $time = $value === '' ? false : strtotime($value);
+
+    return ($time === false) ? $value : date($format, $time);
+}
+
 function successMessage(string $message): array
 {
     return ['status' => 'success', 'message' => $message];

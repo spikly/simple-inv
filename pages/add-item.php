@@ -1,14 +1,23 @@
 <?php
 
+/**
+ * A new part or a new tool. The kind is settled before the form is drawn,
+ * either by the listing it was reached from (?type=tool) or by the item being
+ * duplicated, because it decides which fields and categories are on offer.
+ */
+
 $values = [];
 $formMessage = takeFlash();
+$type = itemType(queryParam('kind'));
 
 if (isset($_POST['add_item_submit'])) {
+    $type = itemType($_POST['item_type'] ?? null);
     $values = $_POST;
+    $values['item_type'] = $type;
     $duplicateOf = (int)($_POST['duplicate_of'] ?? 0);
     $values['duplicate_of'] = $duplicateOf ?: null;
 
-    $error = validateItem($_POST);
+    $error = validateItem($_POST, $type);
     $photo = ['name' => null];
 
     if (!$error) {
@@ -20,7 +29,7 @@ if (isset($_POST['add_item_submit'])) {
     if ($error) {
         $formMessage = errorMessage($error);
     } else {
-        $itemId = dbTransaction(function () use ($photo) {
+        $itemId = dbTransaction(function () use ($photo, $type) {
             $id = dbInsert(
                 'INSERT INTO inv_items
                     (item_name, item_part_no, item_quantity, item_min_quantity, item_measurement_unit,
@@ -28,7 +37,7 @@ if (isset($_POST['add_item_submit'])) {
                  VALUES
                     (:item_name, :item_part_no, :item_quantity, :item_min_quantity, :item_measurement_unit,
                      :item_brand, :item_supplier, :item_location, :item_status, :item_notes, :item_image)',
-                itemColumns($_POST, $photo['name'])
+                itemColumns($_POST, $photo['name'], $type)
             );
 
             saveItemCategories($id, itemCategoryIds($_POST));
@@ -36,7 +45,10 @@ if (isset($_POST['add_item_submit'])) {
             return $id;
         });
 
-        redirectWith('index.php?page=view-item&item_id=' . $itemId, successMessage('Item added!'));
+        redirectWith(
+            'index.php?page=view-item&item_id=' . $itemId,
+            successMessage(ITEM_TYPES[$type] . ' added!')
+        );
     }
 } elseif (queryParam('duplicate')) {
     $item = fetchSingleItem(queryParam('duplicate'));
@@ -44,8 +56,23 @@ if (isset($_POST['add_item_submit'])) {
     if ($item) {
         $values = itemFormValues($item);
         $values['duplicate_of'] = $item['item_id'];
+        $type = itemTypeOf($item);
     }
 }
 
-pageHeader('Add Item', ['Back to Items' => 'index.php?page=items']);
-renderItemForm($values, 'add_item_submit', $formMessage);
+$plural = ITEM_TYPE_PLURALS[$type];
+$other = ($type === 'part') ? 'tool' : 'part';
+
+pageHeader('Add ' . ITEM_TYPES[$type], [
+    'Back to ' . $plural  => 'index.php?page=' . strtolower($plural),
+    'Add a ' . ITEM_TYPES[$other] . ' Instead' => 'index.php?page=add-item&kind=' . $other,
+]);
+
+if (!categoryOptions($type)) {
+    formMessage($formMessage);
+    echo '<p>There are no ' . strtolower(ITEM_TYPES[$type]) . ' categories yet, and everything has to be'
+        . ' filed under one. <a href="index.php?page=add-cat">Add one first.</a></p>' . "\n";
+    return;
+}
+
+renderItemForm($values, 'add_item_submit', $type, $formMessage);

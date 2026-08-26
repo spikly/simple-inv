@@ -191,32 +191,6 @@ function selectOptions(array $options, $selected): string
 }
 
 /**
- * Deployment listing shared by the item and deployment pages.
- */
-function renderDeployments(array $deployments, array $item): void
-{
-    if (!$deployments) {
-        echo '<p>No current deployments</p>' . "\n";
-        return;
-    }
-
-    renderTable(
-        ['Description', 'Quantity', 'Utilisation', 'Date', 'Edit'],
-        $deployments,
-        function ($deployment) use ($item) {
-            return [
-                escapeHtml($deployment['dep_description']),
-                escapeHtml($deployment['dep_quantity']) . escapeHtml($item['unit_symbol']),
-                calculatePercentage($item['item_quantity'], $deployment['dep_quantity']) . '&percnt;',
-                escapeHtml($deployment['dep_timestamp']),
-                '<a href="index.php?page=edit-deployment&deployment_id=' . $deployment['dep_id']
-                    . '&item_id=' . $deployment['dep_item_id'] . '">Edit</a>',
-            ];
-        }
-    );
-}
-
-/**
  * Notes/description block with links made clickable.
  */
 function notesBox($text): void
@@ -326,12 +300,12 @@ function stockCell(array $item): string
  * Filter bar for the items listing: one dropdown per taxonomy plus a text
  * search, all combined with AND. Current selections come from the query string.
  */
-function renderItemFilters(array $applied): void
+function renderItemFilters(array $applied, ?string $kind = null, string $page = 'items'): void
 {
     $search = (string)queryParam('q');
 
     echo '<form method="get" class="filter-bar">' . "\n";
-    echo '    <input type="hidden" name="page" value="items">' . "\n";
+    echo '    <input type="hidden" name="page" value="' . $page . '">' . "\n";
 
     filterField(
         'q',
@@ -341,8 +315,27 @@ function renderItemFilters(array $applied): void
         'filter-search'
     );
 
+    // Only the mixed listing has both kinds in it to choose between; the Parts
+    // and Tools pages are already narrowed to one.
+    if ($kind === null) {
+        filterField(
+            'filter_kind',
+            'Type',
+            '<select name="kind" id="filter_kind">'
+                . '<option value="">Any Type</option>'
+                . selectOptions(ITEM_TYPES, queryParam('kind'))
+                . '</select>'
+        );
+    }
+
     foreach (taxonomies() as $key => $tax) {
         $id = 'filter_' . $tax['param'];
+
+        // On a listing narrowed to one kind, the categories filing the other
+        // kind would only ever filter it down to nothing.
+        $options = ($key === 'category' && $kind !== null)
+            ? categoryOptions($kind)
+            : taxonomyOptions($key);
 
         // The "Any ..." option doubles as the dropdown's resting label, so the
         // bar reads clearly without a row of headings above it.
@@ -351,12 +344,12 @@ function renderItemFilters(array $applied): void
             $tax['label'],
             '<select name="' . $tax['param'] . '" id="' . $id . '">'
                 . '<option value="">Any ' . $tax['label'] . '</option>'
-                . selectOptions(taxonomyOptions($key), queryParam($tax['param']))
+                . selectOptions($options, queryParam($tax['param']))
                 . '</select>'
         );
     }
 
-    filterActions('items', $applied || $search !== '');
+    filterActions($page, $applied || $search !== '' || (string)queryParam('kind') !== '');
 
     echo '</form>' . "\n";
 }

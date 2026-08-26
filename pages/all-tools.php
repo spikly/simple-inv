@@ -1,0 +1,3 @@
+<?php
+
+itemsIndexPage('tool');

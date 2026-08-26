@@ -58,22 +58,31 @@ CREATE TABLE IF NOT EXISTS `inv_categories` (
   `cat_id` int(11) NOT NULL AUTO_INCREMENT,
   `cat_name` text NOT NULL,
   `cat_slug` text NOT NULL,
+  `cat_type` enum('part','tool') NOT NULL DEFAULT 'part',
   PRIMARY KEY (`cat_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `inv_deployments`
+-- Table structure for table `inv_tool_loans`
+--
+-- One row per time a tool leaves the workshop. Signing it back in stamps
+-- loan_in_at rather than deleting the row, so the history is kept; a tool is
+-- out while it has a row with loan_in_at still NULL.
 --
 
-CREATE TABLE IF NOT EXISTS `inv_deployments` (
-  `dep_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `dep_item_id` int(11) NOT NULL,
-  `dep_quantity` int(11) NOT NULL DEFAULT 1,
-  `dep_description` text NOT NULL,
-  `dep_timestamp` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`dep_id`)
+CREATE TABLE IF NOT EXISTS `inv_tool_loans` (
+  `loan_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `loan_item_id` int(11) NOT NULL,
+  `loan_to` varchar(255) NOT NULL,
+  `loan_due_at` date DEFAULT NULL,
+  `loan_out_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `loan_in_at` datetime DEFAULT NULL,
+  `loan_notes` text DEFAULT NULL,
+  PRIMARY KEY (`loan_id`),
+  KEY `idx_loan_item` (`loan_item_id`),
+  KEY `idx_loan_open` (`loan_item_id`,`loan_in_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -267,6 +276,12 @@ CREATE TABLE IF NOT EXISTS inv_assembly_items (
 ALTER TABLE `categories_items`
   ADD CONSTRAINT `categories_items_ibfk_1` FOREIGN KEY (`cat_id`) REFERENCES `inv_categories` (`cat_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `categories_items_ibfk_2` FOREIGN KEY (`item_id`) REFERENCES `inv_items` (`item_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `inv_tool_loans`
+--
+ALTER TABLE `inv_tool_loans`
+  ADD CONSTRAINT `fk_loan_item` FOREIGN KEY (`loan_item_id`) REFERENCES `inv_items` (`item_id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

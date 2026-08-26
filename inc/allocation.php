@@ -3,18 +3,19 @@
 /**
  * Stock moving between the store and project assemblies.
  *
- * A part on an assembly reserves what it still needs out of its item's free
- * stock, so anything set aside for a project stops counting as available
- * anywhere else. Marking some of it installed takes those units out of stock
- * for good and releases the reservation that was holding them.
+ * This is about parts only. A part on an assembly reserves what it still needs
+ * out of its item's free stock, so anything set aside for a project stops
+ * counting as available anywhere else. Marking some of it installed takes
+ * those units out of stock for good and releases the reservation that was
+ * holding them. Tools have no stock to move, see inc/tools.php.
  *
  * Reservations are worked out here rather than typed in, which is what keeps
  * the item pages, the shopping list and the assemblies telling the same story.
  */
 
 /**
- * Stock a part could still claim: what is held, less what deployments have
- * taken and what every other part has already reserved.
+ * Stock a part could still claim: what is held, less what every other part has
+ * already reserved.
  *
  * $exceptAssemblyItemId leaves one part's own reservation in the figure, so a
  * part can be recalculated without competing against itself.
@@ -23,8 +24,6 @@ function itemStockAvailable($item_id, $exceptAssemblyItemId = 0): float
 {
     return (float)dbValue(
         'SELECT i.item_quantity
-            - COALESCE((SELECT SUM(dep_quantity) FROM inv_deployments
-                        WHERE dep_item_id = i.item_id), 0)
             - COALESCE((SELECT SUM(quantity_allocated) FROM inv_assembly_items
                         WHERE item_id = i.item_id AND assembly_item_id <> :except), 0)
          FROM inv_items i
@@ -67,8 +66,8 @@ function allocateAssemblyItem($assembly_item_id): float
  * Share an item's free stock over every part that wants it, oldest part first.
  *
  * Run whenever the stock or the demand on it changes, so a delivery reaches
- * the assemblies that were left short and a new deployment takes its units
- * back off them.
+ * the assemblies that were left short and a part leaving an assembly hands its
+ * units to the next one waiting.
  */
 function reallocateItem($item_id): void
 {

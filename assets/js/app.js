@@ -4,9 +4,12 @@ document.addEventListener("DOMContentLoaded", function()
         button.addEventListener('click', function(e) {
             e.preventDefault();
 
+            // The item form is for a part or for a tool, and a category added
+            // from it has to file that kind, so the kind goes with the request.
             const requestData = {
                 requestType: 'load-form',
-                buttonId: this.id
+                buttonId: this.id,
+                itemType: this.dataset.itemType || 'part'
             };
 
             sendAjaxRequest("inc/ajax.php", requestData, 
@@ -176,6 +179,7 @@ function attachFormSubmitHandler(dropdownId)
         let requestData = {
             requestType: "submit-form",
             formId: dropdownId,
+            itemType: itemTypeOf(dropdownId),
             formData: Object.fromEntries(formData.entries())
         };
         const errorContainer = document.getElementById("modal-error-message");
@@ -221,6 +225,14 @@ function showModalError(message)
     errorContainer.innerHTML = message;
 }
 
+/** Whether the item form a dropdown belongs to is editing a part or a tool. */
+function itemTypeOf(dropdownId)
+{
+    const select = document.getElementById(dropdownId);
+
+    return (select && select.dataset.itemType) || 'part';
+}
+
 function refreshDropdown(dropdownId, newId)
 {
     const select = document.getElementById(dropdownId);
@@ -232,6 +244,7 @@ function refreshDropdown(dropdownId, newId)
     let requestData = {
         requestType: 'get-downdown-options',
         dropdownId: dropdownId,
+        itemType: itemTypeOf(dropdownId),
         newId: newId,
         selected: selected,
         multiple: select.multiple

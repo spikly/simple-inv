@@ -20,7 +20,8 @@ if ($currentPage === 'export-items') {
 
 $navigation = [
     'Dashboard'     => 'dashboard',
-    'Items'         => 'items',
+    'Parts'         => 'parts',
+    'Tools'         => 'tools',
     'Categories'    => 'categories',
     'Projects'      => 'projects',
     'Manufacturers' => 'manufacturers',

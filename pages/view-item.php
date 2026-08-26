@@ -2,13 +2,22 @@
 
 $itemId = queryParam('item_id');
 $item = $itemId ? fetchSingleItem($itemId) : false;
+$type = $item ? itemTypeOf($item) : 'part';
+$loan = ($item && $type === 'tool') ? fetchOpenToolLoan($itemId) : null;
 
-pageHeader('Item Info', $item ? [
-    'Deploy Item'    => 'index.php?page=add-deployment&item_id=' . $item['item_id'],
-    'Edit Item'      => 'index.php?page=edit-item&item_id=' . $item['item_id'],
-    'Duplicate Item' => 'index.php?page=add-item&duplicate=' . $item['item_id'],
-    'Label'          => 'index.php?page=labels&type=item&item_id=' . $item['item_id'],
-] : []);
+$links = [];
+
+if ($item) {
+    if ($type === 'tool') {
+        $links[$loan ? 'Sign In' : 'Sign Out'] = 'index.php?page=loan-tool&item_id=' . $item['item_id'];
+    }
+
+    $links['Edit ' . ITEM_TYPES[$type]] = 'index.php?page=edit-item&item_id=' . $item['item_id'];
+    $links['Duplicate'] = 'index.php?page=add-item&duplicate=' . $item['item_id'];
+    $links['Label'] = 'index.php?page=labels&type=item&item_id=' . $item['item_id'];
+}
+
+pageHeader(ITEM_TYPES[$type] . ' Info', $links);
 
 formMessage(takeFlash());
 
@@ -17,9 +26,8 @@ if (!$item) {
     return;
 }
 
-$deployments = fetchItemDeployments($itemId);
 $assemblyUsage = fetchItemAssemblyUsage($itemId);
-$utilisation = calculatePercentage($item['item_quantity'], $item['item_committed_count']);
+$utilisation = calculatePercentage($item['item_quantity'], $item['item_allocated_count']);
 $categories = fetchItemCategoryIds($itemId);
 
 // Headings for the taxonomies shown as item properties, in display order.
@@ -49,17 +57,38 @@ $properties = [
         itemProperty('Manufacturers Part No', '<p>' . escapeHtml($item['item_part_no']) . '</p>');
     }
 
-    itemProperty('Quantity', '<p>' . escapeHtml($item['item_quantity']) . escapeHtml($item['unit_symbol']) . '</p>');
-    itemProperty('Deployed', '<p>' . formatQuantity($item['item_deployed_count'])
-        . escapeHtml($item['unit_symbol']) . '</p>');
-    itemProperty('Reserved for Projects', '<p>' . formatQuantity($item['item_allocated_count'])
-        . escapeHtml($item['unit_symbol']) . '</p>');
-    itemProperty('Free', '<p>' . stockCell($item) . '</p>');
-    itemProperty('Utilisation', $utilisation . '&percnt;', utilisationBg($utilisation));
+    if ($type === 'tool') {
+        // A tool is one object, so the only quantity worth showing is whether
+        // it is here or with somebody.
+        $overdue = $loan && loanIsOverdue($loan['loan_due_at']);
 
-    if ((int)$item['item_min_quantity'] > 0) {
-        itemProperty('Reorder Level', '<p>' . escapeHtml($item['item_min_quantity'])
+        itemProperty(
+            'Signed Out To',
+            '<p>' . ($loan ? escapeHtml($loan['loan_to']) : 'Nobody, it is here') . '</p>',
+            $loan ? ($overdue ? 'red' : 'amber') : 'green'
+        );
+
+        if ($loan) {
+            itemProperty('Out Since', '<p>' . escapeHtml(formatDate($loan['loan_out_at'])) . '</p>');
+            itemProperty(
+                'Due Back',
+                '<p>' . ($loan['loan_due_at'] ? escapeHtml(formatDate($loan['loan_due_at'])) : 'No date set')
+                    . ($overdue ? ' (overdue)' : '') . '</p>',
+                $overdue ? 'red' : ''
+            );
+        }
+    } else {
+        itemProperty('Quantity', '<p>' . escapeHtml($item['item_quantity'])
             . escapeHtml($item['unit_symbol']) . '</p>');
+        itemProperty('Reserved for Projects', '<p>' . formatQuantity($item['item_allocated_count'])
+            . escapeHtml($item['unit_symbol']) . '</p>');
+        itemProperty('Free', '<p>' . stockCell($item) . '</p>');
+        itemProperty('Utilisation', $utilisation . '&percnt;', utilisationBg($utilisation));
+
+        if ((int)$item['item_min_quantity'] > 0) {
+            itemProperty('Reorder Level', '<p>' . escapeHtml($item['item_min_quantity'])
+                . escapeHtml($item['unit_symbol']) . '</p>');
+        }
     }
 
     foreach ($properties as $key => $heading) {
@@ -95,8 +124,21 @@ $properties = [
 </div>
 <?php
 
+if ($type === 'tool') {
+    sectionHeader('Sign-Out History', [
+        ($loan ? 'Sign In' : 'Sign Out') => 'index.php?page=loan-tool&item_id=' . $item['item_id'],
+    ]);
+
+    renderToolLoans(fetchToolLoans($itemId));
+
+    sectionHeader('Notes');
+    notesBox(strlen((string)$item['item_notes']) > 0 ? $item['item_notes'] : '-');
+
+    return;
+}
+
 if ((float)$item['item_free_count'] < 0) {
-    echo '<p class="form-message form-error">More of this item is deployed and allocated than you hold.</p>';
+    echo '<p class="form-message form-error">More of this part is reserved for projects than you hold.</p>';
 }
 
 sectionHeader('Reserved for Assemblies');
@@ -127,14 +169,8 @@ if ($assemblyUsage) {
         }
     );
 } else {
-    echo '<p>This item is not on any assembly.</p>' . "\n";
+    echo '<p>This part is not on any assembly.</p>' . "\n";
 }
-
-sectionHeader('Current Deployments', [
-    'Deploy Item' => 'index.php?page=add-deployment&item_id=' . $item['item_id'],
-]);
-
-renderDeployments($deployments, $item);
 
 sectionHeader('Notes');
 notesBox(strlen((string)$item['item_notes']) > 0 ? $item['item_notes'] : '-');
