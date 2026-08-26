@@ -59,7 +59,7 @@ echo '</div>' . "\n";
 /** Shared renderer for the two stock warning tables. */
 $stockTable = function (array $items) {
     renderTable(
-        ['Item', 'Location', 'Held', 'Free', 'Reorder At', 'Supplier'],
+        ['Item', 'Location', 'Held', 'Free', 'Reorder At', 'Supplier', ''],
         $items,
         function ($item) {
             return [
@@ -70,6 +70,8 @@ $stockTable = function (array $items) {
                 stockCell($item),
                 (int)$item['item_min_quantity'] > 0 ? escapeHtml($item['item_min_quantity']) : '-',
                 escapeHtml($item['sup_name'] ?? ''),
+                // This is the list you work through after a delivery.
+                '<a href="index.php?page=adjust-stock&item_id=' . $item['item_id'] . '">Add Stock</a>',
             ];
         }
     );

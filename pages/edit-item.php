@@ -36,7 +36,9 @@ if ($item && isset($_POST['edit_item_submit'])) {
     if ($error) {
         $formMessage = errorMessage($error);
     } else {
-        dbTransaction(function () use ($editId, $photo, $type) {
+        $heldBefore = (float)$item['item_quantity'];
+
+        dbTransaction(function () use ($editId, $photo, $type, $heldBefore) {
             dbRun(
                 'UPDATE inv_items SET
                     item_name = :item_name,
@@ -59,6 +61,9 @@ if ($item && isset($_POST['edit_item_submit'])) {
             // A change in quantity is shared out again, so stock added here
             // reaches the assemblies it was short for. A tool has none.
             if ($type === 'part') {
+                // This form sets the quantity rather than changing it, so what
+                // the history wants is the difference it made.
+                recordStockMovement($editId, (float)$_POST['item_quantity'] - $heldBefore, 'edited');
                 reallocateItem($editId);
             }
         });

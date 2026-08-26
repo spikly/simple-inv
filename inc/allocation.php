@@ -126,9 +126,13 @@ function consumeItemStock($item_id, float $quantity): void
  */
 function settleAssemblyItemStock($assembly_item_id, float $installedDelta): array
 {
+    // The assembly's name comes along so the stock history can say where the
+    // units went, rather than only that they went.
     $part = dbRow(
-        'SELECT item_id, quantity_required, quantity_installed
-         FROM inv_assembly_items WHERE assembly_item_id = :id',
+        'SELECT ai.item_id, ai.quantity_required, ai.quantity_installed, a.assembly_name
+         FROM inv_assembly_items ai
+         INNER JOIN inv_project_assemblies a ON a.assembly_id = ai.assembly_id
+         WHERE ai.assembly_item_id = :id',
         ['id' => (int)$assembly_item_id]
     );
 
@@ -137,6 +141,15 @@ function settleAssemblyItemStock($assembly_item_id, float $installedDelta): arra
     }
 
     consumeItemStock($part['item_id'], $installedDelta);
+
+    // consumeItemStock takes stock away, so a positive delta is stock leaving.
+    recordStockMovement(
+        $part['item_id'],
+        -$installedDelta,
+        $installedDelta > 0 ? 'installed' : 'uninstalled',
+        $part['assembly_name']
+    );
+
     reallocateItem($part['item_id']);
 
     $allocated = (float)dbValue(

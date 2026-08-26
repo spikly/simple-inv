@@ -343,6 +343,12 @@ function importItemRows(array $rows): array
                 $ids[$key] = resolveTaxonomyId($key, $row[$column], true);
             }
 
+            // Worked out once, because the stock history has to record the
+            // same figure that gets written to the item.
+            $quantity = ($row['type'] === 'tool' || $row['quantity'] === '')
+                ? 1
+                : (int)$row['quantity'];
+
             $itemId = dbInsert(
                 'INSERT INTO inv_items
                     (item_name, item_part_no, item_quantity, item_min_quantity, item_measurement_unit,
@@ -355,9 +361,7 @@ function importItemRows(array $rows): array
                     'item_part_no'          => $row['part_no'] !== '' ? $row['part_no'] : null,
                     // A tool is one object with no stock behind it, whatever
                     // the spreadsheet happened to say.
-                    'item_quantity'         => $row['type'] === 'tool'
-                        ? 1
-                        : ($row['quantity'] !== '' ? $row['quantity'] : 1),
+                    'item_quantity'         => $quantity,
                     'item_min_quantity'     => $row['type'] === 'tool'
                         ? 0
                         : ($row['min_quantity'] !== '' ? (int)$row['min_quantity'] : 0),
@@ -379,6 +383,11 @@ function importItemRows(array $rows): array
             }
 
             saveItemCategories($itemId, array_filter($categoryIds));
+
+            if ($row['type'] === 'part') {
+                recordStockMovement($itemId, (float)$quantity, 'imported', 'Line ' . $row['line']);
+            }
+
             $imported++;
         }
     });

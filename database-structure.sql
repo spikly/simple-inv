@@ -166,6 +166,28 @@ CREATE TABLE IF NOT EXISTS `inv_statuses` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `inv_stock_movements`
+--
+-- One row every time an item's quantity changes, and why. Nothing reads a
+-- quantity from here; it is a record of how the figure on the item got to be
+-- what it is, so one that looks wrong can be traced back.
+--
+
+CREATE TABLE IF NOT EXISTS `inv_stock_movements` (
+  `move_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `move_item_id` int(11) NOT NULL,
+  `move_change` decimal(12,3) NOT NULL,
+  `move_quantity_after` decimal(12,3) NOT NULL,
+  `move_reason` varchar(20) NOT NULL,
+  `move_note` varchar(255) DEFAULT NULL,
+  `move_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`move_id`),
+  KEY `idx_move_item` (`move_item_id`,`move_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `inv_suppliers`
 --
 
@@ -276,6 +298,12 @@ CREATE TABLE IF NOT EXISTS inv_assembly_items (
 ALTER TABLE `categories_items`
   ADD CONSTRAINT `categories_items_ibfk_1` FOREIGN KEY (`cat_id`) REFERENCES `inv_categories` (`cat_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `categories_items_ibfk_2` FOREIGN KEY (`item_id`) REFERENCES `inv_items` (`item_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `inv_stock_movements`
+--
+ALTER TABLE `inv_stock_movements`
+  ADD CONSTRAINT `fk_move_item` FOREIGN KEY (`move_item_id`) REFERENCES `inv_items` (`item_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `inv_tool_loans`

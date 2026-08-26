@@ -42,6 +42,10 @@ if (isset($_POST['add_item_submit'])) {
 
             saveItemCategories($id, itemCategoryIds($_POST));
 
+            if ($type === 'part') {
+                recordStockMovement($id, (float)$_POST['item_quantity'], 'created');
+            }
+
             return $id;
         });
 

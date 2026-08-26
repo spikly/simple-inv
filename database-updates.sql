@@ -145,3 +145,45 @@ SET @sql = IF(
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- Stock movements, so a quantity that looks wrong can be traced back.
+--
+-- Nothing that has already happened can be recovered, so every part that holds
+-- stock is given one opening row saying what it held when the log began. That
+-- keeps the history adding up to the figure on the item rather than starting
+-- from an unexplained number.
+CREATE TABLE IF NOT EXISTS `inv_stock_movements` (
+  `move_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `move_item_id` int(11) NOT NULL,
+  `move_change` decimal(12,3) NOT NULL,
+  `move_quantity_after` decimal(12,3) NOT NULL,
+  `move_reason` varchar(20) NOT NULL,
+  `move_note` varchar(255) DEFAULT NULL,
+  `move_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`move_id`),
+  KEY `idx_move_item` (`move_item_id`,`move_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET @sql = IF(
+  (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inv_stock_movements'
+      AND CONSTRAINT_NAME = 'fk_move_item') > 0,
+  'DO 0',
+  'ALTER TABLE `inv_stock_movements`
+     ADD CONSTRAINT `fk_move_item` FOREIGN KEY (`move_item_id`)
+     REFERENCES `inv_items` (`item_id`) ON DELETE CASCADE'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Only items with no history at all, so running this again adds nothing.
+INSERT INTO `inv_stock_movements`
+    (`move_item_id`, `move_change`, `move_quantity_after`, `move_reason`, `move_note`)
+  SELECT i.item_id, i.item_quantity, i.item_quantity, 'opening', 'Held when the stock log began'
+  FROM `inv_items` i
+  WHERE NOT EXISTS (SELECT 1 FROM `inv_stock_movements` m WHERE m.move_item_id = i.item_id)
+    AND NOT EXISTS (
+      SELECT 1 FROM `categories_items` ci
+        INNER JOIN `inv_categories` c ON c.cat_id = ci.cat_id
+      WHERE ci.item_id = i.item_id AND c.cat_type = 'tool');

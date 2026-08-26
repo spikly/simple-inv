@@ -32,6 +32,7 @@ return [
     'statuses' => 'all-statuses',
     'add-status' => 'add-status',
     'edit-status' => 'edit-status',
+    'adjust-stock' => 'adjust-stock',
     'loan-tool' => 'loan-tool',
     'edit-loan' => 'edit-loan',
     'export-items' => 'export-items',

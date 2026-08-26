@@ -13,6 +13,8 @@ $links = [];
 if ($item) {
     if ($type === 'tool') {
         $links[$signLink] = 'index.php?page=loan-tool&item_id=' . $item['item_id'];
+    } else {
+        $links['Add Stock'] = 'index.php?page=adjust-stock&item_id=' . $item['item_id'];
     }
 
     $links['Edit ' . ITEM_TYPES[$type]] = 'index.php?page=edit-item&item_id=' . $item['item_id'];
@@ -177,5 +179,13 @@ if ($assemblyUsage) {
 } else {
     echo '<p>This part is not on any assembly.</p>' . "\n";
 }
+
+sectionHeader('Stock History', [
+    'Add Stock' => 'index.php?page=adjust-stock&item_id=' . $item['item_id'],
+]);
+
+$moveSlice = paginate(countStockMovements($itemId), 'sp');
+renderStockMovements(fetchStockMovements($itemId, $moveSlice), $item);
+renderPagination($moveSlice, 'movements');
 
 renderItemNotes($item);

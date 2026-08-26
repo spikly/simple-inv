@@ -24,6 +24,8 @@ Very much work in progress. Designed for an average sized home workshop and almo
 * Sign a tool out to whoever is borrowing it, with a due date, and sign it back in again
 * Keep every sign-out as history, so a tool remembers where it has been
 * See what is out and what is overdue on the dashboard
+* Take a delivery in or write stock off by typing what changed, rather than working out the new total
+* Every change to a part's quantity is recorded with what changed, what it became and why
 * Track how much of a part is reserved for projects and how much is left
 * Stock reserves itself against the assemblies that need it, and installing a part takes it out of stock
 * Set a reorder level per part and see what is running low on the dashboard
@@ -75,9 +77,9 @@ mariadb -u YOUR_USER -p YOUR_DATABASE < database-updates.sql
 It is safe to run more than once, so anything already applied is skipped. It
 adds the part number, reorder level, photo and timestamp columns, stops an item
 being filed under the same category twice, adds the part/tool flag to
-categories, turns the deployments table into the tool sign-out table, restates
-the quantities assemblies have reserved, and drops the unused
-`item_deployed_loc` column. That last column has not been read or written since
+categories, turns the deployments table into the tool sign-out table, adds the
+stock movement log, restates the quantities assemblies have reserved, and drops
+the unused `item_deployed_loc` column. That last column has not been read or written since
 deployments moved into their own table, but check it is empty first if you have
 been running this since before then:
 
@@ -114,6 +116,25 @@ DELETE l FROM inv_tool_loans l
 Reservations against assemblies are restated at the same time. A deployment
 used to hold stock back from projects and no longer does, so a part that was
 short because something was deployed will now reserve what it needs.
+
+### Where the stock history starts
+
+Nothing that happened before the upgrade can be recovered, so every item is
+given one opening row saying what it held at the time. That way the history
+adds up to the figure on the item instead of starting from an unexplained
+number.
+
+Every category starts out filing parts, so items you go on to mark as tools get
+an opening row too. Tools have no stock and never show the history, so those
+rows do nothing, but they can be cleared once the categories are sorted:
+
+```sql
+DELETE m FROM inv_stock_movements m
+  WHERE EXISTS (
+    SELECT 1 FROM categories_items ci
+      INNER JOIN inv_categories c ON c.cat_id = ci.cat_id
+      WHERE ci.item_id = m.move_item_id AND c.cat_type = 'tool');
+```
 
 ### Sorting your categories out
 

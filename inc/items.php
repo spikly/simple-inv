@@ -53,6 +53,9 @@ const ITEM_REQUIRED_FIELDS = [
     'item_status'   => 'You must select a status',
 ];
 
+/** What inv_items.item_quantity can hold, so an addition cannot overflow it. */
+const MAX_ITEM_QUANTITY = 2147483647;
+
 /** Asked for on top of those, but only of a part: a tool has no stock. */
 const PART_REQUIRED_FIELDS = [
     'item_measurement_unit' => 'You must select a measurement unit',
@@ -243,6 +246,58 @@ function itemTaxonomyField(string $key, array $tax, string $type, array $options
         . ' data-item-type="' . $type . '"'
         . ' title="Add new ' . $tax['label'] . '">+</button>'
         . '</div>');
+}
+
+/**
+ * Why an amount typed into the add/remove stock form cannot be used, or null.
+ *
+ * $delta is the amount as a change: what was typed, made negative when the
+ * remove button was the one pressed.
+ */
+function validateStockChange(array $item, string $amount, int $delta): ?string
+{
+    if ($amount === '' || !ctype_digit($amount)) {
+        return 'Enter how much stock to add or remove, as a whole number.';
+    }
+
+    if ((int)$amount < 1) {
+        return 'Enter an amount greater than zero.';
+    }
+
+    $held = (int)$item['item_quantity'];
+
+    if ($held + $delta < 0) {
+        return 'You only hold ' . $held . escapeHtml($item['unit_symbol'])
+            . ', so ' . abs($delta) . escapeHtml($item['unit_symbol']) . ' cannot be removed.';
+    }
+
+    if ($held + $delta > MAX_ITEM_QUANTITY) {
+        return 'That is more stock than this can hold.';
+    }
+
+    return null;
+}
+
+/**
+ * What the change did, for the message shown afterwards. $item is the item as
+ * it stands once the stock has moved.
+ *
+ * Removing stock can take it back off the assemblies holding it, so what is
+ * reserved now is worth saying rather than leaving to be discovered.
+ */
+function stockChangeMessage(array $item, int $delta): string
+{
+    $unit = escapeHtml($item['unit_symbol']);
+
+    $message = ($delta > 0 ? 'Added ' : 'Removed ') . abs($delta) . $unit
+        . '. Now holding ' . (int)$item['item_quantity'] . $unit;
+
+    if ((float)$item['item_allocated_count'] > 0) {
+        $message .= ', with ' . formatQuantity($item['item_allocated_count']) . $unit
+            . ' reserved for projects and ' . formatQuantity($item['item_free_count']) . $unit . ' free';
+    }
+
+    return $message . '.';
 }
 
 /** The notes section at the foot of an item page, or a dash when there are none. */
