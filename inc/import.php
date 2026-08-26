@@ -26,6 +26,7 @@ const IMPORT_COLUMNS = [
  */
 const IMPORT_COLUMN_ALIASES = [
     'brand' => 'manufacturer',
+    'category' => 'categories',
 ];
 
 /** Taxonomy key => the CSV column it is read from. */
