@@ -6,24 +6,34 @@
  */
 
 $formMessage = takeFlash();
-$rows = $_SESSION['import_rows'] ?? [];
+$preview = storedImportPreview();
+$rows = $preview['rows'];
+
+if ($preview['stale']) {
+    $formMessage = errorMessage(
+        'The import waiting here was prepared by an older version of this page, so it has been'
+        . ' cleared rather than shown. Upload the file again to see a fresh preview.'
+    );
+}
 
 if (isset($_POST['import_upload'])) {
     $result = parseItemCsv($_FILES['csv_file'] ?? []);
 
     if (isset($result['error'])) {
-        unset($_SESSION['import_rows']);
+        clearImportPreview();
         $rows = [];
         $formMessage = errorMessage($result['error']);
     } else {
-        $_SESSION['import_rows'] = $rows = $result['rows'];
+        $rows = $result['rows'];
+        storeImportPreview($rows);
+        $formMessage = false;
     }
 } elseif (isset($_POST['import_confirm'])) {
     if (!$rows) {
         $formMessage = errorMessage('There is nothing to import. Upload a file first.');
     } else {
         $counts = importItemRows($rows);
-        unset($_SESSION['import_rows']);
+        clearImportPreview();
 
         redirectWith('index.php?page=items', successMessage(
             $counts['imported'] . ' ' . ($counts['imported'] === 1 ? 'item' : 'items') . ' imported.'
@@ -31,7 +41,7 @@ if (isset($_POST['import_upload'])) {
         ));
     }
 } elseif (isset($_POST['import_cancel'])) {
-    unset($_SESSION['import_rows']);
+    clearImportPreview();
 
     redirectWith('index.php?page=import-items', successMessage('Import cancelled.'));
 }

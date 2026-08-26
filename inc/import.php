@@ -36,6 +36,56 @@ const IMPORT_TAXONOMY_COLUMNS = [
     'status'   => 'status',
 ];
 
+/*
+ * The reviewed rows live in the session between the preview and the confirm,
+ * which means a preview can outlive the code that made it: an update lands, or
+ * a tab is left open through one, and the rows waiting there are no longer the
+ * shape the preview table reads.
+ *
+ * They are stamped with a version so that can be spotted and the preview
+ * thrown away, rather than rendered against a template expecting keys it does
+ * not have. Bump IMPORT_ROW_VERSION whenever importRow() changes what a row
+ * holds; anything without the current stamp, including the bare list of rows
+ * they were kept as before this existed, is treated as out of date.
+ */
+
+const IMPORT_SESSION_KEY = 'import_rows';
+
+const IMPORT_ROW_VERSION = 2;
+
+function storeImportPreview(array $rows): void
+{
+    $_SESSION[IMPORT_SESSION_KEY] = ['version' => IMPORT_ROW_VERSION, 'rows' => $rows];
+}
+
+function clearImportPreview(): void
+{
+    unset($_SESSION[IMPORT_SESSION_KEY]);
+}
+
+/**
+ * The preview waiting in the session, as ['rows' => [...], 'stale' => bool].
+ *
+ * A preview from an older version is cleared and reported as stale, so the
+ * page can say why it is asking for the file again.
+ */
+function storedImportPreview(): array
+{
+    $stored = $_SESSION[IMPORT_SESSION_KEY] ?? null;
+
+    if ($stored === null) {
+        return ['rows' => [], 'stale' => false];
+    }
+
+    if (!is_array($stored) || ($stored['version'] ?? null) !== IMPORT_ROW_VERSION) {
+        clearImportPreview();
+
+        return ['rows' => [], 'stale' => true];
+    }
+
+    return ['rows' => $stored['rows'], 'stale' => false];
+}
+
 /**
  * Read an uploaded CSV into rows ready for review.
  *
@@ -120,7 +170,12 @@ function importKnownNames(): array
     return $known;
 }
 
-/** Turn one CSV record into a reviewable row. */
+/**
+ * Turn one CSV record into a reviewable row.
+ *
+ * Changing which keys a row holds means bumping IMPORT_ROW_VERSION, or a
+ * preview stored by the old code will be handed to a table expecting the new.
+ */
 function importRow(array $record, array $columns, array $known, int $line): array
 {
     $value = function (string $column) use ($record, $columns) {
