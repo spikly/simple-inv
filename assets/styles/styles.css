@@ -1446,11 +1446,22 @@ table td.col-thumb .item-thumb {
 
 /* =========================================================
    Printable QR labels
+
+   Sized for 40mm x 30mm stickers off a roll.
+   To fit a different label, change these three and the @page size in the
+   print block below; @page cannot read a custom property, so the measurement
+   is written out there as well.
    ========================================================= */
+
+:root {
+    --label-width: 40mm;
+    --label-height: 30mm;
+    --label-qr: 21mm;
+}
 
 .label-sheet {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, var(--label-width));
     gap: 12px;
     padding: 0 0 24px;
 }
@@ -1459,31 +1470,38 @@ table td.col-thumb .item-thumb {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 12px;
+    justify-content: flex-start;
+    box-sizing: border-box;
+    width: var(--label-width);
+    height: var(--label-height);
+    padding: 0 2mm 1.5mm;
+    overflow: hidden;
     text-align: center;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
+    background: #ffffff;
+    color: #000000;
+    outline: 1px solid var(--color-border);
     break-inside: avoid;
 }
 
 .label svg {
     display: block;
-    width: 100%;
-    height: auto;
-    max-width: 150px;
+    flex: 0 1 auto;
+    min-height: 0;
+    width: auto;
+    height: var(--label-qr);
+    aspect-ratio: 1;
 }
 
 .label-title {
-    margin-top: 8px;
-    font-size: 1.4rem;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    flex: none;
+    overflow: hidden;
+    width: 100%;
+    font-size: 9pt;
+    line-height: 1.1;
     font-weight: 600;
-    overflow-wrap: anywhere;
-}
-
-.label-note {
-    color: var(--color-text-muted);
-    font-size: 1.2rem;
     overflow-wrap: anywhere;
 }
 
@@ -1497,6 +1515,13 @@ table td.col-thumb .item-thumb {
 }
 
 @media print {
+    /* One label to a page, so a roll printer feeds a single sticker per code.
+       Keep this in step with --label-width and --label-height above. */
+    @page {
+        size: 40mm 30mm;
+        margin: 0;
+    }
+
     header,
     .main-nav,
     .flex-nav,
@@ -1511,10 +1536,21 @@ table td.col-thumb .item-thumb {
     }
 
     .label-sheet {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        display: block;
+        gap: 0;
+        padding: 0;
     }
 
+    /* The sticker is its own edge, so the outline the screen needs goes, and
+       the code is forced to print solid rather than as a saved-ink grey. */
     .label {
-        border: 1px solid #999999;
+        outline: 0;
+        break-after: page;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .label:last-child {
+        break-after: auto;
     }
 }

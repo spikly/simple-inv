@@ -12,7 +12,6 @@ if ($type === 'location') {
     foreach (taxonomyRows(taxonomy('location')) as $row) {
         $labels[] = [
             'title' => $row['loc_name'],
-            'note'  => '',
             'url'   => baseUrl() . 'index.php?page=items&location_id=' . $row['loc_id'],
         ];
     }
@@ -22,7 +21,6 @@ if ($type === 'location') {
     if ($item) {
         $labels[] = [
             'title' => $item['item_name'],
-            'note'  => trim((string)($item['item_part_no'] ?? '')),
             'url'   => baseUrl() . 'index.php?page=view-item&item_id=' . $item['item_id'],
         ];
     }
@@ -32,7 +30,6 @@ if ($type === 'location') {
     foreach (fetchItems($where, $params) as $item) {
         $labels[] = [
             'title' => $item['item_name'],
-            'note'  => trim((string)($item['item_part_no'] ?? '')),
             'url'   => baseUrl() . 'index.php?page=view-item&item_id=' . $item['item_id'],
         ];
     }
@@ -60,9 +57,6 @@ pageHeader('Labels' . countBadge(count($labels)), [
             <div class="label">
                 <?php echo qrSvg($label['url'], 150); ?>
                 <span class="label-title"><?php echo escapeHtml($label['title']); ?></span>
-                <?php if ($label['note']): ?>
-                    <span class="label-note"><?php echo escapeHtml($label['note']); ?></span>
-                <?php endif; ?>
             </div>
         <?php endforeach; ?>
     </div>
