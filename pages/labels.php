@@ -9,13 +9,10 @@ $type = (queryParam('type') === 'item') ? 'item' : 'location';
 $labels = [];
 
 if ($type === 'location') {
-    $locations = taxonomyRows(taxonomy('location'));
-    $usage = taxonomyUsageCounts(taxonomy('location'), array_column($locations, 'loc_id'));
-
-    foreach ($locations as $row) {
+    foreach (taxonomyRows(taxonomy('location')) as $row) {
         $labels[] = [
             'title' => $row['loc_name'],
-            'note'  => ($usage[$row['loc_id']] ?? 0) . ' items',
+            'note'  => '',
             'url'   => baseUrl() . 'index.php?page=items&location_id=' . $row['loc_id'],
         ];
     }
@@ -25,7 +22,7 @@ if ($type === 'location') {
     if ($item) {
         $labels[] = [
             'title' => $item['item_name'],
-            'note'  => trim(($item['item_part_no'] ?? '') . ' ' . ($item['loc_name'] ?? '')),
+            'note'  => trim((string)($item['item_part_no'] ?? '')),
             'url'   => baseUrl() . 'index.php?page=view-item&item_id=' . $item['item_id'],
         ];
     }
@@ -35,7 +32,7 @@ if ($type === 'location') {
     foreach (fetchItems($where, $params) as $item) {
         $labels[] = [
             'title' => $item['item_name'],
-            'note'  => trim(($item['item_part_no'] ?? '') . ' ' . ($item['loc_name'] ?? '')),
+            'note'  => trim((string)($item['item_part_no'] ?? '')),
             'url'   => baseUrl() . 'index.php?page=view-item&item_id=' . $item['item_id'],
         ];
     }
