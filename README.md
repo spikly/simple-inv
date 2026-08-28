@@ -139,9 +139,16 @@ DELETE m FROM inv_stock_movements m
 ### Sorting your categories out
 
 Once upgraded, go to **Categories** and set the ones that file tools to
-**Tools**. A category can only be switched while nothing is filed under it, so
-do it before you start adding things. An item is a tool when its categories are
-tool categories, and every category on an item has to agree.
+**Tools**. Switching a category converts everything filed under it, so you can
+do this whenever you like rather than only while it is empty. An item is a tool
+when its categories are tool categories, and every category on an item has to
+agree.
+
+A switch is refused where an item in the category could not make the move on
+its own: one that is also filed under a category of the other kind, one whose
+stock a project has reserved, or a tool that has been signed out before. The
+category page names the items so you know what to sort out. Anything becoming a
+tool loses its quantity and reorder level, since a tool has no stock.
 
 ## Settings
 

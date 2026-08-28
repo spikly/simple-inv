@@ -529,29 +529,64 @@ function itemListingColumns(?string $type): array
 }
 
 /**
- * Why an item cannot be turned from a part into a tool or back, or null when
- * it can.
+ * What stands in the way of each of these items becoming $newType, as item id
+ * => reason, leaving out the ones with nothing against them.
  *
- * The two keep different records, and neither makes sense against the other:
- * a tool has no stock for an assembly to reserve, and a part is a quantity
- * rather than the one object a sign-out history is about.
+ * The two kinds keep different records, and neither makes sense against the
+ * other: a tool has no stock for an assembly to reserve, and a part is a
+ * quantity rather than the one object a sign-out history is about. So
+ *
+ *   'assembly'  a part a project has reserved stock of
+ *   'loans'     a tool that has been signed out before
+ *
+ * The whole set is asked at once, because switching a category over converts
+ * everything filed under it and that is no place to run a query per item.
+ * The reason is returned rather than a sentence, since the item pages and the
+ * category pages say it differently.
+ */
+function itemsBlockingKindChange(array $itemIds, string $newType): array
+{
+    $itemIds = array_filter(array_map('intval', $itemIds));
+
+    if (!$itemIds) {
+        return [];
+    }
+
+    // The ids are cast to integers above, so they are safe to inline; a bound
+    // parameter cannot stand in for a list.
+    $list = implode(',', $itemIds);
+
+    if ($newType === 'tool') {
+        $reason = 'assembly';
+        $sql = 'SELECT DISTINCT item_id FROM inv_assembly_items WHERE item_id IN (' . $list . ')';
+    } else {
+        $reason = 'loans';
+        $sql = 'SELECT DISTINCT loan_item_id AS item_id FROM inv_tool_loans
+                WHERE loan_item_id IN (' . $list . ')';
+    }
+
+    return array_fill_keys(array_column(dbAll($sql), 'item_id'), $reason);
+}
+
+/**
+ * Why an item cannot be turned from a part into a tool or back, or null when
+ * it can. See itemsBlockingKindChange() for what counts.
  */
 function itemKindChangeError(array $item, string $newType): ?string
 {
-    $current = itemTypeOf($item);
-
-    if ($current === $newType) {
+    if (itemTypeOf($item) === $newType) {
         return null;
     }
 
-    if ($current === 'part' && itemIsOnAnAssembly($item['item_id'])) {
-        return 'This part is on a project assembly, so it cannot become a tool.'
-            . ' Take it off the assembly first.';
-    }
+    $blocked = itemsBlockingKindChange([$item['item_id']], $newType);
 
-    if ($current === 'tool' && toolHasBeenSignedOut($item['item_id'])) {
-        return 'This tool has been signed out before, so it cannot become a part.'
-            . ' Its history would have nothing to belong to.';
+    switch ($blocked[(int)$item['item_id']] ?? '') {
+        case 'assembly':
+            return 'This part is on a project assembly, so it cannot become a tool.'
+                . ' Take it off the assembly first.';
+        case 'loans':
+            return 'This tool has been signed out before, so it cannot become a part.'
+                . ' Its history would have nothing to belong to.';
     }
 
     return null;

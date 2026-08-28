@@ -59,16 +59,6 @@ function fetchToolLoans($item_id, ?array $slice = null): array
     );
 }
 
-/** Whether a tool has ever been signed out, without reading the history. */
-function toolHasBeenSignedOut($item_id): bool
-{
-    return (bool)dbValue(
-        'SELECT EXISTS (SELECT 1 FROM inv_tool_loans WHERE loan_item_id = :item_id)',
-        ['item_id' => $item_id],
-        0
-    );
-}
-
 /**
  * Every tool that is out right now, overdue ones first.
  *

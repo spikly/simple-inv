@@ -74,6 +74,8 @@ function taxonomies(): array
             'columns'    => ['Files' => 'categoryTypeCell'],
             'derived'    => 'categorySlug',
             'guard'      => 'categoryTypeGuard',
+            'notice'     => 'categoryTypeNotice',
+            'onSave'     => 'categoryTypeApply',
         ],
         'location' => [
             'label'      => 'Location',
@@ -114,8 +116,72 @@ function categoryTypeCell(array $row): string
 }
 
 /**
- * A category's kind decides how everything filed under it behaves, so it can
- * only be changed while nothing is filed under it.
+ * What stops the items in a category all becoming $newType, as one phrase per
+ * item that has something against it, named in the order they are listed.
+ *
+ * Two things do. An item filed under another category of the other kind would
+ * be left disagreeing with itself, since a category is the only thing saying
+ * what an item is and they all have to say the same; and an item's own records
+ * can hold it where it is, which is itemsBlockingKindChange()'s question.
+ */
+function categoryConversionBlockers($cat_id, string $newType): array
+{
+    $items = dbAll(
+        'SELECT i.item_id, i.item_name,
+                EXISTS (SELECT 1 FROM categories_items oci
+                        INNER JOIN inv_categories oc ON oc.cat_id = oci.cat_id
+                        WHERE oci.item_id = i.item_id
+                          AND oci.cat_id <> :other_cat_id
+                          AND oc.cat_type <> :new_type) AS in_other_kind
+         FROM categories_items ci
+         INNER JOIN inv_items i ON i.item_id = ci.item_id
+         WHERE ci.cat_id = :cat_id
+         ORDER BY i.item_name asc',
+        ['cat_id' => $cat_id, 'other_cat_id' => $cat_id, 'new_type' => $newType]
+    );
+
+    if (!$items) {
+        return [];
+    }
+
+    $blocked = itemsBlockingKindChange(array_column($items, 'item_id'), $newType);
+    $otherKind = ($newType === 'part') ? 'tool' : 'part';
+
+    $reasons = [
+        'assembly' => 'is on a project assembly',
+        'loans'    => 'has been signed out before',
+    ];
+
+    $problems = [];
+
+    foreach ($items as $item) {
+        $why = [];
+
+        if ($item['in_other_kind']) {
+            $why[] = 'is also in a category that files ' . strtolower(ITEM_TYPE_PLURALS[$otherKind]);
+        }
+
+        if (isset($blocked[$item['item_id']])) {
+            $why[] = $reasons[$blocked[$item['item_id']]];
+        }
+
+        if ($why) {
+            $problems[] = '&ldquo;' . escapeHtml($item['item_name']) . '&rdquo; '
+                . implode(' and ', $why);
+        }
+    }
+
+    return $problems;
+}
+
+/**
+ * A category's kind decides how everything filed under it behaves, so
+ * switching it takes every item in it along. That is allowed, but only where
+ * each of those items can actually make the move, since converting one that
+ * cannot would quietly leave it in a state nothing else expects.
+ *
+ * The first few offenders are named, because being told the number alone
+ * leaves you hunting through the listing for them.
  */
 function categoryTypeGuard($id, array $values): ?string
 {
@@ -125,16 +191,78 @@ function categoryTypeGuard($id, array $values): ?string
         return null;
     }
 
-    $inUse = taxonomyUsageCount(taxonomy('category'), $id);
+    $problems = categoryConversionBlockers($id, $values['cat_type']);
 
-    if ($inUse === 0) {
+    if (!$problems) {
         return null;
     }
 
-    return 'This category files ' . strtolower(ITEM_TYPE_PLURALS[$current]) . ' and '
-        . $inUse . ' ' . ($inUse === 1 ? 'item is' : 'items are') . ' in it, so it cannot be'
-        . ' switched to ' . strtolower(ITEM_TYPE_PLURALS[$values['cat_type']]) . '.'
-        . ' Move ' . ($inUse === 1 ? 'it' : 'them') . ' to another category first.';
+    $shown = array_slice($problems, 0, 5);
+    $rest = count($problems) - count($shown);
+
+    return count($problems) . ' ' . (count($problems) === 1 ? 'item cannot' : 'items cannot')
+        . ' become ' . strtolower(ITEM_TYPE_PLURALS[$values['cat_type']]) . ': '
+        . implode('; ', $shown)
+        . ($rest > 0 ? '; and ' . $rest . ' more' : '')
+        . '. Sort ' . (count($problems) === 1 ? 'it' : 'them') . ' out first.';
+}
+
+/**
+ * The items a switched category takes with it.
+ *
+ * Nothing on an item says which kind it is, so the switch converts them on its
+ * own and there is nothing to write for that. What does need writing is stock:
+ * a tool has none, and those columns are not nullable, so they go back to the
+ * single piece itemColumns() stores for one. The movements the item already
+ * has are left alone as the history of when it was a part, the same as the
+ * item form leaves them.
+ *
+ * Going the other way writes nothing. A quantity of one is where a new part
+ * starts and there is no earlier figure to put back, so it is left to be
+ * edited.
+ *
+ * Runs inside the same transaction as the category's own update and before it,
+ * so cat_type still says what the category was.
+ */
+function categoryTypeApply($id, array $values): void
+{
+    $current = dbValue('SELECT cat_type FROM inv_categories WHERE cat_id = :id', ['id' => $id]);
+
+    if ($current === $values['cat_type'] || $values['cat_type'] !== 'tool') {
+        return;
+    }
+
+    dbRun(
+        'UPDATE inv_items
+            SET item_quantity = 1, item_min_quantity = 0, item_measurement_unit = :unit
+          WHERE item_id IN (SELECT item_id FROM categories_items WHERE cat_id = :cat_id)',
+        ['unit' => pieceUnitId(), 'cat_id' => $id]
+    );
+}
+
+/**
+ * What switching this category would do, said above the form, since the change
+ * reaches a good deal further than the row being edited.
+ */
+function categoryTypeNotice(array $row): void
+{
+    $inUse = taxonomyUsageCount(taxonomy('category'), $row['cat_id']);
+
+    if ($inUse === 0) {
+        return;
+    }
+
+    $otherKind = ($row['cat_type'] === 'part') ? 'tool' : 'part';
+
+    echo '<p>Switching this category to ' . strtolower(ITEM_TYPE_PLURALS[$otherKind])
+        . ' converts the <a href="index.php?page=items&amp;category_id=' . (int)$row['cat_id'] . '">'
+        . $inUse . ' ' . ($inUse === 1 ? 'item' : 'items') . '</a> in it as well'
+        . ($otherKind === 'tool'
+            ? ', and a tool has no stock, so '
+                . ($inUse === 1 ? 'its quantity and reorder level are' : 'their quantities and reorder levels are')
+                . ' cleared'
+            : '')
+        . '.</p>' . "\n";
 }
 
 /** Extra listing column for suppliers. */
@@ -511,6 +639,10 @@ function taxonomyEditPage(string $key): void
     $editUrl = 'index.php?page=' . $tax['routes']['edit'] . '&' . $tax['param'] . '=' . urlencode((string)$editId);
     $indexUrl = 'index.php?page=' . $tax['routes']['index'];
 
+    // What a rejected save was trying to do, so the form comes back holding it
+    // rather than the stored row, the same as the add page does.
+    $posted = null;
+
     if (isset($_POST['edit_' . $tax['submit'] . '_submit'])) {
         $result = taxonomyValues($tax, $_POST);
 
@@ -523,18 +655,27 @@ function taxonomyEditPage(string $key): void
 
         if ($errors) {
             $formMessage = errorMessage($errors);
+            $posted = $_POST;
         } else {
-            $assignments = [];
+            dbTransaction(function () use ($tax, $result, $editId) {
+                // A row that decides how other rows behave puts those right
+                // itself, first, while it can still see what it used to say.
+                if (isset($tax['onSave'])) {
+                    $tax['onSave']($editId, $result['values']);
+                }
 
-            foreach (array_keys($result['values']) as $column) {
-                $assignments[] = $column . ' = :' . $column;
-            }
+                $assignments = [];
 
-            dbRun(
-                'UPDATE ' . $tax['table'] . ' SET ' . implode(', ', $assignments)
-                . ' WHERE ' . $tax['id'] . ' = :edit_id',
-                $result['values'] + ['edit_id' => $editId]
-            );
+                foreach (array_keys($result['values']) as $column) {
+                    $assignments[] = $column . ' = :' . $column;
+                }
+
+                dbRun(
+                    'UPDATE ' . $tax['table'] . ' SET ' . implode(', ', $assignments)
+                    . ' WHERE ' . $tax['id'] . ' = :edit_id',
+                    $result['values'] + ['edit_id' => $editId]
+                );
+            });
 
             redirectWith($editUrl, successMessage($tax['label'] . ' updated!'));
         }
@@ -567,7 +708,11 @@ function taxonomyEditPage(string $key): void
         return;
     }
 
-    taxonomyForm($tax, 'edit', $row, $formMessage);
+    if (isset($tax['notice'])) {
+        $tax['notice']($row);
+    }
+
+    taxonomyForm($tax, 'edit', $posted ?? $row, $formMessage);
 
     $inUse = taxonomyUsageCount($tax, $editId);
 

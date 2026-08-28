@@ -502,16 +502,6 @@ function fetchAvailableItemsForAssembly($assembly_id): array
     ', ['assembly_id' => $assembly_id]);
 }
 
-/** Whether an item is a part on any assembly, without reading them all. */
-function itemIsOnAnAssembly($item_id): bool
-{
-    return (bool)dbValue(
-        'SELECT EXISTS (SELECT 1 FROM inv_assembly_items WHERE item_id = :item_id)',
-        ['item_id' => $item_id],
-        0
-    );
-}
-
 /**
  * Every assembly holding stock of an item, for the item page. Shows where the
  * reserved and installed quantities on an item have gone.
