@@ -5,11 +5,9 @@
  *
  * A tool is one physical object rather than a quantity, so it is either here
  * or it is with somebody. Signing it out opens a row in inv_tool_loans and
- * signing it back in stamps loan_in_at on that row instead of deleting it, so
- * every tool keeps a history of where it has been.
- *
- * A tool is out while it has a row with loan_in_at still null, and it can only
- * have one of those at a time.
+ * signing it back in stamps loan_in_at rather than deleting the row, so every
+ * tool keeps a history of where it has been. It is out while one of those rows
+ * has loan_in_at still null, and it can only have one at a time.
  */
 
 /**
@@ -62,10 +60,9 @@ function fetchToolLoans($item_id, ?array $slice = null): array
 /**
  * Every tool that is out right now, overdue ones first.
  *
- * Only loans against something that is actually a tool are included. An
- * install upgraded from deployments can hold rows against items that were then
- * filed as parts; they are kept as history, but a part is not out with
- * anybody, so nothing counting tools should see them.
+ * Only loans against something that is actually a tool. Upgrading deployments
+ * can leave rows against items since filed as parts; they are kept as history,
+ * but a part is not out with anybody, so nothing counting tools sees them.
  */
 function fetchOpenToolLoans(): array
 {

@@ -5,10 +5,8 @@
  *
  * Every path that changes inv_items.item_quantity writes a row here saying
  * what changed, what it became and why, so a figure that looks wrong can be
- * traced back rather than argued about. Nothing reads a quantity out of this
- * table; the item still holds the number, and this is the story behind it.
- *
- * Tools have no stock, so nothing here applies to them.
+ * traced back. Nothing reads a quantity out of it; the item still holds the
+ * number. Tools have no stock, so nothing here applies to them.
  */
 
 /**
@@ -27,12 +25,11 @@ const STOCK_MOVEMENT_REASONS = [
 ];
 
 /**
- * Write down a change that has already been made.
+ * Write down a change that has already been made. A change of nothing is not
+ * one, and is not recorded.
  *
  * The quantity is read back rather than worked out, so what is recorded is
  * what the item actually holds now even where the column rounded it.
- *
- * A change of nothing is not a movement, so it is not recorded.
  */
 function recordStockMovement($item_id, float $change, string $reason, ?string $note = null): void
 {

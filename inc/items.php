@@ -9,9 +9,8 @@
  * An item is either a part or a tool, and which one it is comes from the
  * categories it is filed under rather than a column of its own.
  *
- * Parts are stock: a quantity that projects reserve and installs consume.
- * Tools are single objects: no quantity, no projects, just signed in and out
- * again, see inc/tools.php.
+ * Parts are stock: a quantity projects reserve and installs consume. Tools are
+ * single objects, signed in and out again, see inc/tools.php.
  */
 const ITEM_TYPES = ['part' => 'Part', 'tool' => 'Tool'];
 
@@ -62,12 +61,11 @@ const PART_REQUIRED_FIELDS = [
 ];
 
 /**
- * Everything wrong with submitted item data, keyed by the field it belongs to,
- * or an empty array when it is fine. $type is the kind the form was filled in
- * as.
+ * Everything wrong with submitted item data, keyed by field, or an empty array
+ * when it is fine. $type is the kind the form was filled in as.
  *
  * Every field is checked rather than stopping at the first, so a half filled
- * form comes back saying all of what it needs at once.
+ * form says all of what it needs at once.
  */
 function validateItem(array $post, string $type): array
 {
@@ -256,13 +254,11 @@ function itemTaxonomyField(string $key, array $tax, string $type, array $options
 
 /**
  * Why an amount typed into the add/remove stock form cannot be used, keyed by
- * the field, or an empty array when it can.
+ * the field, or an empty array when it can. $delta is that amount as a change,
+ * so negative when the remove button was the one pressed.
  *
- * There is only one field to be wrong about, and each check here needs the one
- * before it to have passed, so this stops at the first thing it finds.
- *
- * $delta is the amount as a change: what was typed, made negative when the
- * remove button was the one pressed.
+ * Each check needs the one before it to have passed, so this stops at the
+ * first thing it finds.
  */
 function validateStockChange(array $item, string $amount, int $delta): array
 {
@@ -289,7 +285,7 @@ function validateStockChange(array $item, string $amount, int $delta): array
  * it stands once the stock has moved.
  *
  * Removing stock can take it back off the assemblies holding it, so what is
- * reserved now is worth saying rather than leaving to be discovered.
+ * reserved now is worth saying.
  */
 function stockChangeMessage(array $item, int $delta): string
 {
@@ -470,10 +466,8 @@ function itemFilterSummary(array $applied, array $params, ?string $pinnedKind, ?
 
 /**
  * The listing columns for one kind of thing, as heading => a function giving
- * that heading's cell for a row.
- *
- * Headings and cells are one definition so they cannot drift apart, and
- * renderTable() takes the keys and the values separately.
+ * that heading's cell for a row, so the two cannot drift apart. renderTable()
+ * takes the keys and the values separately.
  */
 function itemListingColumns(?string $type): array
 {
@@ -530,19 +524,14 @@ function itemListingColumns(?string $type): array
 
 /**
  * What stands in the way of each of these items becoming $newType, as item id
- * => reason, leaving out the ones with nothing against them.
+ * => reason, leaving out the ones with nothing against them:
  *
- * The two kinds keep different records, and neither makes sense against the
- * other: a tool has no stock for an assembly to reserve, and a part is a
- * quantity rather than the one object a sign-out history is about. So
+ *   'assembly'  stock a project has reserved, which a tool cannot hold
+ *   'loans'     a sign-out history, which a part cannot have
  *
- *   'assembly'  a part a project has reserved stock of
- *   'loans'     a tool that has been signed out before
- *
- * The whole set is asked at once, because switching a category over converts
- * everything filed under it and that is no place to run a query per item.
- * The reason is returned rather than a sentence, since the item pages and the
- * category pages say it differently.
+ * The whole set is asked at once, since switching a category converts
+ * everything filed under it. A reason rather than a sentence, because the item
+ * pages and the category pages say it differently.
  */
 function itemsBlockingKindChange(array $itemIds, string $newType): array
 {

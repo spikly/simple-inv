@@ -1,16 +1,16 @@
 <?php
 
 /**
- * Stock moving between the store and project assemblies.
+ * Stock moving between the store and project assemblies. Parts only; tools
+ * have no stock to move, see inc/tools.php.
  *
- * This is about parts only. A part on an assembly reserves what it still needs
- * out of its item's free stock, so anything set aside for a project stops
- * counting as available anywhere else. Marking some of it installed takes
- * those units out of stock for good and releases the reservation that was
- * holding them. Tools have no stock to move, see inc/tools.php.
+ * A part on an assembly reserves what it still needs out of its item's free
+ * stock, so anything set aside for a project stops counting as available
+ * elsewhere. Marking some of it installed takes those units out of stock for
+ * good and releases the reservation holding them.
  *
  * Reservations are worked out here rather than typed in, which is what keeps
- * the item pages, the shopping list and the assemblies telling the same story.
+ * the item pages, the shopping list and the assemblies telling one story.
  */
 
 /**

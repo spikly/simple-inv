@@ -5,10 +5,8 @@
  *
  * A listing asks how many rows there are in total, works out which slice the
  * query string is asking for, and passes that slice to its own query so only
- * those rows are read. Nothing here knows what is being listed.
- *
- * The heading of a listing keeps showing the total, so the count you see is
- * always the whole thing rather than however much fitted on this page.
+ * those rows are read. Nothing here knows what is being listed. The heading
+ * goes on showing the total rather than however much fitted on this page.
  */
 
 /** Rows per page. Set 'site' => ['per_page' => 25] in user.config.php. */

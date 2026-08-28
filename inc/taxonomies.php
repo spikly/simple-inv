@@ -117,12 +117,11 @@ function categoryTypeCell(array $row): string
 
 /**
  * What stops the items in a category all becoming $newType, as one phrase per
- * item that has something against it, named in the order they are listed.
+ * item that has something against it.
  *
- * Two things do. An item filed under another category of the other kind would
- * be left disagreeing with itself, since a category is the only thing saying
- * what an item is and they all have to say the same; and an item's own records
- * can hold it where it is, which is itemsBlockingKindChange()'s question.
+ * Two things do: another category of the other kind, which would leave the
+ * item disagreeing with itself about what it is, and the item's own records,
+ * which is itemsBlockingKindChange()'s question.
  */
 function categoryConversionBlockers($cat_id, string $newType): array
 {
@@ -176,12 +175,10 @@ function categoryConversionBlockers($cat_id, string $newType): array
 
 /**
  * A category's kind decides how everything filed under it behaves, so
- * switching it takes every item in it along. That is allowed, but only where
- * each of those items can actually make the move, since converting one that
- * cannot would quietly leave it in a state nothing else expects.
- *
- * The first few offenders are named, because being told the number alone
- * leaves you hunting through the listing for them.
+ * switching it takes every item in it along. Allowed, but only where each of
+ * those items can make the move, since converting one that cannot would leave
+ * it in a state nothing else expects. The first few offenders are named, a
+ * count alone leaving you to hunt for them.
  */
 function categoryTypeGuard($id, array $values): ?string
 {
@@ -210,19 +207,14 @@ function categoryTypeGuard($id, array $values): ?string
 /**
  * The items a switched category takes with it.
  *
- * Nothing on an item says which kind it is, so the switch converts them on its
- * own and there is nothing to write for that. What does need writing is stock:
- * a tool has none, and those columns are not nullable, so they go back to the
- * single piece itemColumns() stores for one. The movements the item already
- * has are left alone as the history of when it was a part, the same as the
- * item form leaves them.
+ * They convert themselves, since nothing on an item says which kind it is; all
+ * that needs writing is stock. A tool has none, and the columns are not
+ * nullable, so they go back to the single piece itemColumns() stores, leaving
+ * the movements already against the item as history. The other direction
+ * writes nothing: there is no earlier quantity to put back.
  *
- * Going the other way writes nothing. A quantity of one is where a new part
- * starts and there is no earlier figure to put back, so it is left to be
- * edited.
- *
- * Runs inside the same transaction as the category's own update and before it,
- * so cat_type still says what the category was.
+ * Runs before the category's own update and in the same transaction, so
+ * cat_type still says what it was.
  */
 function categoryTypeApply($id, array $values): void
 {
@@ -241,8 +233,8 @@ function categoryTypeApply($id, array $values): void
 }
 
 /**
- * What switching this category would do, said above the form, since the change
- * reaches a good deal further than the row being edited.
+ * What switching this category would do, said above the form, since it reaches
+ * further than the row being edited.
  */
 function categoryTypeNotice(array $row): void
 {
