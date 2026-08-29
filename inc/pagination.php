@@ -106,39 +106,5 @@ function renderPagination(array $slice, string $noun = 'rows'): void
         return;
     }
 
-    echo '<nav class="pagination" aria-label="Pagination">' . "\n";
-    echo '    <p class="pagination-count">Showing ' . $slice['from'] . '&ndash;' . $slice['to']
-        . ' of ' . $slice['total'] . ' ' . escapeHtml($noun) . '</p>' . "\n";
-
-    if ($slice['pages'] > 1) {
-        echo '    <p class="pagination-pages">' . "\n";
-        paginationStep($slice, $slice['current'] - 1, 'Previous', $slice['current'] > 1);
-
-        foreach (paginationNumbers($slice['current'], $slice['pages']) as $number) {
-            if ($number === null) {
-                echo '        <span class="pagination-gap">&hellip;</span>' . "\n";
-                continue;
-            }
-
-            echo '        ' . ($number === $slice['current']
-                ? '<span class="pagination-current" aria-current="page">' . $number . '</span>'
-                : '<a href="' . urlWithParam($slice['param'], $number) . '">' . $number . '</a>') . "\n";
-        }
-
-        paginationStep($slice, $slice['current'] + 1, 'Next', $slice['current'] < $slice['pages']);
-        echo '    </p>' . "\n";
-    }
-
-    echo '</nav>' . "\n";
-}
-
-/**
- * A previous/next control, shown greyed out at the ends so the bar keeps its
- * shape rather than shifting as you move through it.
- */
-function paginationStep(array $slice, int $number, string $label, bool $enabled): void
-{
-    echo '        ' . ($enabled
-        ? '<a href="' . urlWithParam($slice['param'], $number) . '" class="pagination-step">' . $label . '</a>'
-        : '<span class="pagination-step is-disabled">' . $label . '</span>') . "\n";
+    template('pagination', compact('slice', 'noun'));
 }

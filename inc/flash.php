@@ -30,8 +30,7 @@ function redirect(string $url): void
     // page has somehow already flushed, send the browser on with markup
     // rather than failing outright.
     if (headers_sent()) {
-        echo '<meta http-equiv="refresh" content="0;url=' . escapeHtml($url) . '">'
-            . '<p><a href="' . escapeHtml($url) . '">Continue</a></p>';
+        template('redirect', compact('url'));
         exit;
     }
 

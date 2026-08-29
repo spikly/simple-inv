@@ -244,17 +244,11 @@ function categoryTypeNotice(array $row): void
         return;
     }
 
-    $otherKind = ($row['cat_type'] === 'part') ? 'tool' : 'part';
-
-    echo '<p>Switching this category to ' . strtolower(ITEM_TYPE_PLURALS[$otherKind])
-        . ' converts the <a href="index.php?page=items&amp;category_id=' . (int)$row['cat_id'] . '">'
-        . $inUse . ' ' . ($inUse === 1 ? 'item' : 'items') . '</a> in it as well'
-        . ($otherKind === 'tool'
-            ? ', and a tool has no stock, so '
-                . ($inUse === 1 ? 'its quantity and reorder level are' : 'their quantities and reorder levels are')
-                . ' cleared'
-            : '')
-        . '.</p>' . "\n";
+    template('taxonomy/category-notice', [
+        'catId'     => (int)$row['cat_id'],
+        'inUse'     => $inUse,
+        'otherKind' => ($row['cat_type'] === 'part') ? 'tool' : 'part',
+    ]);
 }
 
 /** Extra listing column for suppliers. */
@@ -474,27 +468,7 @@ function taxonomyInsert(string $key, array $input): array
  */
 function taxonomyFields(array $tax, array $values = [], array $locked = []): void
 {
-    foreach ($tax['fields'] as $column => $field) {
-        $label = is_array($field) ? $field['label'] : $field;
-        $value = $values[$column] ?? (is_array($field) ? ($field['default'] ?? '') : '');
-
-        // Fixed to one choice by the page that asked for the form, so it is
-        // shown as a statement rather than a control.
-        if (array_key_exists($column, $locked)) {
-            formRow($column, $label, '<span class="locked-field">'
-                . escapeHtml($field['options'][$locked[$column]] ?? $locked[$column]) . '</span>'
-                . '<input type="hidden" name="' . $column . '" value="'
-                . escapeHtml($locked[$column]) . '">', false);
-            continue;
-        }
-
-        if (is_array($field) && ($field['type'] ?? '') === 'select') {
-            selectField($column, $label, $field['options'], $value);
-            continue;
-        }
-
-        textField($column, $label, $value, is_array($field) ? $field['type'] : 'text');
-    }
+    template('taxonomy/fields', compact('tax', 'values', 'locked'));
 }
 
 /**
@@ -507,11 +481,7 @@ function taxonomyForm(
     $formMessage = false,
     array $locked = []
 ): void {
-    echo '<form method="post">' . "\n";
-    formMessage($formMessage);
-    taxonomyFields($tax, $values, $locked);
-    submitButton($action . '_' . $tax['submit'] . '_submit');
-    echo '</form>' . "\n";
+    template('taxonomy/form', compact('tax', 'action', 'values', 'formMessage', 'locked'));
 }
 
 /**
@@ -522,13 +492,7 @@ function taxonomyForm(
  */
 function taxonomyModalForm(string $key, array $locked = []): string
 {
-    $tax = taxonomy($key);
-
-    ob_start();
-    echo '<h2>Add New ' . $tax['label'] . '</h2>' . "\n";
-    taxonomyForm($tax, 'add', [], false, $locked);
-
-    return ob_get_clean();
+    return templateHtml('taxonomy/modal-form', ['tax' => taxonomy($key), 'locked' => $locked]);
 }
 
 /**
@@ -540,11 +504,6 @@ function taxonomyIndexPage(string $key): void
     $search = trim((string)queryParam('q'));
     $slice = paginate(taxonomyRowCount($tax, $search));
     $rows = taxonomyRows($tax, $search, $slice);
-    $nameField = taxonomyNameField($tax);
-    $extraColumns = $tax['columns'] ?? [];
-
-    // One query for the whole page rather than one per line.
-    $usage = taxonomyUsageCounts($tax, array_column($rows, $tax['id']));
 
     $links = ['Add New ' . $tax['label'] => 'index.php?page=' . $tax['routes']['add']];
 
@@ -552,42 +511,17 @@ function taxonomyIndexPage(string $key): void
         $links['Labels'] = 'index.php?page=labels&amp;type=location';
     }
 
-    pageHeader($tax['plural'] . countBadge($slice['total']), $links);
-
-    formMessage(takeFlash());
-    renderSearchBar($tax['routes']['index'], 'Search ' . strtolower($tax['plural']) . '...');
-
-    if (!$rows) {
-        echo '<p>' . ($search !== ''
-            ? 'No ' . strtolower($tax['plural']) . ' match &ldquo;' . escapeHtml($search) . '&rdquo;.'
-            : 'No ' . strtolower($tax['plural']) . ' yet.') . '</p>' . "\n";
-
-        return;
-    }
-
-    renderTable(
-        array_merge(['Name', 'Items'], array_keys($extraColumns), ['Edit']),
-        $rows,
-        function ($row) use ($tax, $nameField, $extraColumns, $usage) {
-            $id = $row[$tax['id']];
-            $itemsUrl = 'index.php?page=items&' . $tax['param'] . '=' . $id;
-
-            $cells = [
-                '<a href="' . $itemsUrl . '">' . escapeHtml($row[$nameField]) . '</a>',
-                $usage[$id] ?? 0,
-            ];
-
-            foreach ($extraColumns as $render) {
-                $cells[] = $render($row);
-            }
-
-            $cells[] = '<a href="index.php?page=' . $tax['routes']['edit'] . '&' . $tax['param'] . '=' . $id . '">Edit</a>';
-
-            return $cells;
-        }
-    );
-
-    renderPagination($slice, strtolower($tax['plural']));
+    template('page/taxonomy-index', [
+        'tax'          => $tax,
+        'rows'         => $rows,
+        'slice'        => $slice,
+        'search'       => $search,
+        // One query for the whole page rather than one per line.
+        'usage'        => taxonomyUsageCounts($tax, array_column($rows, $tax['id'])),
+        'links'        => $links,
+        'nameField'    => taxonomyNameField($tax),
+        'extraColumns' => $tax['columns'] ?? [],
+    ]);
 }
 
 /**
@@ -613,11 +547,7 @@ function taxonomyAddPage(string $key): void
         $formMessage = errorMessage($result['errors']);
     }
 
-    pageHeader('Add ' . $tax['label'], [
-        'Back to ' . $tax['plural'] => 'index.php?page=' . $tax['routes']['index'],
-    ]);
-
-    taxonomyForm($tax, 'add', $values, $formMessage);
+    template('page/taxonomy-add', compact('tax', 'values', 'formMessage'));
 }
 
 /**
@@ -692,36 +622,13 @@ function taxonomyEditPage(string $key): void
 
     $row = dbRow('SELECT * FROM ' . $tax['table'] . ' WHERE ' . $tax['id'] . ' = :edit_id', ['edit_id' => $editId]);
 
-    pageHeader('Edit ' . $tax['label'], ['Back to ' . $tax['plural'] => $indexUrl]);
-
-    if (!$row) {
-        formMessage($formMessage);
-        echo '<p>No ' . strtolower($tax['label']) . ' found</p>' . "\n";
-        return;
-    }
-
-    if (isset($tax['notice'])) {
-        $tax['notice']($row);
-    }
-
-    taxonomyForm($tax, 'edit', $posted ?? $row, $formMessage);
-
-    $inUse = taxonomyUsageCount($tax, $editId);
-
-    if ($inUse > 0) {
-        sectionHeader('Delete ' . $tax['label']);
-        echo '<p>This ' . strtolower($tax['label']) . ' is used by '
-            . '<a href="index.php?page=items&' . $tax['param'] . '=' . $editId . '">'
-            . $inUse . ' ' . ($inUse === 1 ? 'item' : 'items') . '</a>.'
-            . ' Move ' . ($inUse === 1 ? 'it' : 'them') . ' elsewhere before deleting.</p>' . "\n";
-
-        return;
-    }
-
-    deleteSection(
-        $tax['label'],
-        'delete_' . $tax['submit'] . '_submit',
-        'Delete',
-        'Delete this ' . strtolower($tax['label']) . '?'
-    );
+    template('page/taxonomy-edit', [
+        'tax'         => $tax,
+        'row'         => $row,
+        'values'      => $posted ?? ($row ?: []),
+        'formMessage' => $formMessage,
+        'indexUrl'    => $indexUrl,
+        'editId'      => $editId,
+        'inUse'       => $row ? taxonomyUsageCount($tax, $editId) : 0,
+    ]);
 }

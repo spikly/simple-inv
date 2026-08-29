@@ -1,0 +1,9 @@
+<?php
+/**
+ * @var array $values      Current field values.
+ * @var mixed $formMessage The last result, or false.
+ */
+
+pageHeader('Add Project', ['Back to Projects' => 'index.php?page=projects']);
+
+renderProjectForm($values, 'add_project', $formMessage);

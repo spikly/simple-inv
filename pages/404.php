@@ -1,3 +1,3 @@
-<p>
-	Page not found
-</p>
+<?php
+
+template('page/404');

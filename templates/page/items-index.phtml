@@ -1,0 +1,43 @@
+<?php
+/**
+ * The listing behind the Parts, Tools and Items pages.
+ *
+ * @var ?string $type    The kind the page is pinned to, or null for the mixed
+ *                       listing reached by drilling into a location or a
+ *                       manufacturer, which holds both.
+ * @var array   $items   The rows on this page.
+ * @var array   $slice   The slice paginate() worked out.
+ * @var array   $applied Which taxonomy filters are in force.
+ * @var string  $noun    What the rows are called.
+ * @var string  $badges  Filter badges shown beside the heading, raw HTML.
+ * @var array   $links   Heading links, label => href.
+ * @var array   $columns Heading => a function giving that heading's cell.
+ */
+
+pageHeader($noun . countBadge($slice['total'], $badges), $links);
+
+formMessage(takeFlash());
+renderItemFilters($applied, $type, itemTypePage($type));
+
+if (!$items): ?>
+<p>No <?php echo strtolower($noun); ?> match.</p>
+<?php
+    return;
+endif;
+
+renderTable(
+    array_keys($columns),
+    $items,
+    static function (array $item) use ($columns) {
+        $cells = [];
+
+        foreach ($columns as $cell) {
+            $cells[] = $cell($item);
+        }
+
+        return $cells;
+    },
+    [0 => 'col-thumb']
+);
+
+renderPagination($slice, strtolower($noun));

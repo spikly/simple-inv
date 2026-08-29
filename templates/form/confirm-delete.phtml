@@ -1,0 +1,14 @@
+<?php
+/**
+ * A delete button on its own, guarded by a browser confirmation, for the pages
+ * that close with one rather than giving it a section of its own.
+ *
+ * @var string $submitName  Submit button name, which is what the page tests for.
+ * @var string $buttonLabel Button text.
+ * @var string $confirmText Question the browser asks first.
+ */
+?>
+<hr>
+<form method="post" onsubmit="return confirm(<?php echo jsString($confirmText); ?>);">
+    <p><input type="submit" name="<?php echo $submitName; ?>" value="<?php echo $buttonLabel; ?>" class="delete"></p>
+</form>

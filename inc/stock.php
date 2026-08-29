@@ -113,24 +113,5 @@ function stockChangeCell($change, string $unit): string
 /** The history table shown on a part's page. */
 function renderStockMovements(array $movements, array $item): void
 {
-    if (!$movements) {
-        echo '<p>Nothing has moved yet.</p>' . "\n";
-        return;
-    }
-
-    $unit = escapeHtml($item['unit_symbol'] ?? '');
-
-    renderTable(
-        ['When', 'Change', 'Held After', 'Why', 'Note'],
-        $movements,
-        function ($move) use ($unit) {
-            return [
-                escapeHtml(formatDate($move['move_at'], 'j M Y H:i')),
-                stockChangeCell($move['move_change'], $unit),
-                formatQuantity($move['move_quantity_after']) . $unit,
-                escapeHtml(STOCK_MOVEMENT_REASONS[$move['move_reason']] ?? $move['move_reason']),
-                escapeHtml((string)$move['move_note']),
-            ];
-        }
-    );
+    template('stock/movements', compact('movements', 'item'));
 }

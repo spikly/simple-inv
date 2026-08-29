@@ -1,0 +1,9 @@
+<?php
+/**
+ * @var string $name  Field name, also the id.
+ * @var mixed  $value Current value, escaped here.
+ */
+?>
+<textarea name="<?php echo $name; ?>" id="<?php echo $name; ?>"<?php
+    echo invalidAttributes($name);
+?>><?php echo escapeHtml($value); ?></textarea>

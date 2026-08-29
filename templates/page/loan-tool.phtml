@@ -1,0 +1,82 @@
+<?php
+/**
+ * Signing a tool out and back in again.
+ *
+ * The same page does both, because which one it offers is not a choice: a tool
+ * that is here can go out, and one that is out can come back.
+ *
+ * @var mixed  $item        The tool, or false when there is no such id.
+ * @var mixed  $loan        Its open sign-out, or null when it is here.
+ * @var string $itemUrl     Back to the tool.
+ * @var array  $values      What was typed in last, if a save was rejected.
+ * @var mixed  $formMessage The last result, or false.
+ * @var array  $loans       Its sign-out history for this page.
+ * @var array  $loanSlice   Their slice.
+ */
+
+pageHeader('Sign Tool In and Out', $item ? [
+    'View Tool' => $itemUrl,
+    'All Tools' => 'index.php?page=tools',
+] : []);
+
+if (!$item):
+    formMessage($formMessage); ?>
+<p>Invalid item ID</p>
+<?php
+    return;
+endif;
+
+if (!isTool($item)):
+    formMessage($formMessage); ?>
+<p>
+    <strong><?php echo escapeHtml($item['item_name']); ?></strong> is a part, not a tool, so it is
+    reserved through projects rather than signed out.
+    <a href="<?php echo $itemUrl; ?>">Back to it.</a>
+</p>
+<?php
+    return;
+endif;
+?>
+<p>
+    <strong>Tool:</strong> <?php echo escapeHtml($item['item_name']); ?>
+    - kept in <?php echo escapeHtml($item['loc_name'] ?? 'no location'); ?>
+</p>
+<?php
+// A save redirects, so anything reaching here left the loan as it was found.
+if ($loan):
+    $overdue = loanIsOverdue($loan['loan_due_at']);
+?>
+<p class="form-message form-<?php echo $overdue ? 'error' : 'success'; ?>">
+    Out with <strong><?php echo escapeHtml($loan['loan_to']); ?></strong>
+    since <?php echo escapeHtml(formatDate($loan['loan_out_at']));
+
+    if ($loan['loan_due_at']) {
+        echo ', due back ' . escapeHtml(formatDate($loan['loan_due_at'])) . ($overdue ? ' (overdue)' : '');
+    } else {
+        echo ', with no date set';
+    }
+?>.
+</p>
+<?php formMessage($formMessage); ?>
+<form method="post">
+    <p>Signing it back in keeps the record, so this tool remembers where it has been.</p>
+    <p><input type="submit" name="sign_in_submit" value="Sign Back In"></p>
+</form>
+<?php else: ?>
+<form method="post">
+<?php
+    // First, because it is what marks the fields the last save was rejected over.
+    formMessage($formMessage);
+
+    textField('loan_to', 'Signed Out To', $values['loan_to'] ?? '', 'text', ' required');
+    textField('loan_due_at', 'Due Back (optional)', $values['loan_due_at'] ?? '', 'date');
+    textareaField('loan_notes', 'Notes (optional)', $values['loan_notes'] ?? '');
+    submitButton('sign_out_submit', 'Sign Out');
+?>
+</form>
+<?php endif; ?>
+<?php
+sectionHeader('Sign-Out History');
+
+renderToolLoans($loans);
+renderPagination($loanSlice, 'sign-outs');

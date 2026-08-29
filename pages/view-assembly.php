@@ -4,7 +4,7 @@ $assemblyId = queryId('assembly_id');
 $assembly = fetchAssembly($assemblyId);
 
 if (!$assembly) {
-    echo '<p>Assembly not found.</p>';
+    template('page/view-assembly', ['assembly' => false]);
     return;
 }
 
@@ -52,58 +52,11 @@ if (isset($_POST['duplicate_assembly_submit'])) {
 }
 
 $slice = paginate(countAssemblyItems($assemblyId));
-$items = fetchAssemblyItems($assemblyId, $slice);
 
-$duplicateForm = '<form method="post" style="display:inline;"'
-    . ' onsubmit="return confirm(' . jsString('Duplicate this assembly and all of its parts?') . ');">'
-    . '<input type="submit" name="duplicate_assembly_submit" value="Duplicate Assembly">'
-    . '</form>';
-
-pageHeader(escapeHtml($assembly['assembly_name']), [
-    'Add Part'        => 'index.php?page=add-assembly-item&assembly_id=' . $assemblyId,
-    'Edit Assembly'   => 'index.php?page=edit-assembly&assembly_id=' . $assemblyId,
-    'Back to Project' => 'index.php?page=view-project&project_id=' . (int)$assembly['project_id'],
-], $duplicateForm);
-
-formMessage($formMessage);
-
-if ($assembly['assembly_description']) {
-    notesBox($assembly['assembly_description']);
-}
-
-sectionHeader('Parts' . countBadge($slice['total']));
-
-if ($items) {
-    renderTable(
-        ['Item', 'Required', 'Allocated', 'Installed', 'Remaining', ''],
-        $items,
-        function ($item) {
-            // Anything the item could not spare, so a part that is waiting on
-            // stock says so where it is being looked at.
-            $outstanding = max(0, (float)$item['quantity_required'] - (float)$item['quantity_installed']);
-            $short = $outstanding - (float)$item['quantity_allocated'];
-
-            return [
-                '<a href="index.php?page=view-item&item_id=' . (int)$item['item_id'] . '">'
-                    . escapeHtml($item['item_name']) . '</a>',
-                formatQuantity($item['quantity_required']),
-                formatQuantity($item['quantity_allocated'])
-                    . ($short > 0 ? '<small class="row-note">' . formatQuantity($short)
-                        . ' short of stock</small>' : ''),
-                formatQuantity($item['quantity_installed']),
-                formatQuantity($outstanding),
-                '<a href="index.php?page=edit-assembly-item&assembly_item_id='
-                    . (int)$item['assembly_item_id'] . '">Edit</a>',
-            ];
-        }
-    );
-
-    renderPagination($slice, 'parts');
-} else {
-    echo '<p>No parts assigned to this assembly.</p>' . "\n";
-}
-
-if ($assembly['assembly_notes']) {
-    sectionHeader('Notes');
-    notesBox($assembly['assembly_notes']);
-}
+template('page/view-assembly', [
+    'assembly'    => $assembly,
+    'items'       => fetchAssemblyItems($assemblyId, $slice),
+    'slice'       => $slice,
+    'assemblyId'  => $assemblyId,
+    'formMessage' => $formMessage,
+]);

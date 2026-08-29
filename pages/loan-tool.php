@@ -43,58 +43,19 @@ if ($item && isset($_POST['sign_out_submit'])) {
     redirectWith($itemUrl, successMessage(escapeHtml($item['item_name']) . ' is back in.'));
 }
 
-pageHeader('Sign Tool In and Out', $item ? [
-    'View Tool' => $itemUrl,
-    'All Tools' => 'index.php?page=tools',
-] : []);
+$view = [
+    'item'        => $item,
+    'loan'        => $loan,
+    'itemUrl'     => $itemUrl,
+    'values'      => $values,
+    'formMessage' => $formMessage,
+    'loans'       => [],
+    'loanSlice'   => [],
+];
 
-if (!$item) {
-    formMessage($formMessage);
-    echo '<p>Invalid item ID</p>';
-    return;
+if ($item && isTool($item)) {
+    $view['loanSlice'] = paginate(countToolLoans($itemId), 'lp');
+    $view['loans'] = fetchToolLoans($itemId, $view['loanSlice']);
 }
 
-if (!isTool($item)) {
-    formMessage($formMessage);
-    echo '<p><strong>' . escapeHtml($item['item_name']) . '</strong> is a part, not a tool, so it is'
-        . ' reserved through projects rather than signed out.'
-        . ' <a href="' . $itemUrl . '">Back to it.</a></p>' . "\n";
-    return;
-}
-
-echo '<p><strong>Tool:</strong> ' . escapeHtml($item['item_name'])
-    . ' - kept in ' . escapeHtml($item['loc_name'] ?? 'no location') . '</p>' . "\n";
-
-// A save redirects, so anything reaching here left the loan as it was found.
-if ($loan) {
-    $overdue = loanIsOverdue($loan['loan_due_at']);
-
-    echo '<p class="form-message form-' . ($overdue ? 'error' : 'success') . '">'
-        . 'Out with <strong>' . escapeHtml($loan['loan_to']) . '</strong> since '
-        . escapeHtml(formatDate($loan['loan_out_at']))
-        . ($loan['loan_due_at']
-            ? ', due back ' . escapeHtml(formatDate($loan['loan_due_at'])) . ($overdue ? ' (overdue)' : '')
-            : ', with no date set')
-        . '.</p>' . "\n";
-
-    formMessage($formMessage);
-
-    echo '<form method="post">' . "\n";
-    echo '    <p>Signing it back in keeps the record, so this tool remembers where it has been.</p>' . "\n";
-    echo '    <p><input type="submit" name="sign_in_submit" value="Sign Back In"></p>' . "\n";
-    echo '</form>' . "\n";
-} else {
-    echo '<form method="post">' . "\n";
-    formMessage($formMessage);
-    textField('loan_to', 'Signed Out To', $values['loan_to'] ?? '', 'text', ' required');
-    textField('loan_due_at', 'Due Back (optional)', $values['loan_due_at'] ?? '', 'date');
-    textareaField('loan_notes', 'Notes (optional)', $values['loan_notes'] ?? '');
-    submitButton('sign_out_submit', 'Sign Out');
-    echo '</form>' . "\n";
-}
-
-sectionHeader('Sign-Out History');
-
-$loanSlice = paginate(countToolLoans($itemId), 'lp');
-renderToolLoans(fetchToolLoans($itemId, $loanSlice));
-renderPagination($loanSlice, 'sign-outs');
+template('page/loan-tool', $view);

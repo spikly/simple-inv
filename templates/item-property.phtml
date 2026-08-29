@@ -1,0 +1,13 @@
+<?php
+/**
+ * One tile inside an .item-property-container.
+ *
+ * @var string $heading Tile heading.
+ * @var string $body    Raw HTML.
+ * @var string $class   Extra class, usually a colour: green, amber or red.
+ */
+?>
+<div class="item-property<?php echo $class ? ' ' . $class : ''; ?>">
+    <h3><?php echo $heading; ?></h3>
+    <?php echo $body; ?>
+</div>

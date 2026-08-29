@@ -138,3 +138,14 @@ function baseUrl(): string
 
     return ($secure ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . $folder . '/';
 }
+
+/**
+ * The cache buster on an asset's address, so a changed file is fetched again
+ * rather than served from the browser's copy. $path is relative to assets/.
+ */
+function assetVersion(string $path): string
+{
+    $file = __DIR__ . '/../assets/' . $path;
+
+    return (string)(is_file($file) ? filemtime($file) : '');
+}

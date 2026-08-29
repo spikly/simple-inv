@@ -1,0 +1,11 @@
+<?php
+/**
+ * A QR code as a self contained SVG, so a label sheet prints without asking
+ * the browser for anything.
+ *
+ * @var int    $pixels How big to draw it.
+ * @var int    $extent The matrix plus its quiet zone, in modules.
+ * @var string $path   One <path> covering every dark module.
+ */
+?>
+<svg xmlns="http://www.w3.org/2000/svg" width="<?php echo $pixels; ?>" height="<?php echo $pixels; ?>" viewBox="0 0 <?php echo $extent; ?> <?php echo $extent; ?>" shape-rendering="crispEdges" role="img" aria-label="QR code"><rect width="<?php echo $extent; ?>" height="<?php echo $extent; ?>" fill="#ffffff"/><path d="<?php echo $path; ?>" fill="#000000"/></svg>

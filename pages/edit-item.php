@@ -95,28 +95,10 @@ if ($item && isset($_POST['edit_item_submit'])) {
     );
 }
 
-$other = ($type === 'part') ? 'tool' : 'part';
-
-pageHeader('Edit ' . ITEM_TYPES[$type], $item ? [
-    'View ' . ITEM_TYPES[$type]           => 'index.php?page=view-item&item_id=' . $item['item_id'],
-    'Back to ' . ITEM_TYPE_PLURALS[$type] => 'index.php?page=' . itemTypePage($type),
-    'Make it a ' . ITEM_TYPES[$other] => 'index.php?page=edit-item&item_id=' . $item['item_id']
-        . '&amp;kind=' . $other,
-] : []);
-
-if (!$item) {
-    formMessage($formMessage);
-    echo '<p>No item found</p>';
-    return;
-}
-
-if ($type !== itemTypeOf($item)) {
-    echo '<p class="form-message form-success">Filing this as a '
-        . strtolower(ITEM_TYPES[$type]) . '. Pick its new categories and save to make the change.</p>' . "\n";
-}
-
-renderItemForm($values, 'edit_item_submit', $type, $formMessage);
-
-deleteSection(ITEM_TYPES[$type], 'delete_item_submit', 'Delete',
-    'Delete "' . $item['item_name'] . '"? Its '
-    . ($type === 'tool' ? 'sign-out history goes' : 'assembly entries go') . ' too.');
+template('page/edit-item', [
+    'item'        => $item,
+    'values'      => $values,
+    'type'        => $type,
+    'other'       => ($type === 'part') ? 'tool' : 'part',
+    'formMessage' => $formMessage,
+]);

@@ -1,0 +1,49 @@
+<?php
+/**
+ * A taxonomy's edit page, including deletion.
+ *
+ * @var array  $tax         Its definition.
+ * @var mixed  $row         The stored row, or false when there is no such id.
+ * @var array  $values      What to draw the form holding: the row, or what a
+ *                          rejected save was trying to store.
+ * @var mixed  $formMessage The last result, or false.
+ * @var string $indexUrl    Back to the listing.
+ * @var mixed  $editId      The id being edited.
+ * @var int    $inUse       How many items use this row, which is what stops it
+ *                          being deleted.
+ */
+
+pageHeader('Edit ' . $tax['label'], ['Back to ' . $tax['plural'] => $indexUrl]);
+
+if (!$row):
+    formMessage($formMessage); ?>
+<p>No <?php echo strtolower($tax['label']); ?> found</p>
+<?php
+    return;
+endif;
+
+// A row that decides how other rows behave says so before it is changed.
+if (isset($tax['notice'])) {
+    $tax['notice']($row);
+}
+
+taxonomyForm($tax, 'edit', $values, $formMessage);
+
+if ($inUse > 0):
+    sectionHeader('Delete ' . $tax['label']); ?>
+<p>
+    This <?php echo strtolower($tax['label']); ?> is used by
+    <a href="index.php?page=items&<?php echo $tax['param'] . '=' . $editId; ?>"><?php
+        echo $inUse . ' ' . ($inUse === 1 ? 'item' : 'items');
+    ?></a>. Move <?php echo $inUse === 1 ? 'it' : 'them'; ?> elsewhere before deleting.
+</p>
+<?php
+    return;
+endif;
+
+deleteSection(
+    $tax['label'],
+    'delete_' . $tax['submit'] . '_submit',
+    'Delete',
+    'Delete this ' . strtolower($tax['label']) . '?'
+);

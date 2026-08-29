@@ -1,0 +1,14 @@
+<?php
+/**
+ * A taxonomy's add page.
+ *
+ * @var array $tax         Its definition.
+ * @var array $values      What a rejected save was trying to store.
+ * @var mixed $formMessage The last result, or false.
+ */
+
+pageHeader('Add ' . $tax['label'], [
+    'Back to ' . $tax['plural'] => 'index.php?page=' . $tax['routes']['index'],
+]);
+
+taxonomyForm($tax, 'add', $values, $formMessage);

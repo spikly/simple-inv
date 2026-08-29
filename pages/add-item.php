@@ -77,18 +77,10 @@ if (isset($_POST['add_item_submit'])) {
     }
 }
 
-$other = ($type === 'part') ? 'tool' : 'part';
-
-pageHeader('Add ' . ITEM_TYPES[$type], [
-    'Back to ' . ITEM_TYPE_PLURALS[$type] => 'index.php?page=' . itemTypePage($type),
-    'Add a ' . ITEM_TYPES[$other] . ' Instead' => 'index.php?page=add-item&kind=' . $other,
+template('page/add-item', [
+    'values'        => $values,
+    'type'          => $type,
+    'other'         => ($type === 'part') ? 'tool' : 'part',
+    'hasCategories' => (bool)categoryOptions($type),
+    'formMessage'   => $formMessage,
 ]);
-
-if (!categoryOptions($type)) {
-    formMessage($formMessage);
-    echo '<p>There are no ' . strtolower(ITEM_TYPES[$type]) . ' categories yet, and everything has to be'
-        . ' filed under one. <a href="index.php?page=add-cat">Add one first.</a></p>' . "\n";
-    return;
-}
-
-renderItemForm($values, 'add_item_submit', $type, $formMessage);

@@ -1,0 +1,15 @@
+<?php
+/**
+ * The submit and clear buttons that close a filter bar.
+ *
+ * @var string $page       Page to return to with nothing filtered.
+ * @var bool   $hasFilters Whether anything is in force to clear.
+ * @var string $label      Submit button text.
+ */
+?>
+    <p class="filter-actions">
+        <input type="submit" value="<?php echo $label; ?>">
+<?php if ($hasFilters): ?>
+        <a href="index.php?page=<?php echo $page; ?>" class="filter-clear">Clear</a>
+<?php endif; ?>
+    </p>

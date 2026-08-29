@@ -46,30 +46,4 @@ if ($loan && isset($_POST['edit_loan_submit'])) {
     );
 }
 
-pageHeader('Edit Sign-Out Record', $itemId ? [
-    'View Tool' => 'index.php?page=view-item&item_id=' . urlencode((string)$itemId),
-] : []);
-
-if (!$loan) {
-    formMessage($formMessage);
-    echo '<p>No sign-out record found</p>';
-    return;
-}
-
-echo '<form method="post">' . "\n";
-formMessage($formMessage);
-textField('loan_to', 'Signed Out To', $loan['loan_to'], 'text', ' required');
-textField('loan_due_at', 'Due Back (optional)', $loan['loan_due_at'], 'date');
-// Clearing this puts the tool back out with whoever had it.
-textField(
-    'loan_in_at',
-    'Returned (clear this to put it back out)',
-    $loan['loan_in_at'] ? date('Y-m-d\TH:i', strtotime($loan['loan_in_at'])) : '',
-    'datetime-local'
-);
-textareaField('loan_notes', 'Notes (optional)', (string)$loan['loan_notes']);
-submitButton('edit_loan_submit');
-echo '</form>' . "\n";
-
-deleteSection('Sign-Out Record', 'delete_loan_submit', 'Delete',
-    'Delete this sign-out record? The tool\'s history loses it for good.');
+template('page/edit-loan', compact('loan', 'itemId', 'formMessage'));

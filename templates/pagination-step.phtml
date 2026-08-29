@@ -1,0 +1,18 @@
+<?php
+/**
+ * A previous/next control, shown greyed out at the ends so the bar keeps its
+ * shape rather than shifting as you move through it.
+ *
+ * @var array  $slice   The slice paginate() worked out.
+ * @var int    $number  The page this steps to.
+ * @var string $label   Control text.
+ * @var bool   $enabled Whether there is a page that way.
+ */
+?>
+<?php if ($enabled): ?>
+        <a href="<?php echo urlWithParam($slice['param'], $number); ?>" class="pagination-step"><?php
+            echo $label;
+        ?></a>
+<?php else: ?>
+        <span class="pagination-step is-disabled"><?php echo $label; ?></span>
+<?php endif; ?>

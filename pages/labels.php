@@ -1,8 +1,8 @@
 <?php
 
 /**
- * Printable QR labels. Stick a location label on the drawer it names and
- * scanning it opens that location's items; an item label opens the item.
+ * Which labels to make: every location, one item, or whatever the items
+ * listing was filtered down to.
  */
 
 $type = (queryParam('type') === 'item') ? 'item' : 'location';
@@ -35,29 +35,4 @@ if ($type === 'location') {
     }
 }
 
-pageHeader('Labels' . countBadge(count($labels)), [
-    'Location Labels' => 'index.php?page=labels&amp;type=location',
-    'Item Labels'     => 'index.php?page=labels&amp;type=item',
-    'Print'           => '#print',
-]);
-
-?>
-<p class="no-print">
-    Scanning a label opens this app at that <?php echo $type === 'location' ? 'location' : 'item'; ?>.
-    The address encoded is <code><?php echo escapeHtml(baseUrl()); ?></code> -
-    set <code>'site' =&gt; ['url' =&gt; '...']</code> in <code>config/user.config.php</code> if that is
-    not how you reach this machine.
-</p>
-
-<?php if (!$labels): ?>
-    <p>Nothing to make labels for.</p>
-<?php else: ?>
-    <div class="label-sheet">
-        <?php foreach ($labels as $label): ?>
-            <div class="label">
-                <?php echo qrSvg($label['url'], 150); ?>
-                <span class="label-title"><?php echo escapeHtml($label['title']); ?></span>
-            </div>
-        <?php endforeach; ?>
-    </div>
-<?php endif; ?>
+template('page/labels', compact('type', 'labels'));

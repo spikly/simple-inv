@@ -1,0 +1,12 @@
+<?php
+/**
+ * The form loaded into the "add new" modal on the item pages.
+ *
+ * @var array $tax    Its definition.
+ * @var array $locked Column => value fixed by the item form. A category added
+ *                    from there has to file the kind of thing that item is, so
+ *                    there is nothing to choose.
+ */
+?>
+<h2>Add New <?php echo $tax['label']; ?></h2>
+<?php taxonomyForm($tax, 'add', [], false, $locked); ?>

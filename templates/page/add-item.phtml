@@ -1,0 +1,27 @@
+<?php
+/**
+ * A new part or a new tool.
+ *
+ * @var array  $values      Current field values.
+ * @var string $type        The kind being added.
+ * @var string $other       The kind it is not, for the link that switches.
+ * @var bool   $hasCategories Whether there is a category to file it under.
+ * @var mixed  $formMessage The last result, or false.
+ */
+
+pageHeader('Add ' . ITEM_TYPES[$type], [
+    'Back to ' . ITEM_TYPE_PLURALS[$type] => 'index.php?page=' . itemTypePage($type),
+    'Add a ' . ITEM_TYPES[$other] . ' Instead' => 'index.php?page=add-item&kind=' . $other,
+]);
+
+if (!$hasCategories):
+    formMessage($formMessage); ?>
+<p>
+    There are no <?php echo strtolower(ITEM_TYPES[$type]); ?> categories yet, and everything has to be
+    filed under one. <a href="index.php?page=add-cat">Add one first.</a>
+</p>
+<?php
+    return;
+endif;
+
+renderItemForm($values, 'add_item_submit', $type, $formMessage);

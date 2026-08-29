@@ -1,0 +1,46 @@
+<?php
+/**
+ * One part on an assembly: how much it needs, and how much of that is in.
+ *
+ * @var mixed  $assemblyItem The row, or false when there is no such id.
+ * @var array  $values       Current field values.
+ * @var float  $available    What this part could still take: its own
+ *                           reservation plus anything free.
+ * @var mixed  $formMessage  The last result, or false.
+ */
+
+if (!$assemblyItem): ?>
+<p>Assembly item not found.</p>
+<?php
+    return;
+endif;
+
+pageHeader('Edit Assembly Part', [
+    'Back to Assembly' => 'index.php?page=view-assembly&assembly_id=' . (int)$assemblyItem['assembly_id'],
+]);
+
+$unit = escapeHtml($assemblyItem['unit_symbol'] ?? '');
+?>
+<p>Item: <strong><?php echo escapeHtml($assemblyItem['item_name']); ?></strong></p>
+<p>Assembly: <strong><?php echo escapeHtml($assemblyItem['assembly_name']); ?></strong></p>
+<div class="item-property-container">
+<?php
+itemProperty('Reserved from Stock', '<p>' . formatQuantity($assemblyItem['quantity_allocated']) . $unit . '</p>');
+itemProperty('Available to Take', '<p>' . formatQuantity($available) . $unit . '</p>');
+?>
+</div>
+<form method="post">
+<?php
+// First, because it is what marks the fields the last save was rejected over.
+formMessage($formMessage);
+
+renderAssemblyItemFields($values, formatQuantity($available) . $unit . ' available');
+submitButton('edit_assembly_item_submit');
+?>
+</form>
+<?php
+confirmDeleteForm(
+    'delete_assembly_item_submit',
+    'Remove Part',
+    'Remove this part from the assembly? Its reserved stock goes back, installed units stay spent.'
+);

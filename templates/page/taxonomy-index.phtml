@@ -1,0 +1,54 @@
+<?php
+/**
+ * A taxonomy's listing page: every row, searchable, linking through to the
+ * items filed under it.
+ *
+ * @var array  $tax          Its definition.
+ * @var array  $rows         The rows on this page.
+ * @var array  $slice        The slice paginate() worked out.
+ * @var string $search       What is being searched for now, or ''.
+ * @var array  $usage        Row id => how many items use it.
+ * @var array  $links        Heading links, label => href.
+ * @var string $nameField    The required name column.
+ * @var array  $extraColumns Heading => a function giving that heading's cell.
+ */
+
+pageHeader($tax['plural'] . countBadge($slice['total']), $links);
+
+formMessage(takeFlash());
+renderSearchBar($tax['routes']['index'], 'Search ' . strtolower($tax['plural']) . '...');
+
+if (!$rows):
+    if ($search !== ''): ?>
+<p>No <?php echo strtolower($tax['plural']); ?> match &ldquo;<?php echo escapeHtml($search); ?>&rdquo;.</p>
+<?php else: ?>
+<p>No <?php echo strtolower($tax['plural']); ?> yet.</p>
+<?php endif;
+
+    return;
+endif;
+
+renderTable(
+    array_merge(['Name', 'Items'], array_keys($extraColumns), ['Edit']),
+    $rows,
+    static function ($row) use ($tax, $nameField, $extraColumns, $usage) {
+        $id = $row[$tax['id']];
+
+        $cells = [
+            '<a href="index.php?page=items&' . $tax['param'] . '=' . $id . '">'
+                . escapeHtml($row[$nameField]) . '</a>',
+            $usage[$id] ?? 0,
+        ];
+
+        foreach ($extraColumns as $render) {
+            $cells[] = $render($row);
+        }
+
+        $cells[] = '<a href="index.php?page=' . $tax['routes']['edit']
+            . '&' . $tax['param'] . '=' . $id . '">Edit</a>';
+
+        return $cells;
+    }
+);
+
+renderPagination($slice, strtolower($tax['plural']));

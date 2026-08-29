@@ -1,0 +1,42 @@
+<?php
+/**
+ * The bar under a listing: what you are looking at, and the way to the rest.
+ *
+ * @var array  $slice The slice paginate() worked out.
+ * @var string $noun  What the rows are, so it reads "of 312 parts".
+ */
+?>
+<nav class="pagination" aria-label="Pagination">
+    <p class="pagination-count">Showing <?php
+        echo $slice['from'];
+    ?>&ndash;<?php echo $slice['to']; ?> of <?php echo $slice['total']; ?> <?php echo escapeHtml($noun); ?></p>
+<?php if ($slice['pages'] > 1): ?>
+    <p class="pagination-pages">
+<?php
+        template('pagination-step', [
+            'slice'   => $slice,
+            'number'  => $slice['current'] - 1,
+            'label'   => 'Previous',
+            'enabled' => $slice['current'] > 1,
+        ]);
+
+        foreach (paginationNumbers($slice['current'], $slice['pages']) as $number):
+            if ($number === null): ?>
+        <span class="pagination-gap">&hellip;</span>
+<?php       elseif ($number === $slice['current']): ?>
+        <span class="pagination-current" aria-current="page"><?php echo $number; ?></span>
+<?php       else: ?>
+        <a href="<?php echo urlWithParam($slice['param'], $number); ?>"><?php echo $number; ?></a>
+<?php       endif;
+        endforeach;
+
+        template('pagination-step', [
+            'slice'   => $slice,
+            'number'  => $slice['current'] + 1,
+            'label'   => 'Next',
+            'enabled' => $slice['current'] < $slice['pages'],
+        ]);
+?>
+    </p>
+<?php endif; ?>
+</nav>

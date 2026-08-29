@@ -17,6 +17,7 @@ if (!file_exists(__DIR__ . '/../config/user.config.php')) {
 
 require __DIR__ . '/config.php';
 require __DIR__ . '/utils.php';
+require __DIR__ . '/template.php';
 require __DIR__ . '/errors.php';
 
 registerErrorHandlers();

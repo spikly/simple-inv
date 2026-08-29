@@ -581,10 +581,5 @@ function qrSvg(string $text, int $pixels = 120, string $ecLevel = 'M'): string
         }
     }
 
-    return '<svg xmlns="http://www.w3.org/2000/svg" width="' . $pixels . '" height="' . $pixels . '"'
-        . ' viewBox="0 0 ' . $extent . ' ' . $extent . '" shape-rendering="crispEdges" role="img"'
-        . ' aria-label="QR code">'
-        . '<rect width="' . $extent . '" height="' . $extent . '" fill="#ffffff"/>'
-        . '<path d="' . $path . '" fill="#000000"/>'
-        . '</svg>';
+    return trim(templateHtml('qr-svg', compact('pixels', 'extent', 'path')));
 }

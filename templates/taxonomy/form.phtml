@@ -1,0 +1,20 @@
+<?php
+/**
+ * A taxonomy's add/edit form: its fields plus a save button.
+ *
+ * @var array  $tax         Its definition.
+ * @var string $action      'add' or 'edit', which picks the submit name.
+ * @var array  $values      Current field values.
+ * @var mixed  $formMessage The last result, or false.
+ * @var array  $locked      Column => value fixed by the page.
+ */
+?>
+<form method="post">
+<?php
+// First, because it is what marks the fields the last save was rejected over.
+formMessage($formMessage);
+
+taxonomyFields($tax, $values, $locked);
+submitButton($action . '_' . $tax['submit'] . '_submit');
+?>
+</form>

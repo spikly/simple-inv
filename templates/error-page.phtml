@@ -1,0 +1,30 @@
+<?php
+/**
+ * The whole page shown when something went wrong, standing in for the layout
+ * in index.php because whatever was being drawn has been thrown away.
+ *
+ * @var string $detail Raw HTML: the trace when debug is on, a note about the
+ *                     error log when it is not.
+ */
+?>
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Something went wrong</title>
+        <link href="assets/styles/styles.css" rel="stylesheet">
+    </head>
+    <body>
+        <div class="container body">
+            <div class="flex-nav"><h2>Something went wrong</h2></div>
+            <p>
+                The page could not be loaded. This is usually a database problem -
+                check that the settings in <code>config/user.config.php</code> are correct and that
+                the database has been updated with <code>database-updates.sql</code>.
+            </p>
+            <?php echo $detail; ?>
+            <p><a href="index.php">Back to the dashboard</a></p>
+        </div>
+    </body>
+</html>

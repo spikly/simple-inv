@@ -1,0 +1,78 @@
+<?php
+/**
+ * Taking a delivery in, or writing stock off.
+ *
+ * The edit page sets what is held to a figure. This changes it by one, because
+ * buying five more of something is a change of five and not a sum to work out
+ * in your head first.
+ *
+ * @var mixed  $item        The part, or false when there is no such id.
+ * @var string $itemUrl     Back to the part.
+ * @var string $amount      What was typed in last, if a save was rejected.
+ * @var string $note        Likewise.
+ * @var mixed  $formMessage The last result, or false.
+ * @var array  $movements   Its stock history for this page.
+ * @var array  $moveSlice   Their slice.
+ */
+
+pageHeader('Add and Remove Stock', $item ? [
+    'View Part'  => $itemUrl,
+    'Edit Part'  => 'index.php?page=edit-item&item_id=' . $item['item_id'],
+    'All Parts'  => 'index.php?page=parts',
+] : []);
+
+if (!$item):
+    formMessage($formMessage); ?>
+<p>Invalid item ID</p>
+<?php
+    return;
+endif;
+
+if (isTool($item)):
+    formMessage($formMessage); ?>
+<p>
+    <strong><?php echo escapeHtml($item['item_name']); ?></strong> is a tool rather than stock, so it is
+    signed in and out rather than counted.
+    <a href="index.php?page=loan-tool&item_id=<?php echo $item['item_id']; ?>">Sign it in or out.</a>
+</p>
+<?php
+    return;
+endif;
+
+$unit = escapeHtml($item['unit_symbol']);
+?>
+<p>
+    <strong>Part:</strong> <?php echo escapeHtml($item['item_name']); ?>
+    - kept in <?php echo escapeHtml($item['loc_name'] ?? 'no location'); ?>
+</p>
+<div class="item-property-container">
+<?php
+itemProperty('Held', '<p>' . (int)$item['item_quantity'] . $unit . '</p>');
+itemProperty('Reserved for Projects', '<p>' . formatQuantity($item['item_allocated_count']) . $unit . '</p>');
+itemProperty('Free', '<p>' . stockCell($item) . '</p>');
+?>
+</div>
+<form method="post">
+<?php
+// First, because it is what marks the fields the last save was rejected over.
+formMessage($formMessage);
+
+textField('stock_amount', 'Amount', $amount, 'number', ' min="1" step="1" required autofocus');
+textField('stock_note', 'Note (optional)', $note, 'text', ' maxlength="255"');
+?>
+    <p>
+        <input type="submit" name="add_stock_submit" value="Add Stock">
+        <input type="submit" name="remove_stock_submit" value="Remove Stock" class="delete">
+    </p>
+</form>
+<?php if ((float)$item['item_allocated_count'] > 0): ?>
+<p>
+    Stock arriving goes first to the assemblies that are short of it. Removing stock takes it back off
+    them, so what is reserved can fall as well as rise.
+</p>
+<?php endif; ?>
+<?php
+sectionHeader('Stock History');
+
+renderStockMovements($movements, $item);
+renderPagination($moveSlice, 'movements');

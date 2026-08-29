@@ -4,7 +4,7 @@ $projectId = queryId('project_id');
 $project = fetchProject($projectId);
 
 if (!$project) {
-    echo '<p>Project not found.</p>';
+    template('page/edit-project', ['project' => false]);
     return;
 }
 
@@ -43,14 +43,4 @@ if (isset($_POST['edit_project_submit'])) {
     redirectWith('index.php?page=projects', successMessage('Project deleted!'));
 }
 
-pageHeader('Edit Project', [
-    'Back to Project' => 'index.php?page=view-project&project_id=' . $projectId,
-]);
-
-renderProjectForm($values, 'edit_project_submit', $formMessage);
-
-confirmDeleteForm(
-    'delete_project_submit',
-    'Delete Project',
-    'Are you sure you want to delete this project? This will also delete all assemblies and their parts.'
-);
+template('page/edit-project', compact('project', 'values', 'projectId', 'formMessage'));

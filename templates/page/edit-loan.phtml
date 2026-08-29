@@ -1,0 +1,48 @@
+<?php
+/**
+ * Correcting one sign-out record: the wrong name, a date that moved, or an
+ * entry made by mistake.
+ *
+ * @var mixed $loan        The record, or false when there is no such id.
+ * @var mixed $itemId      The tool it belongs to, for the link back.
+ * @var mixed $formMessage The last result, or false.
+ */
+
+pageHeader('Edit Sign-Out Record', $itemId ? [
+    'View Tool' => 'index.php?page=view-item&item_id=' . urlencode((string)$itemId),
+] : []);
+
+if (!$loan):
+    formMessage($formMessage); ?>
+<p>No sign-out record found</p>
+<?php
+    return;
+endif;
+?>
+<form method="post">
+<?php
+// First, because it is what marks the fields the last save was rejected over.
+formMessage($formMessage);
+
+textField('loan_to', 'Signed Out To', $loan['loan_to'], 'text', ' required');
+textField('loan_due_at', 'Due Back (optional)', $loan['loan_due_at'], 'date');
+
+// Clearing this puts the tool back out with whoever had it.
+textField(
+    'loan_in_at',
+    'Returned (clear this to put it back out)',
+    $loan['loan_in_at'] ? date('Y-m-d\TH:i', strtotime($loan['loan_in_at'])) : '',
+    'datetime-local'
+);
+
+textareaField('loan_notes', 'Notes (optional)', (string)$loan['loan_notes']);
+submitButton('edit_loan_submit');
+?>
+</form>
+<?php
+deleteSection(
+    'Sign-Out Record',
+    'delete_loan_submit',
+    'Delete',
+    'Delete this sign-out record? The tool\'s history loses it for good.'
+);

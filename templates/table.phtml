@@ -1,0 +1,34 @@
+<?php
+/**
+ * A listing table wrapped in its scrolling container. Headings are clickable
+ * to sort, see assets/js/app.js.
+ *
+ * Headings and cells are raw HTML, because a cell is usually a link or a
+ * coloured span built by the caller.
+ *
+ * @var array    $headings      Column headings.
+ * @var array    $items         Rows to draw.
+ * @var callable $rows          Takes one item, returns its cells.
+ * @var array    $columnClasses Column position => class, put on th and td
+ *                              alike, which is how a column gets its own size.
+ */
+
+$cells = static function (array $values, string $tag) use ($columnClasses) {
+    $html = '';
+
+    foreach (array_values($values) as $index => $value) {
+        $class = isset($columnClasses[$index]) ? ' class="' . $columnClasses[$index] . '"' : '';
+        $html .= '<' . $tag . $class . '>' . $value . '</' . $tag . '>';
+    }
+
+    return $html;
+};
+?>
+<div class="table-container">
+    <table class="sortable">
+        <tr><?php echo $cells($headings, 'th'); ?></tr>
+<?php foreach ($items as $item): ?>
+        <tr><?php echo $cells($rows($item), 'td'); ?></tr>
+<?php endforeach; ?>
+    </table>
+</div>

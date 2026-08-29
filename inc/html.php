@@ -1,6 +1,13 @@
 <?php
 
 /**
+ * The shared markup kit.
+ *
+ * Nothing here writes HTML itself: each function works out what a template
+ * needs and hands it over. The markup is in templates/, see inc/template.php.
+ */
+
+/**
  * Heading row with an optional set of nav links.
  *
  * $title accepts HTML so callers can add count badges; escape any user data.
@@ -8,21 +15,7 @@
  */
 function headerRow(string $class, string $title, array $links = [], string $extraHtml = ''): void
 {
-    echo '<div class="' . $class . '">' . "\n";
-    echo '    <h2>' . $title . '</h2>' . "\n";
-
-    if ($links || $extraHtml) {
-        echo '    <nav class="onpage-nav">' . "\n";
-
-        foreach ($links as $label => $href) {
-            echo '        <a href="' . $href . '">' . $label . '</a>' . "\n";
-        }
-
-        echo $extraHtml;
-        echo '    </nav>' . "\n";
-    }
-
-    echo '</div>' . "\n";
+    template('header-row', compact('class', 'title', 'links', 'extraHtml'));
 }
 
 /** Heading at the top of a page. */
@@ -71,9 +64,9 @@ function fieldError(string $name): string
 }
 
 /**
- * Attributes marking a control as the one at fault, so the highlight formRow()
- * draws is announced rather than only seen. The id is the one formRow() gives
- * the message it puts below the control.
+ * Attributes marking a control as the one at fault, so the highlight the form
+ * row draws is announced rather than only seen. The id is the one the row
+ * gives the message it puts below the control.
  */
 function invalidAttributes(string $name): string
 {
@@ -102,53 +95,21 @@ function formMessage($formMessage): void
         return;
     }
 
-    // Naming the field a message belongs to lets assets/js/app.js take the
-    // message away again once that field has been dealt with.
-    $field = function ($key) {
-        return is_string($key) ? ' data-field="' . $key . '"' : '';
-    };
-
-    if (count($messages) === 1) {
-        echo '<p class="form-message form-' . $status . '"' . $field(array_key_first($messages))
-            . '>' . reset($messages) . '</p>' . "\n";
-        return;
-    }
-
-    echo '<div class="form-message form-' . $status . '">' . "\n";
-    echo '    <p>Please put these right:</p>' . "\n";
-    echo '    <ul>' . "\n";
-
-    foreach ($messages as $key => $message) {
-        echo '        <li' . $field($key) . '>' . $message . '</li>' . "\n";
-    }
-
-    echo '    </ul>' . "\n";
-    echo '</div>' . "\n";
+    template('form/message', compact('messages', 'status'));
 }
 
 /**
- * One control in a filter bar. The label is kept for screen readers; sighted
- * users get the same wording from the control's own placeholder.
+ * One control in a filter bar.
  */
 function filterField(string $id, string $label, string $control, string $class = ''): void
 {
-    echo '    <p class="filter-field' . ($class ? ' ' . $class : '') . '">' . "\n";
-    echo '        <label for="' . $id . '" class="visually-hidden">' . $label . '</label>' . "\n";
-    echo '        ' . $control . "\n";
-    echo '    </p>' . "\n";
+    template('filter/field', compact('id', 'label', 'control', 'class'));
 }
 
 /** Submit and clear buttons that close a filter bar. */
 function filterActions(string $page, bool $hasFilters, string $label = 'Filter'): void
 {
-    echo '    <p class="filter-actions">' . "\n";
-    echo '        <input type="submit" value="' . $label . '">' . "\n";
-
-    if ($hasFilters) {
-        echo '        <a href="index.php?page=' . $page . '" class="filter-clear">Clear</a>' . "\n";
-    }
-
-    echo '    </p>' . "\n";
+    template('filter/actions', compact('page', 'hasFilters', 'label'));
 }
 
 /**
@@ -156,22 +117,11 @@ function filterActions(string $page, bool $hasFilters, string $label = 'Filter')
  */
 function renderSearchBar(string $page, string $placeholder): void
 {
-    $search = (string)queryParam('q');
-
-    echo '<form method="get" class="filter-bar">' . "\n";
-    echo '    <input type="hidden" name="page" value="' . $page . '">' . "\n";
-
-    filterField(
-        'q',
-        'Search',
-        '<input type="search" name="q" id="q" value="' . escapeHtml($search)
-            . '" placeholder="' . escapeHtml($placeholder) . '">',
-        'filter-search'
-    );
-
-    filterActions($page, $search !== '', 'Search');
-
-    echo '</form>' . "\n";
+    template('filter/search-bar', [
+        'page'        => $page,
+        'placeholder' => $placeholder,
+        'search'      => (string)queryParam('q'),
+    ]);
 }
 
 /**
@@ -185,27 +135,7 @@ function renderSearchBar(string $page, string $placeholder): void
  */
 function renderTable(array $headings, array $items, callable $rows, array $columnClasses = []): void
 {
-    $cells = function (array $values, string $tag) use ($columnClasses) {
-        $html = '';
-
-        foreach (array_values($values) as $index => $value) {
-            $class = isset($columnClasses[$index]) ? ' class="' . $columnClasses[$index] . '"' : '';
-            $html .= '<' . $tag . $class . '>' . $value . '</' . $tag . '>';
-        }
-
-        return $html;
-    };
-
-    echo '<div class="table-container">' . "\n";
-    echo '    <table class="sortable">' . "\n";
-    echo '        <tr>' . $cells($headings, 'th') . '</tr>' . "\n";
-
-    foreach ($items as $item) {
-        echo '        <tr>' . $cells($rows($item), 'td') . '</tr>' . "\n";
-    }
-
-    echo '    </table>' . "\n";
-    echo '</div>' . "\n";
+    template('table', compact('headings', 'items', 'rows', 'columnClasses'));
 }
 
 /**
@@ -217,14 +147,13 @@ function deleteSection(
     string $buttonLabel = 'Delete',
     string $confirmText = ''
 ): void {
-    $confirmText = $confirmText ?: 'Delete this ' . strtolower($heading) . '? This cannot be undone.';
-
     sectionHeader('Delete ' . $heading);
 
-    echo '<form method="post" onsubmit="return confirm(' . jsString($confirmText) . ');">' . "\n";
-    echo '    <p>This action cannot be undone.</p>' . "\n";
-    echo '    <input type="submit" name="' . $submitName . '" class="delete" value="' . $buttonLabel . '">' . "\n";
-    echo '</form>' . "\n";
+    template('form/delete-section', [
+        'submitName'  => $submitName,
+        'buttonLabel' => $buttonLabel,
+        'confirmText' => $confirmText ?: 'Delete this ' . strtolower($heading) . '? This cannot be undone.',
+    ]);
 }
 
 /**
@@ -232,10 +161,7 @@ function deleteSection(
  */
 function confirmDeleteForm(string $submitName, string $buttonLabel, string $confirmText): void
 {
-    echo '<hr>' . "\n";
-    echo '<form method="post" onsubmit="return confirm(' . jsString($confirmText) . ');">' . "\n";
-    echo '    <p><input type="submit" name="' . $submitName . '" value="' . $buttonLabel . '" class="delete"></p>' . "\n";
-    echo '</form>' . "\n";
+    template('form/confirm-delete', compact('submitName', 'buttonLabel', 'confirmText'));
 }
 
 /**
@@ -275,7 +201,7 @@ function nameOrDeleted($name): string
  */
 function notesBox($text): void
 {
-    echo '<div class="notes-box">' . nl2p(text2link(escapeHtml($text))) . '</div>' . "\n";
+    template('notes-box', ['text' => nl2p(text2link(escapeHtml($text)))]);
 }
 
 /**
@@ -283,46 +209,24 @@ function notesBox($text): void
  */
 function itemProperty(string $heading, string $body, string $class = ''): void
 {
-    echo '<div class="item-property' . ($class ? ' ' . $class : '') . '">' . "\n";
-    echo '    <h3>' . $heading . '</h3>' . "\n";
-    echo '    ' . $body . "\n";
-    echo '</div>' . "\n";
+    template('item-property', compact('heading', 'body', 'class'));
 }
 
 /**
  * Labelled form control. $control is raw HTML.
  *
- * A field the last submission was rejected over is marked, and the reason is
- * repeated below the control so it is answered where it is fixed rather than
- * only in the summary at the top of the form.
- *
- * The row is a <div> rather than a <p> because some controls are built from
- * block elements, and a browser closes a paragraph as soon as it meets one:
- * the row would end where its control began, taking the mark with it.
- *
  * $hasControl says whether there is something focusable for the label to point
- * at. A row that only states a value the page has already settled has not, and
- * a label naming an id that does not exist is worse than one naming nothing.
+ * at; see templates/form/row.phtml for why that matters.
  */
 function formRow(string $name, string $label, string $control, bool $hasControl = true): void
 {
-    $error = fieldError($name);
-
-    // The field is named on the row as well as in the message, so the script
-    // that clears the mark knows which message went with it.
-    $rowAttributes = ($error === '')
-        ? ' class="form-row"'
-        : ' class="form-row field-invalid" data-field="' . $name . '"';
-
-    echo '    <div' . $rowAttributes . '>' . "\n";
-    echo '        <label' . ($hasControl ? ' for="' . $name . '"' : '') . '>' . $label . '</label>' . "\n";
-    echo '        ' . $control . "\n";
-
-    if ($error) {
-        echo '        <span class="field-error" id="' . $name . '_error">' . $error . '</span>' . "\n";
-    }
-
-    echo '    </div>' . "\n";
+    template('form/row', [
+        'name'       => $name,
+        'label'      => $label,
+        'control'    => $control,
+        'hasControl' => $hasControl,
+        'error'      => fieldError($name),
+    ]);
 }
 
 /**
@@ -330,14 +234,12 @@ function formRow(string $name, string $label, string $control, bool $hasControl 
  */
 function textField(string $name, string $label, $value = '', string $type = 'text', string $attributes = ''): void
 {
-    formRow($name, $label, '<input type="' . $type . '" name="' . $name . '" id="' . $name . '"'
-        . ' value="' . escapeHtml($value) . '"' . $attributes . invalidAttributes($name) . ' />');
+    formRow($name, $label, templateHtml('form/input', compact('name', 'type', 'value', 'attributes')));
 }
 
 function textareaField(string $name, string $label, $value = ''): void
 {
-    formRow($name, $label, '<textarea name="' . $name . '" id="' . $name . '"'
-        . invalidAttributes($name) . '>' . escapeHtml($value) . '</textarea>');
+    formRow($name, $label, templateHtml('form/textarea', compact('name', 'value')));
 }
 
 /**
@@ -351,14 +253,15 @@ function selectField(
     string $firstOption = '',
     string $attributes = ''
 ): void {
-    formRow($name, $label, '<select name="' . $name . '" id="' . $name . '"' . $attributes
-        . invalidAttributes($name) . '>'
-        . $firstOption . selectOptions($options, $selected) . '</select>');
+    formRow($name, $label, templateHtml(
+        'form/select',
+        compact('name', 'options', 'selected', 'firstOption', 'attributes')
+    ));
 }
 
 function submitButton(string $name, string $label = 'Save'): void
 {
-    echo '    <p><input type="submit" name="' . $name . '" value="' . $label . '"></p>' . "\n";
+    template('form/submit', compact('name', 'label'));
 }
 
 /**
@@ -404,59 +307,16 @@ function stockCell(array $item): string
 }
 
 /**
- * Filter bar for the items listing: one dropdown per taxonomy plus a text
- * search, all combined with AND. Current selections come from the query string.
+ * Filter bar for the items listing.
  */
 function renderItemFilters(array $applied, ?string $kind = null, string $page = 'items'): void
 {
     $search = (string)queryParam('q');
 
-    echo '<form method="get" class="filter-bar">' . "\n";
-    echo '    <input type="hidden" name="page" value="' . $page . '">' . "\n";
-
-    filterField(
-        'q',
-        'Search',
-        '<input type="search" name="q" id="q" value="' . escapeHtml($search)
-            . '" placeholder="Search name, part number or notes">',
-        'filter-search'
-    );
-
-    // Only the mixed listing has both kinds in it to choose between; the Parts
-    // and Tools pages are already narrowed to one.
-    if ($kind === null) {
-        filterField(
-            'filter_kind',
-            'Type',
-            '<select name="kind" id="filter_kind">'
-                . '<option value="">Any Type</option>'
-                . selectOptions(ITEM_TYPES, queryParam('kind'))
-                . '</select>'
-        );
-    }
-
-    foreach (taxonomies() as $key => $tax) {
-        $id = 'filter_' . $tax['param'];
-
-        // On a listing narrowed to one kind, the categories filing the other
-        // kind would only ever filter it down to nothing.
-        $options = ($key === 'category' && $kind !== null)
-            ? categoryOptions($kind)
-            : taxonomyOptions($key);
-
-        // The "Any ..." option doubles as the dropdown's resting label, so the
-        // bar reads clearly without a row of headings above it.
-        filterField(
-            $id,
-            $tax['label'],
-            '<select name="' . $tax['param'] . '" id="' . $id . '">'
-                . '<option value="">Any ' . $tax['label'] . '</option>'
-                . selectOptions($options, queryParam($tax['param']))
-                . '</select>'
-        );
-    }
-
-    filterActions($page, $applied || $search !== '' || (string)queryParam('kind') !== '');
-
-    echo '</form>' . "\n";
+    template('filter/item-filters', [
+        'page'       => $page,
+        'search'     => $search,
+        'kind'       => $kind,
+        'hasFilters' => (bool)$applied || $search !== '' || (string)queryParam('kind') !== '',
+    ]);
 }

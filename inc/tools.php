@@ -223,31 +223,5 @@ function toolDueCell(array $item): string
  */
 function renderToolLoans(array $loans): void
 {
-    if (!$loans) {
-        echo '<p>This tool has never been signed out.</p>' . "\n";
-        return;
-    }
-
-    renderTable(
-        ['Signed Out To', 'Out', 'Due Back', 'Returned', 'Notes', 'Edit'],
-        $loans,
-        function ($loan) {
-            $overdue = loanIsOverdue($loan['loan_due_at'], $loan['loan_in_at']);
-
-            return [
-                escapeHtml($loan['loan_to']),
-                escapeHtml(formatDate($loan['loan_out_at'])),
-                $loan['loan_due_at']
-                    ? escapeHtml(formatDate($loan['loan_due_at']))
-                        . ($overdue ? '<small class="row-note">overdue</small>' : '')
-                    : '-',
-                $loan['loan_in_at']
-                    ? escapeHtml(formatDate($loan['loan_in_at']))
-                    : '<span class="stock ' . ($overdue ? 'stock-over' : 'stock-low') . '">Still out</span>',
-                escapeHtml((string)$loan['loan_notes']),
-                '<a href="index.php?page=edit-loan&loan_id=' . (int)$loan['loan_id']
-                    . '&item_id=' . (int)$loan['loan_item_id'] . '">Edit</a>',
-            ];
-        }
-    );
+    template('tool/loans', compact('loans'));
 }

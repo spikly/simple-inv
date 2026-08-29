@@ -1,0 +1,11 @@
+<?php
+/**
+ * @var string $name       Field name, also the id.
+ * @var string $type       Input type.
+ * @var mixed  $value      Current value, escaped here.
+ * @var string $attributes Raw HTML appended to the tag, eg ' required'.
+ */
+?>
+<input type="<?php echo $type; ?>" name="<?php echo $name; ?>" id="<?php echo $name; ?>" value="<?php
+    echo escapeHtml($value);
+?>"<?php echo $attributes . invalidAttributes($name); ?> />

@@ -1,0 +1,57 @@
+<?php
+/**
+ * The add/edit form for a part or a tool.
+ *
+ * $type decides both which fields appear and which categories are offered, so
+ * the categories an item ends up with always match the kind it was filled in
+ * as.
+ *
+ * @var array  $values      Current field values.
+ * @var string $submitName  Submit button name, which is what the page tests for.
+ * @var string $type        'part' or 'tool'.
+ * @var mixed  $formMessage The last result, or false.
+ * @var array  $options     Dropdown options, keyed by field name.
+ */
+?>
+<form method="post" enctype="multipart/form-data">
+<?php
+// First, because it is what marks the fields the last save was rejected over.
+formMessage($formMessage);
+?>
+    <input type="hidden" name="item_type" value="<?php echo $type; ?>">
+<?php
+textField('item_name', ITEM_TYPES[$type] . ' Name', $values['item_name'] ?? '');
+textField('item_part_no', 'Manufacturers Part Number (optional)', $values['item_part_no'] ?? '');
+
+if ($type === 'part') {
+    textField('item_quantity', 'Item Quantity', $values['item_quantity'] ?? 1, 'number', ' min="0"');
+    textField(
+        'item_min_quantity',
+        'Reorder Level (0 for no warning)',
+        $values['item_min_quantity'] ?? 0,
+        'number',
+        ' min="0"'
+    );
+
+    selectField(
+        'item_measurement_unit',
+        'Measurement Unit',
+        $options['item_measurement_unit'],
+        $values['item_measurement_unit'] ?? null,
+        '<option value="0">Select</option>'
+    );
+}
+
+foreach (taxonomies() as $key => $tax) {
+    itemTaxonomyField($key, $tax, $type, $options['item_' . $key], $values['item_' . $key] ?? null);
+}
+?>
+<?php if (!empty($values['duplicate_of'])): ?>
+    <input type="hidden" name="duplicate_of" value="<?php echo (int)$values['duplicate_of']; ?>">
+<?php endif; ?>
+<?php
+renderItemPhotoField($values['item_image'] ?? null, !empty($values['remove_photo']));
+textareaField('item_notes', 'Notes (optional)', trim($values['item_notes'] ?? ''));
+submitButton($submitName);
+?>
+</form>

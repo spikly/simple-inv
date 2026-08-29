@@ -1,0 +1,188 @@
+<?php
+/**
+ * Everything known about one part or tool, and what has happened to it.
+ *
+ * A tool's history is who has had it; a part's is what its stock has done and
+ * which assemblies are holding some of it.
+ *
+ * @var mixed   $item        The item row, or false when there is no such id.
+ * @var string  $type        'part' or 'tool'.
+ * @var bool    $isOut       Whether a tool is signed out right now.
+ * @var string  $signLink    'Sign In' or 'Sign Out', whichever is on offer.
+ * @var array   $links       Heading links, label => href.
+ * @var mixed   $formMessage The last result, or false.
+ *
+ * Set only when the item was found:
+ * @var array   $categories    Its category ids.
+ * @var array   $loans         Sign-out history (tools).
+ * @var array   $loanSlice     Its slice (tools).
+ * @var array   $assemblyUsage Assemblies holding this part (parts).
+ * @var array   $movements     Stock history (parts).
+ * @var array   $moveSlice     Its slice (parts).
+ */
+
+pageHeader(ITEM_TYPES[$type] . ' Info', $links);
+
+formMessage($formMessage);
+
+if (!$item): ?>
+<p>No item found</p>
+<?php
+    return;
+endif;
+
+// Headings for the taxonomies shown as item properties, in display order.
+$properties = [
+    'brand'    => 'Manufacturer',
+    'supplier' => 'Supplier',
+    'location' => 'Storage Location',
+    'status'   => 'Status',
+];
+?>
+<h3>Name</h3>
+<p class="item-name">
+    <?php echo escapeHtml($item['item_name']); ?>
+</p>
+<?php if ($item['item_image']): ?>
+    <p class="item-photo">
+        <a href="<?php echo itemImageUrl($item['item_image']); ?>" target="_blank">
+            <?php echo itemThumb($item['item_image'], $item['item_name'], 'item-photo-large'); ?>
+        </a>
+    </p>
+<?php endif; ?>
+<div class="item-property-container">
+    <?php
+
+    if (isset($item['item_part_no'])) {
+        itemProperty('Manufacturers Part No', '<p>' . escapeHtml($item['item_part_no']) . '</p>');
+    }
+
+    if ($type === 'tool') {
+        // A tool is one object, so the only quantity worth showing is whether
+        // it is here or with somebody.
+        $overdue = $isOut && loanIsOverdue($item['loan_due_at']);
+
+        itemProperty(
+            'Signed Out To',
+            '<p>' . ($isOut ? escapeHtml($item['loan_to']) : 'Nobody, it is here') . '</p>',
+            $isOut ? ($overdue ? 'red' : 'amber') : 'green'
+        );
+
+        if ($isOut) {
+            itemProperty('Out Since', '<p>' . escapeHtml(formatDate($item['loan_out_at'])) . '</p>');
+            itemProperty(
+                'Due Back',
+                '<p>' . ($item['loan_due_at'] ? escapeHtml(formatDate($item['loan_due_at'])) : 'No date set')
+                    . ($overdue ? ' (overdue)' : '') . '</p>',
+                $overdue ? 'red' : ''
+            );
+        }
+    } else {
+        itemProperty('Quantity', '<p>' . escapeHtml($item['item_quantity'])
+            . escapeHtml($item['unit_symbol']) . '</p>');
+        itemProperty('Reserved for Projects', '<p>' . formatQuantity($item['item_allocated_count'])
+            . escapeHtml($item['unit_symbol']) . '</p>');
+        itemProperty('Free', '<p>' . stockCell($item) . '</p>');
+
+        $utilisation = calculatePercentage($item['item_quantity'], $item['item_allocated_count']);
+        itemProperty('Utilisation', '<p>' . $utilisation . '&percnt;</p>', utilisationBg($utilisation));
+
+        if ((int)$item['item_min_quantity'] > 0) {
+            itemProperty('Reorder Level', '<p>' . escapeHtml($item['item_min_quantity'])
+                . escapeHtml($item['unit_symbol']) . '</p>');
+        }
+    }
+
+    foreach ($properties as $key => $heading) {
+        $tax = taxonomy($key);
+
+        // Suppliers are optional.
+        if ($key === 'supplier' && !isset($item['sup_id'])) {
+            continue;
+        }
+
+        $link = '<a href="index.php?page=items&' . $tax['param'] . '=' . $item[$tax['id']] . '">'
+            . escapeHtml($item[taxonomyNameField($tax)]) . '</a>';
+
+        if ($key === 'supplier' && $item['sup_website']) {
+            $link .= ' | <a href="' . escapeHtml($item['sup_website']) . '" target="_blank">Website</a>';
+        }
+
+        itemProperty($heading, '<p>' . $link . '</p>');
+    }
+
+    if ($categories) {
+        $categoryLinks = [];
+
+        foreach ($categories as $categoryId) {
+            $categoryLinks[] = '<a href="index.php?page=items&category_id=' . $categoryId . '">'
+                . escapeHtml(taxonomyName('category', $categoryId) ?? 'Deleted') . '</a>';
+        }
+
+        itemProperty('Categories', '<p>' . implode(', ', $categoryLinks) . '</p>');
+    }
+
+    ?>
+</div>
+<?php
+
+if ($type === 'tool') {
+    sectionHeader('Sign-Out History', [
+        $signLink => 'index.php?page=loan-tool&item_id=' . $item['item_id'],
+    ]);
+
+    renderToolLoans($loans);
+    renderPagination($loanSlice, 'sign-outs');
+
+    renderItemNotes($item);
+
+    return;
+}
+
+if ((float)$item['item_free_count'] < 0): ?>
+<p class="form-message form-error">More of this part is reserved for projects than you hold.</p>
+<?php endif; ?>
+
+<?php sectionHeader('Reserved for Assemblies'); ?>
+
+<?php if ($assemblyUsage): ?>
+<p>
+    Stock set aside for these assemblies is held back from the free quantity above.
+    Installed quantities have already left stock.
+</p>
+<?php
+renderTable(
+    ['Project', 'Assembly', 'Required', 'Reserved', 'Installed'],
+    $assemblyUsage,
+    static function ($part) use ($item) {
+        $unit = escapeHtml($item['unit_symbol']);
+        $outstanding = max(0, (float)$part['quantity_required'] - (float)$part['quantity_installed']);
+        $short = $outstanding - (float)$part['quantity_allocated'];
+
+        return [
+            '<a href="index.php?page=view-project&project_id=' . (int)$part['project_id'] . '">'
+                . escapeHtml($part['project_name']) . '</a>',
+            '<a href="index.php?page=view-assembly&assembly_id=' . (int)$part['assembly_id'] . '">'
+                . escapeHtml($part['assembly_name']) . '</a>',
+            formatQuantity($part['quantity_required']) . $unit,
+            formatQuantity($part['quantity_allocated']) . $unit
+                . ($short > 0 ? '<small class="row-note">' . formatQuantity($short)
+                    . $unit . ' short of stock</small>' : ''),
+            formatQuantity($part['quantity_installed']) . $unit,
+        ];
+    }
+);
+?>
+<?php else: ?>
+<p>This part is not on any assembly.</p>
+<?php endif; ?>
+
+<?php
+sectionHeader('Stock History', [
+    'Add Stock' => 'index.php?page=adjust-stock&item_id=' . $item['item_id'],
+]);
+
+renderStockMovements($movements, $item);
+renderPagination($moveSlice, 'movements');
+
+renderItemNotes($item);

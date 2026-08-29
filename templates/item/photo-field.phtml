@@ -1,0 +1,26 @@
+<?php
+/**
+ * The photo picker, showing what is already stored with the option to remove it.
+ *
+ * @var ?string $image  The stored filename, or null.
+ * @var bool    $remove Whether "remove this photo" is ticked. It is kept ticked
+ *                      when a rejected save is drawn again, so asking for the
+ *                      photo to go is not quietly undone by a mistake in
+ *                      another field.
+ */
+
+$input = '<input type="file" name="item_photo" id="item_photo"'
+    . ' accept="image/jpeg,image/png,image/gif,image/webp"' . invalidAttributes('item_photo') . '>';
+
+if (!$image) {
+    echo $input;
+
+    return;
+}
+?>
+<span class="photo-field"><?php
+    echo itemThumb($image, 'Current photo', 'item-thumb item-thumb-form');
+    echo $input;
+?><label class="checkbox"><input type="checkbox" name="remove_photo" value="1"<?php
+    echo $remove ? ' checked' : '';
+?>> Remove this photo</label></span>

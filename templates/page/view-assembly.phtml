@@ -1,0 +1,65 @@
+<?php
+/**
+ * One assembly and the parts that make it up.
+ *
+ * @var mixed  $assembly    The assembly row, or false when there is no such id.
+ * @var array  $items       The parts on this page.
+ * @var array  $slice       Their slice.
+ * @var int    $assemblyId  The id being viewed.
+ * @var mixed  $formMessage The last result, or false.
+ */
+
+if (!$assembly): ?>
+<p>Assembly not found.</p>
+<?php
+    return;
+endif;
+
+pageHeader(escapeHtml($assembly['assembly_name']), [
+    'Add Part'        => 'index.php?page=add-assembly-item&assembly_id=' . $assemblyId,
+    'Edit Assembly'   => 'index.php?page=edit-assembly&assembly_id=' . $assemblyId,
+    'Back to Project' => 'index.php?page=view-project&project_id=' . (int)$assembly['project_id'],
+], templateHtml('project/duplicate-assembly'));
+
+formMessage($formMessage);
+
+if ($assembly['assembly_description']) {
+    notesBox($assembly['assembly_description']);
+}
+
+sectionHeader('Parts' . countBadge($slice['total']));
+
+if ($items):
+    renderTable(
+        ['Item', 'Required', 'Allocated', 'Installed', 'Remaining', ''],
+        $items,
+        static function ($item) {
+            // Anything the item could not spare, so a part that is waiting on
+            // stock says so where it is being looked at.
+            $outstanding = max(0, (float)$item['quantity_required'] - (float)$item['quantity_installed']);
+            $short = $outstanding - (float)$item['quantity_allocated'];
+
+            return [
+                '<a href="index.php?page=view-item&item_id=' . (int)$item['item_id'] . '">'
+                    . escapeHtml($item['item_name']) . '</a>',
+                formatQuantity($item['quantity_required']),
+                formatQuantity($item['quantity_allocated'])
+                    . ($short > 0 ? '<small class="row-note">' . formatQuantity($short)
+                        . ' short of stock</small>' : ''),
+                formatQuantity($item['quantity_installed']),
+                formatQuantity($outstanding),
+                '<a href="index.php?page=edit-assembly-item&assembly_item_id='
+                    . (int)$item['assembly_item_id'] . '">Edit</a>',
+            ];
+        }
+    );
+
+    renderPagination($slice, 'parts');
+else: ?>
+<p>No parts assigned to this assembly.</p>
+<?php endif; ?>
+
+<?php if ($assembly['assembly_notes']): ?>
+    <?php sectionHeader('Notes'); ?>
+    <?php notesBox($assembly['assembly_notes']); ?>
+<?php endif; ?>

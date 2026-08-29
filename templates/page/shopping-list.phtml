@@ -1,0 +1,67 @@
+<?php
+/**
+ * What a project still needs to buy, one table per supplier so the list can be
+ * worked through an order at a time.
+ *
+ * @var mixed $project    The project row, or false when there is no such id.
+ * @var array $bySupplier Supplier name => its rows.
+ * @var bool  $hasRows    Whether the project has any parts at all.
+ * @var float $toBuyTotal How much has to be bought across all of them.
+ * @var int   $projectId  The id being listed.
+ */
+
+if (!$project): ?>
+<p>Project not found.</p>
+<?php
+    return;
+endif;
+
+pageHeader('Shopping List', [
+    'Back to Project' => 'index.php?page=view-project&project_id=' . $projectId,
+]);
+
+formMessage(takeFlash());
+?>
+<p>
+    What <strong><?php echo escapeHtml($project['project_name']); ?></strong> still needs, after everything
+    already reserved for it or installed, and everything free in stock.
+</p>
+<?php if (!$hasRows): ?>
+<p>This project has no parts yet.</p>
+<?php
+    return;
+endif; ?>
+
+<?php if ($toBuyTotal <= 0): ?>
+<p class="form-message form-success">
+    Nothing needs buying - stock covers everything this project still needs.
+</p>
+<?php endif; ?>
+
+<?php foreach ($bySupplier as $supplier => $supplierRows):
+    $website = $supplierRows[0]['sup_website'] ?? '';
+
+    sectionHeader(escapeHtml($supplier), $website ? ['Visit Website' => escapeHtml($website)] : []);
+
+    renderTable(
+        ['Item', 'Part No', 'Required', 'Installed', 'Reserved', 'Still To Reserve', 'From Stock', 'To Buy'],
+        $supplierRows,
+        static function ($row) {
+            $unit = escapeHtml($row['unit_symbol'] ?? '');
+
+            return [
+                '<a href="index.php?page=view-item&item_id=' . (int)$row['item_id'] . '">'
+                    . escapeHtml($row['item_name']) . '</a>',
+                escapeHtml($row['item_part_no'] ?? ''),
+                formatQuantity($row['required_quantity']) . $unit,
+                formatQuantity($row['installed_quantity']) . $unit,
+                formatQuantity($row['allocated_quantity']) . $unit,
+                formatQuantity($row['still_to_allocate']) . $unit,
+                formatQuantity($row['from_stock']) . $unit,
+                $row['to_buy'] > 0
+                    ? '<strong class="stock stock-over">' . formatQuantity($row['to_buy']) . $unit . '</strong>'
+                    : '-',
+            ];
+        }
+    );
+endforeach; ?>

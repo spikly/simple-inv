@@ -1,0 +1,13 @@
+<?php
+/**
+ * A field the page has already settled: shown as a statement, submitted as a
+ * hidden value.
+ *
+ * @var string $column Field name.
+ * @var string $value  What is submitted.
+ * @var string $label  What is read.
+ */
+?>
+<span class="locked-field"><?php echo escapeHtml($label); ?></span><input type="hidden" name="<?php
+    echo $column;
+?>" value="<?php echo escapeHtml($value); ?>">

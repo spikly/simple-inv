@@ -4,7 +4,7 @@ $assemblyId = queryId('assembly_id');
 $assembly = fetchAssembly($assemblyId);
 
 if (!$assembly) {
-    echo '<p>Assembly not found.</p>';
+    template('page/edit-assembly', ['assembly' => false]);
     return;
 }
 
@@ -46,14 +46,4 @@ if (isset($_POST['edit_assembly_submit'])) {
     );
 }
 
-pageHeader('Edit Assembly', ['Back to Assembly' => 'index.php?page=view-assembly&assembly_id=' . $assemblyId]);
-
-echo '<p>Project: <strong>' . escapeHtml($assembly['project_name']) . '</strong></p>' . "\n";
-
-renderAssemblyForm($assembly, 'edit_assembly_submit', $formMessage);
-
-confirmDeleteForm(
-    'delete_assembly_submit',
-    'Delete Assembly',
-    'Are you sure you want to delete this assembly? All parts assigned to it will also be removed.'
-);
+template('page/edit-assembly', compact('assembly', 'assemblyId', 'formMessage'));

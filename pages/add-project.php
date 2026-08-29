@@ -20,5 +20,4 @@ if (isset($_POST['add_project'])) {
     }
 }
 
-pageHeader('Add Project', ['Back to Projects' => 'index.php?page=projects']);
-renderProjectForm($values, 'add_project', $formMessage);
+template('page/add-project', compact('values', 'formMessage'));

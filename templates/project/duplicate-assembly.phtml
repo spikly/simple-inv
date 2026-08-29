@@ -1,0 +1,9 @@
+<?php
+/**
+ * The duplicate button, which sits inline among the heading links rather than
+ * in a section of its own because it is one more thing you can do from here.
+ */
+?>
+<form method="post" style="display:inline;" onsubmit="return confirm(<?php
+    echo jsString('Duplicate this assembly and all of its parts?');
+?>);"><input type="submit" name="duplicate_assembly_submit" value="Duplicate Assembly"></form>

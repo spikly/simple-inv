@@ -35,56 +35,19 @@ if ($item && !isTool($item) && (isset($_POST['add_stock_submit']) || isset($_POS
     }
 }
 
-pageHeader('Add and Remove Stock', $item ? [
-    'View Part'  => $itemUrl,
-    'Edit Part'  => 'index.php?page=edit-item&item_id=' . $item['item_id'],
-    'All Parts'  => 'index.php?page=parts',
-] : []);
+$view = [
+    'item'        => $item,
+    'itemUrl'     => $itemUrl,
+    'amount'      => $amount,
+    'note'        => $note,
+    'formMessage' => $formMessage,
+    'movements'   => [],
+    'moveSlice'   => [],
+];
 
-if (!$item) {
-    formMessage($formMessage);
-    echo '<p>Invalid item ID</p>';
-    return;
+if ($item && !isTool($item)) {
+    $view['moveSlice'] = paginate(countStockMovements($itemId), 'sp');
+    $view['movements'] = fetchStockMovements($itemId, $view['moveSlice']);
 }
 
-if (isTool($item)) {
-    formMessage($formMessage);
-    echo '<p><strong>' . escapeHtml($item['item_name']) . '</strong> is a tool rather than stock, so it is'
-        . ' signed in and out rather than counted.'
-        . ' <a href="index.php?page=loan-tool&item_id=' . $item['item_id'] . '">Sign it in or out.</a></p>' . "\n";
-    return;
-}
-
-$unit = escapeHtml($item['unit_symbol']);
-
-echo '<p><strong>Part:</strong> ' . escapeHtml($item['item_name'])
-    . ' - kept in ' . escapeHtml($item['loc_name'] ?? 'no location') . '</p>' . "\n";
-
-echo '<div class="item-property-container">' . "\n";
-itemProperty('Held', '<p>' . (int)$item['item_quantity'] . $unit . '</p>');
-itemProperty('Reserved for Projects', '<p>' . formatQuantity($item['item_allocated_count']) . $unit . '</p>');
-itemProperty('Free', '<p>' . stockCell($item) . '</p>');
-echo '</div>' . "\n";
-
-echo '<form method="post">' . "\n";
-formMessage($formMessage);
-
-textField('stock_amount', 'Amount', $amount, 'number', ' min="1" step="1" required autofocus');
-textField('stock_note', 'Note (optional)', $note, 'text', ' maxlength="255"');
-
-echo '    <p>' . "\n";
-echo '        <input type="submit" name="add_stock_submit" value="Add Stock">' . "\n";
-echo '        <input type="submit" name="remove_stock_submit" value="Remove Stock" class="delete">' . "\n";
-echo '    </p>' . "\n";
-echo '</form>' . "\n";
-
-if ((float)$item['item_allocated_count'] > 0) {
-    echo '<p>Stock arriving goes first to the assemblies that are short of it. Removing stock takes it'
-        . ' back off them, so what is reserved can fall as well as rise.</p>' . "\n";
-}
-
-sectionHeader('Stock History');
-
-$moveSlice = paginate(countStockMovements($itemId), 'sp');
-renderStockMovements(fetchStockMovements($itemId, $moveSlice), $item);
-renderPagination($moveSlice, 'movements');
+template('page/adjust-stock', $view);

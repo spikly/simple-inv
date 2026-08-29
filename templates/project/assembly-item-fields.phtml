@@ -1,0 +1,27 @@
+<?php
+/**
+ * The quantity and notes fields shared by the add and edit assembly part forms.
+ *
+ * @var array  $values    Current field values.
+ * @var string $stockNote Shown against the required field, so the free stock is
+ *                        in front of whoever is deciding the quantity.
+ */
+
+$quantities = [
+    'quantity_required'  => 'Quantity Required',
+    'quantity_installed' => 'Quantity Installed',
+];
+
+foreach ($quantities as $name => $label) {
+    $required = ($name === 'quantity_required');
+
+    textField(
+        $name,
+        $label . ($required && $stockNote !== '' ? ' <small>' . $stockNote . '</small>' : ''),
+        formatQuantity($values[$name] ?? ($required ? 1 : 0)),
+        'number',
+        ' step="1" min="0"' . ($required ? ' required' : '')
+    );
+}
+
+textareaField('assembly_item_notes', 'Notes', $values['assembly_item_notes'] ?? '');

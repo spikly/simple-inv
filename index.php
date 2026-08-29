@@ -30,36 +30,4 @@ $navigation = [
     'Statuses'      => 'statuses',
 ];
 
-?>
-<!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        
-        <title><?php echo escapeHtml(siteTitle()); ?></title>
-        <link href="assets/styles/styles.css?<?php echo filemtime(__DIR__ . '/assets/styles/styles.css'); ?>" rel="stylesheet">
-    </head>
-    <body>
-        <header>
-            <div class="container">
-                <h1>
-                    <a href="index.php"><?php echo escapeHtml(siteTitle()); ?></a>
-                </h1>
-            </div>
-        </header>
-        <nav class="main-nav">
-            <div class="container">
-                <?php foreach ($navigation as $label => $page): ?>
-                    <a href="index.php?page=<?php echo $page; ?>"<?php
-                        echo ($pages[$page] ?? null) === $currentPage ? ' class="is-current"' : '';
-                    ?>><?php echo $label; ?></a>
-                <?php endforeach; ?>
-            </div>
-        </nav>
-        <div class="container body">
-            <?php include __DIR__ . '/pages/' . $currentPage . '.php'; ?>
-        </div>
-        <script src="assets/js/app.js?<?php echo filemtime(__DIR__ . '/assets/js/app.js'); ?>"></script>
-    </body>
-</html>
+template('layout', compact('currentPage', 'navigation', 'pages'));

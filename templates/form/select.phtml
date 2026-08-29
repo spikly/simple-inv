@@ -1,0 +1,12 @@
+<?php
+/**
+ * @var string $name        Field name, also the id.
+ * @var array  $options     value => label, or label => nested array for a group.
+ * @var mixed  $selected    Chosen value, or an array of them.
+ * @var string $firstOption Raw HTML for an optional leading placeholder.
+ * @var string $attributes  Raw HTML appended to the tag.
+ */
+?>
+<select name="<?php echo $name; ?>" id="<?php echo $name; ?>"<?php
+    echo $attributes . invalidAttributes($name);
+?>><?php echo $firstOption . selectOptions($options, $selected); ?></select>

@@ -49,22 +49,11 @@ function renderErrorPage(\Throwable $e): void
         ob_end_clean();
     }
 
-    $detail = config('debug')
-        ? '<pre class="error-detail">' . escapeHtml($e->getMessage() . "\n\n"
-            . $e->getFile() . ':' . $e->getLine() . "\n\n" . $e->getTraceAsString()) . '</pre>'
-        : '<p>The details have been written to the server error log.</p>';
-
-    echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport"'
-        . ' content="width=device-width, initial-scale=1.0"><title>Something went wrong</title>'
-        . '<link href="assets/styles/styles.css" rel="stylesheet"></head><body>'
-        . '<div class="container body">'
-        . '<div class="flex-nav"><h2>Something went wrong</h2></div>'
-        . '<p>The page could not be loaded. This is usually a database problem -'
-        . ' check that the settings in <code>config/user.config.php</code> are correct and that'
-        . ' the database has been updated with <code>database-updates.sql</code>.</p>'
-        . $detail
-        . '<p><a href="index.php">Back to the dashboard</a></p>'
-        . '</div></body></html>';
+    template('error-page', [
+        'detail' => config('debug')
+            ? templateHtml('error-detail', ['e' => $e])
+            : '<p>The details have been written to the server error log.</p>',
+    ]);
 
     exit(1);
 }

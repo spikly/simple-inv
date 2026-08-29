@@ -1,0 +1,15 @@
+<?php
+/**
+ * One control in a filter bar. The label is kept for screen readers; sighted
+ * users get the same wording from the control's own placeholder.
+ *
+ * @var string $id      Control id the label points at.
+ * @var string $label   Label text.
+ * @var string $control Control HTML.
+ * @var string $class   Extra class on the wrapper.
+ */
+?>
+    <p class="filter-field<?php echo $class ? ' ' . $class : ''; ?>">
+        <label for="<?php echo $id; ?>" class="visually-hidden"><?php echo $label; ?></label>
+        <?php echo $control; ?>
+    </p>

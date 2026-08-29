@@ -1,0 +1,31 @@
+<?php
+/**
+ * One taxonomy dropdown on the item form, with the "+" button that opens the
+ * add-new modal handled by assets/js/app.js.
+ *
+ * The kind of item is put on both controls, because a category added from here
+ * has to file that kind and the refreshed options have to be narrowed to it;
+ * assets/js/app.js reads it back off them and inc/ajax.php acts on it.
+ *
+ * @var string $key      Taxonomy key, eg 'brand'.
+ * @var array  $tax      Its definition, for the label.
+ * @var string $name     Field name, also the select's id.
+ * @var string $type     'part' or 'tool'.
+ * @var bool   $multiple Whether more than one may be chosen.
+ * @var array  $options  value => label.
+ * @var mixed  $selected What is chosen now.
+ */
+?>
+<div class="searchable-select-row"><div class="searchable-select"><select name="<?php
+    echo $name . ($multiple ? '[]' : '');
+?>" id="<?php echo $name; ?>" data-item-type="<?php echo $type; ?>"<?php
+    echo invalidAttributes($name);
+    echo $multiple ? ' multiple data-placeholder="Select..."' : '';
+?>><?php
+    echo $multiple ? '' : '<option value="0">Select</option>';
+    echo selectOptions($options, $selected);
+?></select></div><button type="button" class="add-new-attribute-value" id="add_new_<?php
+    echo $key;
+?>" data-item-type="<?php echo $type; ?>" title="Add new <?php
+    echo $tax['label'];
+?>">+</button></div>

@@ -1,0 +1,24 @@
+<?php
+/**
+ * @var mixed $assembly    The assembly row, or false when there is no such id.
+ * @var int   $assemblyId  The id being edited.
+ * @var mixed $formMessage The last result, or false.
+ */
+
+if (!$assembly): ?>
+<p>Assembly not found.</p>
+<?php
+    return;
+endif;
+
+pageHeader('Edit Assembly', ['Back to Assembly' => 'index.php?page=view-assembly&assembly_id=' . $assemblyId]);
+?>
+<p>Project: <strong><?php echo escapeHtml($assembly['project_name']); ?></strong></p>
+<?php
+renderAssemblyForm($assembly, 'edit_assembly_submit', $formMessage);
+
+confirmDeleteForm(
+    'delete_assembly_submit',
+    'Delete Assembly',
+    'Are you sure you want to delete this assembly? All parts assigned to it will also be removed.'
+);

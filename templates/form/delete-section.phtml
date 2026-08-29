@@ -1,0 +1,13 @@
+<?php
+/**
+ * A plain "this cannot be undone" delete form under its own heading.
+ *
+ * @var string $submitName  Submit button name, which is what the page tests for.
+ * @var string $buttonLabel Button text.
+ * @var string $confirmText Question the browser asks first.
+ */
+?>
+<form method="post" onsubmit="return confirm(<?php echo jsString($confirmText); ?>);">
+    <p>This action cannot be undone.</p>
+    <input type="submit" name="<?php echo $submitName; ?>" class="delete" value="<?php echo $buttonLabel; ?>">
+</form>

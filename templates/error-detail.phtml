@@ -1,0 +1,10 @@
+<?php
+/**
+ * What actually went wrong, shown only when 'debug' => true in user.config.php.
+ *
+ * @var \Throwable $e
+ */
+?>
+<pre class="error-detail"><?php echo escapeHtml(
+    $e->getMessage() . "\n\n" . $e->getFile() . ':' . $e->getLine() . "\n\n" . $e->getTraceAsString()
+); ?></pre>

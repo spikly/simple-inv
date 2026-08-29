@@ -1,0 +1,33 @@
+<?php
+/**
+ * A labelled control.
+ *
+ * A field the last submission was rejected over is marked, and the reason is
+ * repeated below the control so it is answered where it is fixed rather than
+ * only in the summary at the top of the form.
+ *
+ * The row is a <div> rather than a <p> because some controls are built from
+ * block elements, and a browser closes a paragraph as soon as it meets one:
+ * the row would end where its control began, taking the mark with it.
+ *
+ * @var string $name       Field name, also the control's id.
+ * @var string $label      Label HTML.
+ * @var string $control    Control HTML.
+ * @var bool   $hasControl Whether there is something focusable to point the
+ *                         label at. A row that only states a settled value has
+ *                         not, and a label naming an id that does not exist is
+ *                         worse than one naming nothing.
+ * @var string $error      Why the last submission was rejected, or ''.
+ */
+?>
+<?php if ($error === ''): ?>
+    <div class="form-row">
+<?php else: ?>
+    <div class="form-row field-invalid" data-field="<?php echo $name; ?>">
+<?php endif; ?>
+        <label<?php echo $hasControl ? ' for="' . $name . '"' : ''; ?>><?php echo $label; ?></label>
+        <?php echo $control; ?>
+<?php if ($error !== ''): ?>
+        <span class="field-error" id="<?php echo $name; ?>_error"><?php echo $error; ?></span>
+<?php endif; ?>
+    </div>

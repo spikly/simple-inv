@@ -1,0 +1,42 @@
+<?php
+/**
+ * Editing a part or a tool, including switching it between the two.
+ *
+ * @var mixed  $item        The stored item, or false when there is no such id.
+ * @var array  $values      Current field values.
+ * @var string $type        The kind the form is being drawn as, which is not
+ *                          the stored kind while a switch is being considered.
+ * @var string $other       The kind it is not, for the link that switches.
+ * @var mixed  $formMessage The last result, or false.
+ */
+
+pageHeader('Edit ' . ITEM_TYPES[$type], $item ? [
+    'View ' . ITEM_TYPES[$type]           => 'index.php?page=view-item&item_id=' . $item['item_id'],
+    'Back to ' . ITEM_TYPE_PLURALS[$type] => 'index.php?page=' . itemTypePage($type),
+    'Make it a ' . ITEM_TYPES[$other] => 'index.php?page=edit-item&item_id=' . $item['item_id']
+        . '&amp;kind=' . $other,
+] : []);
+
+if (!$item):
+    formMessage($formMessage); ?>
+<p>No item found</p>
+<?php
+    return;
+endif;
+?>
+<?php if ($type !== itemTypeOf($item)): ?>
+<p class="form-message form-success">
+    Filing this as a <?php echo strtolower(ITEM_TYPES[$type]); ?>.
+    Pick its new categories and save to make the change.
+</p>
+<?php endif; ?>
+<?php
+renderItemForm($values, 'edit_item_submit', $type, $formMessage);
+
+deleteSection(
+    ITEM_TYPES[$type],
+    'delete_item_submit',
+    'Delete',
+    'Delete "' . $item['item_name'] . '"? Its '
+        . ($type === 'tool' ? 'sign-out history goes' : 'assembly entries go') . ' too.'
+);

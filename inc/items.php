@@ -174,82 +174,32 @@ function itemFormValues(array $item): array
  */
 function renderItemForm(array $values, string $submitName, string $type, $formMessage = false): void
 {
-    $options = fetchItemFormOptions($type);
-
-    echo '<form method="post" enctype="multipart/form-data">' . "\n";
-    formMessage($formMessage);
-
-    echo '    <input type="hidden" name="item_type" value="' . $type . '">' . "\n";
-
-    textField('item_name', ITEM_TYPES[$type] . ' Name', $values['item_name'] ?? '');
-    textField('item_part_no', 'Manufacturers Part Number (optional)', $values['item_part_no'] ?? '');
-
-    if ($type === 'part') {
-        textField('item_quantity', 'Item Quantity', $values['item_quantity'] ?? 1, 'number', ' min="0"');
-        textField(
-            'item_min_quantity',
-            'Reorder Level (0 for no warning)',
-            $values['item_min_quantity'] ?? 0,
-            'number',
-            ' min="0"'
-        );
-
-        selectField(
-            'item_measurement_unit',
-            'Measurement Unit',
-            $options['item_measurement_unit'],
-            $values['item_measurement_unit'] ?? null,
-            '<option value="0">Select</option>'
-        );
-    }
-
-    foreach (taxonomies() as $key => $tax) {
-        itemTaxonomyField($key, $tax, $type, $options['item_' . $key], $values['item_' . $key] ?? null);
-    }
-
-    if (!empty($values['duplicate_of'])) {
-        echo '    <input type="hidden" name="duplicate_of" value="' . (int)$values['duplicate_of'] . '">' . "\n";
-    }
-
-    renderItemPhotoField($values['item_image'] ?? null, !empty($values['remove_photo']));
-
-    textareaField('item_notes', 'Notes (optional)', trim($values['item_notes'] ?? ''));
-
-    submitButton($submitName);
-    echo '</form>' . "\n";
+    template('item/form', [
+        'values'      => $values,
+        'submitName'  => $submitName,
+        'type'        => $type,
+        'formMessage' => $formMessage,
+        'options'     => fetchItemFormOptions($type),
+    ]);
 }
 
 /**
- * One taxonomy dropdown on the item form, with the "+" button that opens the
- * add-new modal.
+ * One taxonomy dropdown on the item form.
  *
- * The kind of item is put on both controls, because a category added from here
- * has to file that kind and the refreshed options have to be narrowed to it;
- * assets/js/app.js reads it back off them and inc/ajax.php acts on it.
+ * Only categories differ between a part and a tool, so only they are labelled
+ * with which one is being edited.
  */
 function itemTaxonomyField(string $key, array $tax, string $type, array $options, $selected): void
 {
     $name = 'item_' . $key;
     $multiple = !empty($tax['multiple']);
-
-    // Only categories differ between a part and a tool, so only they are
-    // labelled with which one is being edited.
     $label = ($key === 'category') ? ITEM_TYPES[$type] . ' ' . $tax['label'] : $tax['label'];
 
-    formRow($name, $label . ($multiple ? ' (choose one or more)' : ''),
-        '<div class="searchable-select-row">'
-        . '<div class="searchable-select">'
-        . '<select name="' . $name . ($multiple ? '[]' : '') . '" id="' . $name . '"'
-        . ' data-item-type="' . $type . '"' . invalidAttributes($name)
-        . ($multiple ? ' multiple data-placeholder="Select..."' : '') . '>'
-        . ($multiple ? '' : '<option value="0">Select</option>')
-        . selectOptions($options, $selected)
-        . '</select>'
-        . '</div>'
-        . '<button type="button" class="add-new-attribute-value" id="add_new_' . $key . '"'
-        . ' data-item-type="' . $type . '"'
-        . ' title="Add new ' . $tax['label'] . '">+</button>'
-        . '</div>');
+    formRow(
+        $name,
+        $label . ($multiple ? ' (choose one or more)' : ''),
+        templateHtml('item/taxonomy-field', compact('key', 'tax', 'name', 'type', 'multiple', 'options', 'selected'))
+    );
 }
 
 /**
@@ -317,19 +267,7 @@ function renderItemNotes(array $item): void
  */
 function renderItemPhotoField(?string $image, bool $remove = false): void
 {
-    $control = '<input type="file" name="item_photo" id="item_photo"'
-        . ' accept="image/jpeg,image/png,image/gif,image/webp"' . invalidAttributes('item_photo') . '>';
-
-    if ($image) {
-        $control = '<span class="photo-field">'
-            . itemThumb($image, 'Current photo', 'item-thumb item-thumb-form')
-            . $control
-            . '<label class="checkbox"><input type="checkbox" name="remove_photo" value="1"'
-            . ($remove ? ' checked' : '') . '> Remove this photo</label>'
-            . '</span>';
-    }
-
-    formRow('item_photo', 'Photo (optional)', $control);
+    formRow('item_photo', 'Photo (optional)', templateHtml('item/photo-field', compact('image', 'remove')));
 }
 
 /**
@@ -380,7 +318,6 @@ function itemsIndexPage(?string $type): void
     [$where, $params, $applied, $kind] = itemFilters($type);
 
     $slice = paginate(countItems($where, $params));
-    $items = fetchItems($where, $params, $slice);
     $noun = ($type === null) ? 'Items' : ITEM_TYPE_PLURALS[$type];
     [$badges, $query] = itemFilterSummary($applied, $params, $type, $kind);
 
@@ -397,29 +334,16 @@ function itemsIndexPage(?string $type): void
     $links['Add New ' . ($kind === null ? 'Item' : ITEM_TYPES[$kind])] =
         'index.php?page=add-item' . ($kind === null ? '' : '&amp;kind=' . $kind);
 
-    pageHeader($noun . countBadge($slice['total'], $badges), $links);
-
-    formMessage(takeFlash());
-    renderItemFilters($applied, $type, itemTypePage($type));
-
-    if (!$items) {
-        echo '<p>No ' . strtolower($noun) . ' match.</p>';
-        return;
-    }
-
-    $columns = itemListingColumns($type);
-
-    renderTable(array_keys($columns), $items, function (array $item) use ($columns) {
-        $cells = [];
-
-        foreach ($columns as $cell) {
-            $cells[] = $cell($item);
-        }
-
-        return $cells;
-    }, [0 => 'col-thumb']);
-
-    renderPagination($slice, strtolower($noun));
+    template('page/items-index', [
+        'type'    => $type,
+        'items'   => fetchItems($where, $params, $slice),
+        'slice'   => $slice,
+        'applied' => $applied,
+        'noun'    => $noun,
+        'badges'  => $badges,
+        'links'   => $links,
+        'columns' => itemListingColumns($type),
+    ]);
 }
 
 /**

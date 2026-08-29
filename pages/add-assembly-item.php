@@ -4,7 +4,7 @@ $assemblyId = queryId('assembly_id');
 $assembly = fetchAssembly($assemblyId);
 
 if (!$assembly) {
-    echo '<p>Assembly not found.</p>';
+    template('page/add-assembly-item', ['assembly' => false]);
     return;
 }
 
@@ -51,39 +51,11 @@ if (isset($_POST['add_assembly_item_submit'])) {
     }
 }
 
-$items = fetchAvailableItemsForAssembly($assemblyId);
-
-pageHeader('Add Part', [
-    'Back to Assembly' => 'index.php?page=view-assembly&assembly_id=' . (int)$assembly['assembly_id'],
-]);
-
-echo '<p>Assembly: <strong>' . escapeHtml($assembly['assembly_name']) . '</strong></p>' . "\n";
-
-if (!$items) {
-    formMessage($formMessage);
-    echo '<p>Every item is already part of this assembly.</p>' . "\n";
-    return;
-}
-
-echo '<form method="post">' . "\n";
-formMessage($formMessage);
-
 $options = [];
 
-foreach ($items as $item) {
+foreach (fetchAvailableItemsForAssembly($assemblyId) as $item) {
     $options[$item['item_id']] = $item['item_name']
         . ' (' . formatQuantity($item['item_free_count']) . $item['unit_symbol'] . ' free)';
 }
 
-selectField(
-    'item_id',
-    'Item',
-    $options,
-    $values['item_id'] ?? null,
-    '<option value="">Select an item</option>',
-    ' required'
-);
-
-renderAssemblyItemFields($values, 'stock is reserved automatically, as far as it goes');
-submitButton('add_assembly_item_submit');
-echo '</form>' . "\n";
+template('page/add-assembly-item', compact('assembly', 'options', 'values', 'formMessage'));

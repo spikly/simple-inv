@@ -4,7 +4,7 @@ $assemblyItemId = queryId('assembly_item_id');
 $assemblyItem = fetchAssemblyItem($assemblyItemId);
 
 if (!$assemblyItem) {
-    echo '<p>Assembly item not found.</p>';
+    template('page/edit-assembly-item', ['assemblyItem' => false]);
     return;
 }
 
@@ -69,30 +69,10 @@ if (isset($_POST['edit_assembly_item_submit'])) {
     );
 }
 
-pageHeader('Edit Assembly Part', [
-    'Back to Assembly' => 'index.php?page=view-assembly&assembly_id=' . (int)$assemblyItem['assembly_id'],
+template('page/edit-assembly-item', [
+    'assemblyItem' => $assemblyItem,
+    'values'       => $values,
+    // What this part could still take: its own reservation plus anything free.
+    'available'    => itemStockAvailable($assemblyItem['item_id'], $assemblyItemId),
+    'formMessage'  => $formMessage,
 ]);
-
-// What this part could still take: its own reservation plus anything free.
-$available = itemStockAvailable($assemblyItem['item_id'], $assemblyItemId);
-$unit = escapeHtml($assemblyItem['unit_symbol'] ?? '');
-
-echo '<p>Item: <strong>' . escapeHtml($assemblyItem['item_name']) . '</strong></p>' . "\n";
-echo '<p>Assembly: <strong>' . escapeHtml($assemblyItem['assembly_name']) . '</strong></p>' . "\n";
-
-echo '<div class="item-property-container">' . "\n";
-itemProperty('Reserved from Stock', '<p>' . formatQuantity($assemblyItem['quantity_allocated']) . $unit . '</p>');
-itemProperty('Available to Take', '<p>' . formatQuantity($available) . $unit . '</p>');
-echo '</div>' . "\n";
-
-echo '<form method="post">' . "\n";
-formMessage($formMessage);
-renderAssemblyItemFields($values, formatQuantity($available) . $unit . ' available');
-submitButton('edit_assembly_item_submit');
-echo '</form>' . "\n";
-
-confirmDeleteForm(
-    'delete_assembly_item_submit',
-    'Remove Part',
-    'Remove this part from the assembly? Its reserved stock goes back, installed units stay spent.'
-);

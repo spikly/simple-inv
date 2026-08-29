@@ -1,0 +1,19 @@
+<?php
+/**
+ * @var mixed $project     The project it belongs to, or false when there is
+ *                         no such id.
+ * @var array $values      Current field values.
+ * @var int   $projectId   The project's id.
+ * @var mixed $formMessage The last result, or false.
+ */
+
+if (!$project): ?>
+<p>Project not found.</p>
+<?php
+    return;
+endif;
+
+pageHeader('Add Assembly', ['Back to Project' => 'index.php?page=view-project&project_id=' . $projectId]);
+?>
+<p>Project: <strong><?php echo escapeHtml($project['project_name']); ?></strong></p>
+<?php renderAssemblyForm($values, 'add_assembly_submit', $formMessage); ?>

@@ -1,0 +1,23 @@
+<?php
+/**
+ * The add/edit project form.
+ *
+ * @var array  $values      Current field values.
+ * @var string $submitName  Submit button name, which is what the page tests for.
+ * @var mixed  $formMessage The last result, or false.
+ * @var array  $statuses    project_status_id => name.
+ */
+?>
+<form method="post">
+<?php
+// First, because it is what marks the fields the last save was rejected over.
+formMessage($formMessage);
+
+textField('project_name', 'Project Name', $values['project_name'] ?? '', 'text', ' required');
+textField('project_reference', 'Reference', $values['project_reference'] ?? '');
+selectField('project_status_id', 'Status', $statuses, $values['project_status_id'] ?? null);
+textareaField('project_description', 'Description', $values['project_description'] ?? '');
+textareaField('project_notes', 'Notes', $values['project_notes'] ?? '');
+submitButton($submitName);
+?>
+</form>

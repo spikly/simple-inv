@@ -4,7 +4,7 @@ $projectId = queryId('project_id');
 $project = fetchProject($projectId);
 
 if (!$project) {
-    echo '<p>Project not found.</p>';
+    template('page/add-assembly', ['project' => false]);
     return;
 }
 
@@ -28,8 +28,4 @@ if (isset($_POST['add_assembly_submit'])) {
     }
 }
 
-pageHeader('Add Assembly', ['Back to Project' => 'index.php?page=view-project&project_id=' . $projectId]);
-
-echo '<p>Project: <strong>' . escapeHtml($project['project_name']) . '</strong></p>' . "\n";
-
-renderAssemblyForm($values, 'add_assembly_submit', $formMessage);
+template('page/add-assembly', compact('project', 'values', 'projectId', 'formMessage'));

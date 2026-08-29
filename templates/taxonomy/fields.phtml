@@ -1,0 +1,36 @@
+<?php
+/**
+ * The labelled controls for a taxonomy's own columns.
+ *
+ * @var array $tax    Its definition; fields is ordered, name column first.
+ * @var array $values Current field values.
+ * @var array $locked Column => value fixed by the page that asked for the form.
+ */
+
+foreach ($tax['fields'] as $column => $field) {
+    $label = is_array($field) ? $field['label'] : $field;
+    $value = $values[$column] ?? (is_array($field) ? ($field['default'] ?? '') : '');
+
+    // Fixed to one choice by the page that asked for the form, so it is shown
+    // as a statement rather than a control.
+    if (array_key_exists($column, $locked)) {
+        formRow(
+            $column,
+            $label,
+            templateHtml('taxonomy/locked-field', [
+                'column' => $column,
+                'value'  => $locked[$column],
+                'label'  => $field['options'][$locked[$column]] ?? $locked[$column],
+            ]),
+            false
+        );
+        continue;
+    }
+
+    if (is_array($field) && ($field['type'] ?? '') === 'select') {
+        selectField($column, $label, $field['options'], $value);
+        continue;
+    }
+
+    textField($column, $label, $value, is_array($field) ? $field['type'] : 'text');
+}

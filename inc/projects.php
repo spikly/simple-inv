@@ -20,24 +20,12 @@ function projectColumns(array $post): array
 
 function renderProjectForm(array $values, string $submitName, $formMessage = false): void
 {
-    echo '<form method="post">' . "\n";
-    formMessage($formMessage);
-
-    textField('project_name', 'Project Name', $values['project_name'] ?? '', 'text', ' required');
-    textField('project_reference', 'Reference', $values['project_reference'] ?? '');
-
-    selectField(
-        'project_status_id',
-        'Status',
-        array_column(fetchProjectStatuses(), 'project_status_name', 'project_status_id'),
-        $values['project_status_id'] ?? null
-    );
-
-    textareaField('project_description', 'Description', $values['project_description'] ?? '');
-    textareaField('project_notes', 'Notes', $values['project_notes'] ?? '');
-
-    submitButton($submitName);
-    echo '</form>' . "\n";
+    template('project/form', [
+        'values'      => $values,
+        'submitName'  => $submitName,
+        'formMessage' => $formMessage,
+        'statuses'    => array_column(fetchProjectStatuses(), 'project_status_name', 'project_status_id'),
+    ]);
 }
 
 /**
@@ -55,16 +43,7 @@ function assemblyColumns(array $post): array
 
 function renderAssemblyForm(array $values, string $submitName, $formMessage = false): void
 {
-    echo '<form method="post">' . "\n";
-    formMessage($formMessage);
-
-    textField('assembly_name', 'Assembly Name', $values['assembly_name'] ?? '', 'text', ' required');
-    textField('assembly_sort_order', 'Sort Order', (int)($values['assembly_sort_order'] ?? 0), 'number');
-    textareaField('assembly_description', 'Description', $values['assembly_description'] ?? '');
-    textareaField('assembly_notes', 'Notes', $values['assembly_notes'] ?? '');
-
-    submitButton($submitName);
-    echo '</form>' . "\n";
+    template('project/assembly-form', compact('values', 'submitName', 'formMessage'));
 }
 
 /**
@@ -148,22 +127,5 @@ function assemblyStockMessage(array $stock): string
  */
 function renderAssemblyItemFields(array $values, string $stockNote = ''): void
 {
-    $quantities = [
-        'quantity_required'  => 'Quantity Required',
-        'quantity_installed' => 'Quantity Installed',
-    ];
-
-    foreach ($quantities as $name => $label) {
-        $required = ($name === 'quantity_required');
-
-        textField(
-            $name,
-            $label . ($required && $stockNote !== '' ? ' <small>' . $stockNote . '</small>' : ''),
-            formatQuantity($values[$name] ?? ($required ? 1 : 0)),
-            'number',
-            ' step="1" min="0"' . ($required ? ' required' : '')
-        );
-    }
-
-    textareaField('assembly_item_notes', 'Notes', $values['assembly_item_notes'] ?? '');
+    template('project/assembly-item-fields', compact('values', 'stockNote'));
 }

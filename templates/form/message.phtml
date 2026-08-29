@@ -1,0 +1,30 @@
+<?php
+/**
+ * The result of a form submission: one message on its own, or a list of
+ * everything that has to be put right.
+ *
+ * A message that belongs to a field is named, so assets/js/app.js can take it
+ * away again once that field has been dealt with.
+ *
+ * @var array  $messages Field name (or a bare index) => message HTML.
+ * @var string $status   'success' or 'error', which is what colours it.
+ */
+
+$field = static function ($key) {
+    return is_string($key) ? ' data-field="' . $key . '"' : '';
+};
+?>
+<?php if (count($messages) === 1): ?>
+<p class="form-message form-<?php echo $status; ?>"<?php echo $field(array_key_first($messages)); ?>><?php
+    echo reset($messages);
+?></p>
+<?php else: ?>
+<div class="form-message form-<?php echo $status; ?>">
+    <p>Please put these right:</p>
+    <ul>
+<?php foreach ($messages as $key => $message): ?>
+        <li<?php echo $field($key); ?>><?php echo $message; ?></li>
+<?php endforeach; ?>
+    </ul>
+</div>
+<?php endif; ?>

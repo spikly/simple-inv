@@ -1,0 +1,22 @@
+<?php
+/**
+ * What switching a category would do, said above the form, since it reaches
+ * further than the row being edited.
+ *
+ * @var int    $catId     The category being edited.
+ * @var int    $inUse     How many items are filed under it.
+ * @var string $otherKind The kind it would become.
+ */
+?>
+<p>
+    Switching this category to <?php echo strtolower(ITEM_TYPE_PLURALS[$otherKind]); ?> converts the
+    <a href="index.php?page=items&amp;category_id=<?php echo $catId; ?>"><?php
+        echo $inUse . ' ' . ($inUse === 1 ? 'item' : 'items');
+    ?></a> in it as well<?php
+    if ($otherKind === 'tool') {
+        echo ', and a tool has no stock, so '
+            . ($inUse === 1 ? 'its quantity and reorder level are' : 'their quantities and reorder levels are')
+            . ' cleared';
+    }
+?>.
+</p>

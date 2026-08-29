@@ -1,0 +1,81 @@
+<?php
+/**
+ * A project: what it is for, how far along it is, and its assemblies.
+ *
+ * @var mixed  $project        The project row, or false when there is no such id.
+ * @var array  $assemblies     The assemblies on this page.
+ * @var array  $assemblySlice  Their slice.
+ * @var array  $summary        Totals across the whole project.
+ * @var int    $projectId      The id being viewed.
+ * @var string $addAssemblyUrl Where "Add Assembly" goes, used twice.
+ */
+
+if (!$project): ?>
+<p>Project not found.</p>
+<?php
+    return;
+endif;
+
+pageHeader(escapeHtml($project['project_name']), [
+    'Add Assembly'  => $addAssemblyUrl,
+    'Shopping List' => 'index.php?page=shopping-list&project_id=' . $projectId,
+    'Edit'          => 'index.php?page=edit-project&project_id=' . $projectId,
+]);
+
+formMessage(takeFlash());
+?>
+<?php if ($project['project_reference']): ?>
+<p><strong>Reference:</strong> <?php echo escapeHtml($project['project_reference']); ?></p>
+<?php endif; ?>
+<p><strong>Status:</strong> <?php echo escapeHtml($project['project_status_name']); ?></p>
+<?php if ($project['project_description']): ?>
+    <?php notesBox($project['project_description']); ?>
+<?php endif; ?>
+<div class="item-property-container">
+<?php
+
+$totals = [
+    'Required'  => 'required_quantity',
+    'Allocated' => 'allocated_quantity',
+    'Installed' => 'installed_quantity',
+];
+
+foreach ($totals as $heading => $column) {
+    itemProperty($heading, '<p>' . formatQuantity($summary[$column]) . '</p>');
+}
+?>
+</div>
+<?php sectionHeader('Assemblies' . countBadge($assemblySlice['total']), ['Add Assembly' => $addAssemblyUrl]); ?>
+<?php if ($assemblies): ?>
+<?php
+renderTable(
+    ['Assembly', 'Parts', 'Required', 'Installed', 'Progress', ''],
+    $assemblies,
+    static function ($assembly) {
+        $id = (int)$assembly['assembly_id'];
+        $required = (float)$assembly['quantity_required'];
+        $installed = (float)$assembly['quantity_installed'];
+        $progress = $required > 0 ? min(100, round(($installed / $required) * 100)) : 0;
+
+        return [
+            '<a href="index.php?page=view-assembly&assembly_id=' . $id . '">'
+                . escapeHtml($assembly['assembly_name']) . '</a>',
+            (int)$assembly['item_count'],
+            formatQuantity($required),
+            formatQuantity($installed),
+            $progress . '%',
+            '<a href="index.php?page=edit-assembly&assembly_id=' . $id . '">Edit</a>',
+        ];
+    }
+);
+
+renderPagination($assemblySlice, 'assemblies');
+?>
+<?php else: ?>
+<p>No assemblies yet.</p>
+<?php endif; ?>
+
+<?php if ($project['project_notes']): ?>
+    <?php sectionHeader('Notes'); ?>
+    <?php notesBox($project['project_notes']); ?>
+<?php endif; ?>

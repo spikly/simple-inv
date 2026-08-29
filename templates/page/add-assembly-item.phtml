@@ -1,0 +1,46 @@
+<?php
+/**
+ * Putting a part on an assembly. Stock reserves itself against the part as
+ * soon as it is saved, as far as it will go.
+ *
+ * @var mixed $assembly    The assembly, or false when there is no such id.
+ * @var array $options     item_id => name and free stock, for the dropdown.
+ * @var array $values      Current field values.
+ * @var mixed $formMessage The last result, or false.
+ */
+
+if (!$assembly): ?>
+<p>Assembly not found.</p>
+<?php
+    return;
+endif;
+
+pageHeader('Add Part', [
+    'Back to Assembly' => 'index.php?page=view-assembly&assembly_id=' . (int)$assembly['assembly_id'],
+]);
+?>
+<p>Assembly: <strong><?php echo escapeHtml($assembly['assembly_name']); ?></strong></p>
+<?php if (!$options):
+    formMessage($formMessage); ?>
+<p>Every item is already part of this assembly.</p>
+<?php
+    return;
+endif; ?>
+<form method="post">
+<?php
+// First, because it is what marks the fields the last save was rejected over.
+formMessage($formMessage);
+
+selectField(
+    'item_id',
+    'Item',
+    $options,
+    $values['item_id'] ?? null,
+    '<option value="">Select an item</option>',
+    ' required'
+);
+
+renderAssemblyItemFields($values, 'stock is reserved automatically, as far as it goes');
+submitButton('add_assembly_item_submit');
+?>
+</form>

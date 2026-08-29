@@ -1,0 +1,23 @@
+<?php
+/**
+ * A search box on its own, for listings that have nothing else to filter by.
+ *
+ * @var string $page        Page the form submits back to.
+ * @var string $placeholder Wording inside the box.
+ * @var string $search      What is being searched for now.
+ */
+?>
+<form method="get" class="filter-bar">
+    <input type="hidden" name="page" value="<?php echo $page; ?>">
+<?php
+filterField(
+    'q',
+    'Search',
+    '<input type="search" name="q" id="q" value="' . escapeHtml($search)
+        . '" placeholder="' . escapeHtml($placeholder) . '">',
+    'filter-search'
+);
+
+filterActions($page, $search !== '', 'Search');
+?>
+</form>
