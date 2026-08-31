@@ -287,3 +287,121 @@ DEALLOCATE PREPARE stmt;
 -- in on the item's page, after the file has been uploaded.
 ALTER TABLE `inv_item_files`
   ADD COLUMN IF NOT EXISTS `file_description` varchar(255) DEFAULT NULL AFTER `file_name`;
+
+-- Names are unique from here on, so a second "Acme" cannot be typed in.
+--
+-- The columns become VARCHAR because a UNIQUE key over TEXT needs a prefix
+-- length; 191 is the longest utf8mb4 column older InnoDB will index whole.
+-- inv_project_statuses already models a name this way.
+ALTER TABLE `inv_brands`     MODIFY `brand_name`  varchar(191) NOT NULL;
+ALTER TABLE `inv_suppliers`  MODIFY `sup_name`    varchar(191) NOT NULL;
+ALTER TABLE `inv_statuses`   MODIFY `status_name` varchar(191) NOT NULL;
+ALTER TABLE `inv_categories` MODIFY `cat_name`    varchar(191) NOT NULL;
+ALTER TABLE `inv_locations`  MODIFY `loc_name`    varchar(191) NOT NULL;
+
+-- Two categories of the same name filing different kinds are not duplicates:
+-- merging them would turn tools into parts. They are told apart instead, which
+-- also lets the app go on treating a category name as naming one kind.
+UPDATE `inv_categories` c
+  INNER JOIN (SELECT `cat_name` FROM `inv_categories`
+              GROUP BY `cat_name` HAVING COUNT(DISTINCT `cat_type`) > 1) m
+    ON m.`cat_name` = c.`cat_name`
+  SET c.`cat_name` = CONCAT(c.`cat_name`, ' (', IF(c.`cat_type` = 'tool', 'Tools', 'Parts'), ')'),
+      c.`cat_slug` = CONCAT(c.`cat_slug`, '-', c.`cat_type`);
+
+-- Everything left sharing a name is the same thing typed twice: the lowest id
+-- is kept and whatever pointed at the others is moved onto it. The comparison
+-- is the collation's, so "Acme" and "acme" merge the way the index will treat
+-- them.
+UPDATE `inv_items` i
+  INNER JOIN `inv_brands` b ON b.`brand_id` = i.`item_brand_id`
+  INNER JOIN (SELECT MIN(`brand_id`) AS keep_id, `brand_name` FROM `inv_brands` GROUP BY `brand_name`) k
+    ON k.`brand_name` = b.`brand_name`
+  SET i.`item_brand_id` = k.keep_id WHERE i.`item_brand_id` <> k.keep_id;
+
+DELETE b FROM `inv_brands` b
+  INNER JOIN (SELECT MIN(`brand_id`) AS keep_id, `brand_name` FROM `inv_brands` GROUP BY `brand_name`) k
+    ON k.`brand_name` = b.`brand_name`
+  WHERE b.`brand_id` <> k.keep_id;
+
+UPDATE `inv_items` i
+  INNER JOIN `inv_suppliers` s ON s.`sup_id` = i.`item_sup_id`
+  INNER JOIN (SELECT MIN(`sup_id`) AS keep_id, `sup_name` FROM `inv_suppliers` GROUP BY `sup_name`) k
+    ON k.`sup_name` = s.`sup_name`
+  SET i.`item_sup_id` = k.keep_id WHERE i.`item_sup_id` <> k.keep_id;
+
+DELETE s FROM `inv_suppliers` s
+  INNER JOIN (SELECT MIN(`sup_id`) AS keep_id, `sup_name` FROM `inv_suppliers` GROUP BY `sup_name`) k
+    ON k.`sup_name` = s.`sup_name`
+  WHERE s.`sup_id` <> k.keep_id;
+
+UPDATE `inv_items` i
+  INNER JOIN `inv_statuses` st ON st.`status_id` = i.`item_status`
+  INNER JOIN (SELECT MIN(`status_id`) AS keep_id, `status_name` FROM `inv_statuses` GROUP BY `status_name`) k
+    ON k.`status_name` = st.`status_name`
+  SET i.`item_status` = k.keep_id WHERE i.`item_status` <> k.keep_id;
+
+DELETE st FROM `inv_statuses` st
+  INNER JOIN (SELECT MIN(`status_id`) AS keep_id, `status_name` FROM `inv_statuses` GROUP BY `status_name`) k
+    ON k.`status_name` = st.`status_name`
+  WHERE st.`status_id` <> k.keep_id;
+
+-- An item may already be in the category being kept, and a pairing is only
+-- stored once, so IGNORE drops the row that would repeat it; deleting the
+-- duplicate category then cascades the leftover away.
+UPDATE IGNORE `categories_items` ci
+  INNER JOIN `inv_categories` c ON c.`cat_id` = ci.`cat_id`
+  INNER JOIN (SELECT MIN(`cat_id`) AS keep_id, `cat_name` FROM `inv_categories` GROUP BY `cat_name`) k
+    ON k.`cat_name` = c.`cat_name`
+  SET ci.`cat_id` = k.keep_id WHERE ci.`cat_id` <> k.keep_id;
+
+DELETE c FROM `inv_categories` c
+  INNER JOIN (SELECT MIN(`cat_id`) AS keep_id, `cat_name` FROM `inv_categories` GROUP BY `cat_name`) k
+    ON k.`cat_name` = c.`cat_name`
+  WHERE c.`cat_id` <> k.keep_id;
+
+-- A location's name only has to be unique inside the one it sits in, so
+-- "Drawer 1" in two different chests is two locations. Nesting is one level
+-- deep, so the parents are settled first and the sub-locations then compared
+-- inside whichever parent they ended up under.
+UPDATE `inv_locations` child
+  INNER JOIN `inv_locations` p ON p.`loc_id` = child.`loc_parent_id`
+  INNER JOIN (SELECT MIN(`loc_id`) AS keep_id, `loc_name` FROM `inv_locations`
+              WHERE `loc_parent_id` IS NULL GROUP BY `loc_name`) k
+    ON k.`loc_name` = p.`loc_name`
+  SET child.`loc_parent_id` = k.keep_id WHERE child.`loc_parent_id` <> k.keep_id;
+
+UPDATE `inv_items` i
+  INNER JOIN `inv_locations` l ON l.`loc_id` = i.`item_loc_id`
+  INNER JOIN (SELECT MIN(`loc_id`) AS keep_id, `loc_name` FROM `inv_locations`
+              WHERE `loc_parent_id` IS NULL GROUP BY `loc_name`) k
+    ON k.`loc_name` = l.`loc_name`
+  SET i.`item_loc_id` = k.keep_id
+  WHERE l.`loc_parent_id` IS NULL AND i.`item_loc_id` <> k.keep_id;
+
+DELETE l FROM `inv_locations` l
+  INNER JOIN (SELECT MIN(`loc_id`) AS keep_id, `loc_name` FROM `inv_locations`
+              WHERE `loc_parent_id` IS NULL GROUP BY `loc_name`) k
+    ON k.`loc_name` = l.`loc_name`
+  WHERE l.`loc_parent_id` IS NULL AND l.`loc_id` <> k.keep_id;
+
+UPDATE `inv_items` i
+  INNER JOIN `inv_locations` l ON l.`loc_id` = i.`item_loc_id`
+  INNER JOIN (SELECT MIN(`loc_id`) AS keep_id, `loc_name`, `loc_parent_id` FROM `inv_locations`
+              WHERE `loc_parent_id` IS NOT NULL GROUP BY `loc_name`, `loc_parent_id`) k
+    ON k.`loc_name` = l.`loc_name` AND k.`loc_parent_id` = l.`loc_parent_id`
+  SET i.`item_loc_id` = k.keep_id WHERE i.`item_loc_id` <> k.keep_id;
+
+DELETE l FROM `inv_locations` l
+  INNER JOIN (SELECT MIN(`loc_id`) AS keep_id, `loc_name`, `loc_parent_id` FROM `inv_locations`
+              WHERE `loc_parent_id` IS NOT NULL GROUP BY `loc_name`, `loc_parent_id`) k
+    ON k.`loc_name` = l.`loc_name` AND k.`loc_parent_id` = l.`loc_parent_id`
+  WHERE l.`loc_id` <> k.keep_id;
+
+-- MySQL counts NULLs as distinct, so this stops a repeated sub-location but not
+-- two top level locations of the same name; taxonomyNameTaken() covers that.
+ALTER TABLE `inv_brands`     ADD UNIQUE KEY IF NOT EXISTS `uq_brand_name`  (`brand_name`);
+ALTER TABLE `inv_suppliers`  ADD UNIQUE KEY IF NOT EXISTS `uq_sup_name`    (`sup_name`);
+ALTER TABLE `inv_statuses`   ADD UNIQUE KEY IF NOT EXISTS `uq_status_name` (`status_name`);
+ALTER TABLE `inv_categories` ADD UNIQUE KEY IF NOT EXISTS `uq_cat_name`    (`cat_name`);
+ALTER TABLE `inv_locations`  ADD UNIQUE KEY IF NOT EXISTS `uq_loc_name`    (`loc_name`, `loc_parent_id`);

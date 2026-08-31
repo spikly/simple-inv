@@ -44,8 +44,9 @@ CREATE TABLE IF NOT EXISTS `categories_items` (
 
 CREATE TABLE IF NOT EXISTS `inv_brands` (
   `brand_id` int(11) NOT NULL AUTO_INCREMENT,
-  `brand_name` text NOT NULL,
-  PRIMARY KEY (`brand_id`)
+  `brand_name` varchar(191) NOT NULL,
+  PRIMARY KEY (`brand_id`),
+  UNIQUE KEY `uq_brand_name` (`brand_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -56,10 +57,11 @@ CREATE TABLE IF NOT EXISTS `inv_brands` (
 
 CREATE TABLE IF NOT EXISTS `inv_categories` (
   `cat_id` int(11) NOT NULL AUTO_INCREMENT,
-  `cat_name` text NOT NULL,
+  `cat_name` varchar(191) NOT NULL,
   `cat_slug` text NOT NULL,
   `cat_type` enum('part','tool') NOT NULL DEFAULT 'part',
-  PRIMARY KEY (`cat_id`)
+  PRIMARY KEY (`cat_id`),
+  UNIQUE KEY `uq_cat_name` (`cat_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -151,9 +153,10 @@ CREATE TABLE IF NOT EXISTS `inv_items` (
 
 CREATE TABLE IF NOT EXISTS `inv_locations` (
   `loc_id` int(11) NOT NULL AUTO_INCREMENT,
-  `loc_name` text NOT NULL,
+  `loc_name` varchar(191) NOT NULL,
   `loc_parent_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`loc_id`),
+  UNIQUE KEY `uq_loc_name` (`loc_name`,`loc_parent_id`),
   KEY `idx_loc_parent` (`loc_parent_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -193,8 +196,9 @@ INSERT INTO `inv_measurement_units` (`unit_id`, `unit_label`, `unit_symbol`, `un
 
 CREATE TABLE IF NOT EXISTS `inv_statuses` (
   `status_id` int(11) NOT NULL AUTO_INCREMENT,
-  `status_name` text NOT NULL,
-  PRIMARY KEY (`status_id`)
+  `status_name` varchar(191) NOT NULL,
+  PRIMARY KEY (`status_id`),
+  UNIQUE KEY `uq_status_name` (`status_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -227,9 +231,10 @@ CREATE TABLE IF NOT EXISTS `inv_stock_movements` (
 
 CREATE TABLE IF NOT EXISTS `inv_suppliers` (
   `sup_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `sup_name` text NOT NULL,
+  `sup_name` varchar(191) NOT NULL,
   `sup_website` text DEFAULT NULL,
-  PRIMARY KEY (`sup_id`)
+  PRIMARY KEY (`sup_id`),
+  UNIQUE KEY `uq_sup_name` (`sup_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 

@@ -23,6 +23,7 @@ Very much work in progress. Designed for an average sized home workshop and almo
 * Keep spec sheets, manuals, drawings and extra pictures against an item as documents, alongside that photo
 * Say what each of those documents is, so a file called `DS_74HC595_R3.pdf` is findable as a datasheet
 * Put an item in more than one category
+* Manufacturer, supplier, category, location and status names are unique, so nothing gets filed under two spellings of the same thing
 * Record a colour and a link to the product page an item came from, on parts and tools alike
 * Filter and search items by name, part number, colour, notes, manufacturer, supplier, category, location and status
 * Sign a tool out to whoever is borrowing it, with a due date, and sign it back in again
@@ -87,13 +88,38 @@ part/tool flag to categories, turns the deployments table into the tool
 sign-out table, adds the stock movement log, restates the quantities assemblies
 have reserved, adds the sub-location column to locations, puts an `https://` on
 any supplier website stored without one, adds the table item documents are
-recorded in, and drops the unused `item_deployed_loc` column. That last column has not been read or written since
+recorded in, merges duplicate manufacturer, supplier, category, location and
+status names, and drops the unused `item_deployed_loc` column. That last column has not been read or written since
 deployments moved into their own table, but check it is empty first if you have
 been running this since before then:
 
 ```sql
 SELECT item_id, item_name, item_deployed_loc FROM inv_items WHERE item_deployed_loc <> '';
 ```
+
+### Duplicate names are merged
+
+Names are unique from this upgrade on, so the update merges any duplicates it
+finds first. The lowest numbered row wins and everything pointing at the others
+is moved onto it; the comparison ignores case, so `Acme` and `acme` become one.
+Nothing is lost, but it is worth seeing what will be merged before you run it:
+
+```sql
+SELECT brand_name, COUNT(*) FROM inv_brands GROUP BY brand_name HAVING COUNT(*) > 1;
+SELECT sup_name, COUNT(*) FROM inv_suppliers GROUP BY sup_name HAVING COUNT(*) > 1;
+SELECT status_name, COUNT(*) FROM inv_statuses GROUP BY status_name HAVING COUNT(*) > 1;
+SELECT cat_name, COUNT(*) FROM inv_categories GROUP BY cat_name HAVING COUNT(*) > 1;
+SELECT loc_name, loc_parent_id, COUNT(*) FROM inv_locations
+  GROUP BY loc_name, loc_parent_id HAVING COUNT(*) > 1;
+```
+
+A location's name only has to be unique inside the location it sits in, so a
+`Drawer 1` in two different chests is two locations and is left alone.
+
+Two categories of the same name filing different kinds are not duplicates:
+merging them would turn tools into parts. They are renamed instead, so
+`Clamps` filing parts and `Clamps` filing tools become `Clamps (Parts)` and
+`Clamps (Tools)`.
 
 ### Deployments have gone
 

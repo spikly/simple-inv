@@ -102,6 +102,7 @@ function taxonomies(): array
                     'nullable'    => true,
                 ],
             ],
+            'uniqueWith'    => 'loc_parent_id',
             'joins'         => 'LEFT JOIN inv_locations parent ON parent.loc_id = t.loc_parent_id',
             'select'        => 'parent.loc_name AS loc_parent_name,
                 (SELECT COUNT(*) FROM inv_locations child
@@ -454,6 +455,38 @@ function locationDeleteBlocker($id): ?string
         . ', so it cannot be deleted. Delete ' . ($children === 1 ? 'it' : 'them') . ' first.';
 }
 
+/**
+ * Whether another row already holds this name. $id is the row being edited, so
+ * renaming something to what it is already called is not a clash.
+ *
+ * uniqueWith narrows the question to rows sharing that column, since a
+ * sub-location's name only has to be unique inside the location it sits in.
+ * The unique indexes are the backstop, but MySQL counts NULLs as distinct, so
+ * two top level locations of the same name only fail here.
+ */
+function taxonomyNameTaken(array $tax, array $values, $id = null): bool
+{
+    $nameField = taxonomyNameField($tax);
+    $where = $nameField . ' = :name';
+    $params = ['name' => $values[$nameField]];
+
+    if (isset($tax['uniqueWith'])) {
+        $scope = $values[$tax['uniqueWith']] ?? null;
+        $where .= ' AND ' . $tax['uniqueWith'] . ($scope === null ? ' IS NULL' : ' = :scope');
+
+        if ($scope !== null) {
+            $params['scope'] = $scope;
+        }
+    }
+
+    if ($id !== null && $id !== '') {
+        $where .= ' AND ' . $tax['id'] . ' <> :id';
+        $params['id'] = $id;
+    }
+
+    return dbValue('SELECT 1 FROM ' . $tax['table'] . ' WHERE ' . $where . ' LIMIT 1', $params) !== null;
+}
+
 /** The required name column of a taxonomy. */
 function taxonomyNameField(array $tax): string
 {
@@ -637,6 +670,10 @@ function taxonomyValues(array $tax, array $input, $id = null): array
 
     if ($values[$nameField] === '') {
         $errors[$nameField] = $tax['label'] . ' name cannot be empty';
+    } elseif (taxonomyNameTaken($tax, $values, $id)) {
+        $errors[$nameField] = 'There is already a ' . strtolower($tax['label']) . ' called "'
+            . escapeHtml($values[$nameField]) . '"'
+            . (empty($values[$tax['uniqueWith'] ?? '']) ? '' : ' in there') . '.';
     }
 
     // type="url" is only a request: anything posting straight to the page
