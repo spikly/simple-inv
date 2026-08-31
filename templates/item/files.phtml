@@ -1,0 +1,60 @@
+<?php
+/**
+ * The documents kept against an item, and the control for adding more.
+ *
+ * @var array $files  Rows from fetchItemFiles().
+ * @var mixed $itemId The item they belong to.
+ */
+
+$formId = 'item-files-form';
+
+if ($files):
+    renderTable(
+        ['Name', 'Description', 'Type', 'Size', 'Added', ''],
+        $files,
+        static function ($file) use ($itemId, $formId) {
+            // A picture or a PDF opens in a tab of its own; anything else is
+            // sent as a download, so it stays on this page. See pages/download-file.php.
+            $inline = itemFileIsInline($file['file_stored_name']);
+            $id = (int)$file['file_id'];
+
+            return [
+                '<a href="index.php?page=download-file&file_id=' . $id . '"'
+                    . ($inline ? ' target="_blank"' : '') . '>'
+                    . escapeHtml($file['file_name']) . '</a>',
+                '<input type="text" name="file_description[' . $id . ']"'
+                    . ' value="' . escapeHtml((string)$file['file_description']) . '"'
+                    . ' form="' . $formId . '" maxlength="255"'
+                    . ' aria-label="What ' . escapeHtml($file['file_name']) . ' is"'
+                    . ' placeholder="What is it?">',
+                escapeHtml(strtoupper((string)pathinfo($file['file_stored_name'], PATHINFO_EXTENSION))),
+                formatFileSize($file['file_size']),
+                escapeHtml(formatDate($file['file_uploaded_at'])),
+                templateHtml('item/file-delete', [
+                    'fileId' => $id,
+                    'itemId' => $itemId,
+                    'name'   => $file['file_name'],
+                ]),
+            ];
+        },
+        [1 => 'table-description', 5 => 'table-action']
+    );
+else: ?>
+<p>Nothing is kept against this item yet.</p>
+<?php endif; ?>
+
+<form method="post" enctype="multipart/form-data" id="<?php echo $formId; ?>">
+    <input type="hidden" name="item_id" value="<?php echo (int)$itemId; ?>">
+<?php
+formRow(
+    'item_files',
+    'Add Documents <small class="field-hint">' . escapeHtml(itemFileTypeList())
+        . '. Up to 16MB each, and you can choose more than one at a time.</small>',
+    '<input type="file" name="item_files[]" id="item_files" multiple'
+        . ' accept="' . escapeHtml('.' . implode(',.', array_keys(ITEM_FILE_TYPES))) . '"'
+        . invalidAttributes('item_files') . '>'
+);
+
+submitButton('save_files_submit', $files ? 'Save' : 'Upload');
+?>
+</form>

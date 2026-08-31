@@ -36,6 +36,7 @@ return [
     'loan-tool' => 'loan-tool',
     'edit-loan' => 'edit-loan',
     'export-items' => 'export-items',
+    'download-file' => 'download-file',
     'projects' => 'all-projects',
     'add-project' => 'add-project',
     'edit-project' => 'edit-project',

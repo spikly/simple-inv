@@ -1,8 +1,13 @@
 <?php
 
 /**
- * Item photos. Files are stored under assets/uploads/items/ with a generated
- * name, so nothing a browser sends is ever used as a path.
+ * Item photos and item attachments.
+ *
+ * Both are stored with a generated name, so nothing a browser sends is ever
+ * used as a path: photos under assets/uploads/items/, attachments under
+ * assets/uploads/files/. The folder above them turns PHP off and sends
+ * X-Content-Type-Options, see assets/uploads/.htaccess.
+ *
  */
 
 const UPLOAD_MAX_BYTES = 8388608; // 8MB
@@ -243,4 +248,198 @@ function copyItemImage(?string $file): ?string
     $name = bin2hex(random_bytes(8)) . '.' . $matches[1];
 
     return @copy(uploadPath($file), uploadPath($name)) ? $name : null;
+}
+
+/*
+ * Item attachments: spec sheets, manuals, drawings and any other document or
+ * extra picture kept against an item.
+ *
+ * Unlike the photo above, an attachment is never re-encoded or resized. It is
+ * the document you uploaded, handed back byte for byte, so a drawing stays
+ * readable and a PDF stays the PDF the manufacturer published.
+ */
+
+/** Largest attachment accepted. PHP's own upload_max_filesize may be lower. */
+const ITEM_FILE_MAX_BYTES = 16777216; // 16MB
+
+/**
+ * What may be uploaded, as the stored extension => the type it is served as.
+ *
+ * This list is the whole of what decides the extension a file is saved with,
+ * so nothing the webserver would execute can ever be written: an upload whose
+ * extension is not one of these keys is turned away rather than corrected.
+ */
+const ITEM_FILE_TYPES = [
+    'pdf'  => 'application/pdf',
+    'doc'  => 'application/msword',
+    'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'xls'  => 'application/vnd.ms-excel',
+    'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'odt'  => 'application/vnd.oasis.opendocument.text',
+    'ods'  => 'application/vnd.oasis.opendocument.spreadsheet',
+    'rtf'  => 'application/rtf',
+    'txt'  => 'text/plain',
+    'csv'  => 'text/csv',
+    'zip'  => 'application/zip',
+    'jpg'  => 'image/jpeg',
+    'png'  => 'image/png',
+    'gif'  => 'image/gif',
+    'webp' => 'image/webp',
+];
+
+/** Extensions meaning one of the above under another name. */
+const ITEM_FILE_ALIASES = ['jpeg' => 'jpg'];
+
+/**
+ * The types shown in the browser rather than downloaded. A picture and a PDF
+ * are things you look at; everything else is a file you open in its own
+ * program, so it is sent as a download.
+ */
+const ITEM_FILE_INLINE = ['pdf', 'jpg', 'png', 'gif', 'webp'];
+
+/** The pattern every generated attachment name matches. */
+const ITEM_FILE_NAME_PATTERN = '/^[0-9a-f]{16}\.[a-z0-9]{1,5}$/';
+
+function itemFilePath(string $file = ''): string
+{
+    return __DIR__ . '/../assets/uploads/files/' . $file;
+}
+
+/** A readable list of what may be uploaded, for the form and its errors. */
+function itemFileTypeList(): string
+{
+    return strtoupper(implode(', ', array_keys(ITEM_FILE_TYPES)));
+}
+
+/**
+ * Save one uploaded attachment.
+ *
+ * Returns ['name' => storedName, 'original' => whatItWasCalled, 'size' => bytes],
+ * ['name' => null] when nothing was chosen, or ['error' => message].
+ */
+function storeItemFile(array $upload): array
+{
+    if (($upload['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return ['name' => null];
+    }
+
+    if ($upload['error'] !== UPLOAD_ERR_OK) {
+        return ['error' => 'The file could not be uploaded. It may be larger than the server allows.'];
+    }
+
+    if ($upload['size'] > ITEM_FILE_MAX_BYTES) {
+        return ['error' => 'Each file must be 16MB or smaller.'];
+    }
+
+    if ($upload['size'] === 0) {
+        return ['error' => 'That file is empty.'];
+    }
+
+    if (!is_uploaded_file($upload['tmp_name'])) {
+        return ['error' => 'The file could not be read.'];
+    }
+
+    // Only ever read for its extension; the name itself is never used as a
+    // path, and basename() keeps a directory out of what is shown.
+    $original = basename(str_replace('\\', '/', (string)$upload['name']));
+    $extension = strtolower((string)pathinfo($original, PATHINFO_EXTENSION));
+    $extension = ITEM_FILE_ALIASES[$extension] ?? $extension;
+
+    if (!isset(ITEM_FILE_TYPES[$extension])) {
+        return ['error' => 'A ' . ($extension === '' ? 'file with no extension' : strtoupper($extension) . ' file')
+            . ' cannot be attached. Accepted types are ' . itemFileTypeList() . '.'];
+    }
+
+    if (!is_dir(itemFilePath()) && !@mkdir(itemFilePath(), 0775, true)) {
+        return ['error' => 'The upload folder assets/uploads/files/ could not be created.'];
+    }
+
+    if (!is_writable(itemFilePath())) {
+        return ['error' => 'The upload folder assets/uploads/files/ is not writable.'];
+    }
+
+    $name = bin2hex(random_bytes(8)) . '.' . $extension;
+
+    if (!move_uploaded_file($upload['tmp_name'], itemFilePath($name))) {
+        return ['error' => 'The file could not be saved.'];
+    }
+
+    return [
+        'name'     => $name,
+        // Kept only to show and to name the download; 255 is what the column
+        // holds, and mb_substr so a long name is not cut through a character.
+        'original' => mb_substr($original, 0, 255),
+        'size'     => (int)$upload['size'],
+    ];
+}
+
+/**
+ * The $_FILES entry for each file chosen in one multiple upload control, as
+ * the single-file shape the rest of this file works in.
+ *
+ * PHP turns <input name="x[]" multiple> inside out, giving one array per
+ * property rather than one entry per file, which nothing else here expects.
+ */
+function uploadedFileList(array $files): array
+{
+    if (!isset($files['name']) || !is_array($files['name'])) {
+        return [];
+    }
+
+    $list = [];
+
+    foreach (array_keys($files['name']) as $index) {
+        // A control submitted with nothing chosen still sends one empty entry.
+        if (($files['error'][$index] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            continue;
+        }
+
+        $list[] = [
+            'name'     => $files['name'][$index] ?? '',
+            'type'     => $files['type'][$index] ?? '',
+            'tmp_name' => $files['tmp_name'][$index] ?? '',
+            'error'    => $files['error'][$index] ?? UPLOAD_ERR_NO_FILE,
+            'size'     => $files['size'][$index] ?? 0,
+        ];
+    }
+
+    return $list;
+}
+
+/** The type a stored attachment is served as, from the extension it was saved with. */
+function itemFileMime(string $stored): string
+{
+    $extension = strtolower((string)pathinfo($stored, PATHINFO_EXTENSION));
+
+    return ITEM_FILE_TYPES[$extension] ?? 'application/octet-stream';
+}
+
+/** Whether a stored attachment is shown in the browser rather than downloaded. */
+function itemFileIsInline(string $stored): bool
+{
+    return in_array(strtolower((string)pathinfo($stored, PATHINFO_EXTENSION)), ITEM_FILE_INLINE, true);
+}
+
+/** Remove a stored attachment, ignoring one that has already gone. */
+function deleteItemFile(?string $stored): void
+{
+    // Guard against anything that is not one of our generated names.
+    if ($stored && preg_match(ITEM_FILE_NAME_PATTERN, $stored) && is_file(itemFilePath($stored))) {
+        @unlink(itemFilePath($stored));
+    }
+}
+
+/**
+ * Copy a stored attachment under a new name, so a duplicated item owns its own
+ * files. Returns the new name, or null when there was nothing to copy.
+ */
+function copyItemFile(?string $stored): ?string
+{
+    if (!$stored || !preg_match(ITEM_FILE_NAME_PATTERN, $stored) || !is_file(itemFilePath($stored))) {
+        return null;
+    }
+
+    $name = bin2hex(random_bytes(8)) . '.' . strtolower((string)pathinfo($stored, PATHINFO_EXTENSION));
+
+    return @copy(itemFilePath($stored), itemFilePath($name)) ? $name : null;
 }

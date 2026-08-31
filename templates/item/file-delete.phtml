@@ -1,0 +1,15 @@
+<?php
+/**
+ * The delete button on one row of the item's document list.
+ *
+ * @var int    $fileId The document to remove.
+ * @var mixed  $itemId The item it belongs to.
+ * @var string $name   What it is called, for the confirmation.
+ */
+?>
+<form method="post">
+    <input type="hidden" name="item_id" value="<?php echo (int)$itemId; ?>">
+    <input type="hidden" name="file_id" value="<?php echo $fileId; ?>">
+    <input type="submit" name="delete_file_submit" value="Delete" class="delete"
+        onclick="return confirm(<?php echo jsString('Delete "' . $name . '"? This cannot be undone.'); ?>)">
+</form>

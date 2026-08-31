@@ -249,3 +249,41 @@ UPDATE `inv_suppliers`
 --   SELECT sup_id, sup_name, sup_website FROM inv_suppliers
 --   WHERE sup_website <> '' AND sup_website NOT LIKE 'http://%'
 --     AND sup_website NOT LIKE 'https://%';
+
+-- Documents and extra pictures kept against an item: spec sheets, manuals,
+-- drawings. The item's own photo is unchanged and stays where it was, in
+-- inv_items.item_image; these sit alongside it rather than replacing it.
+--
+-- The files themselves live under assets/uploads/files/, which has to be
+-- writable by the webserver the same way assets/uploads/items/ already is.
+CREATE TABLE IF NOT EXISTS `inv_item_files` (
+  `file_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `file_item_id` int(11) NOT NULL,
+  `file_stored_name` varchar(255) NOT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_size` int(11) UNSIGNED NOT NULL DEFAULT 0,
+  `file_uploaded_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`file_id`),
+  KEY `idx_file_item` (`file_item_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Deleting an item takes its attachments with it. The app unlinks the files
+-- from disk first, so this only has to clear the rows.
+SET @sql = IF(
+  (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inv_item_files'
+      AND CONSTRAINT_NAME = 'fk_file_item') > 0,
+  'DO 0',
+  'ALTER TABLE `inv_item_files`
+     ADD CONSTRAINT `fk_file_item` FOREIGN KEY (`file_item_id`)
+     REFERENCES `inv_items` (`item_id`) ON DELETE CASCADE'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- A line saying what each attached document is, because a filename often does
+-- not: "DS_74HC595_R3.pdf" means less than "Shift register datasheet". Filled
+-- in on the item's page, after the file has been uploaded.
+ALTER TABLE `inv_item_files`
+  ADD COLUMN IF NOT EXISTS `file_description` varchar(255) DEFAULT NULL AFTER `file_name`;

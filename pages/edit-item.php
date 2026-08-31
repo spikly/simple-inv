@@ -89,6 +89,7 @@ if ($item && isset($_POST['edit_item_submit'])) {
     }
 } elseif ($item && isset($_POST['delete_item_submit'])) {
     deleteItemImage($item['item_image']);
+    deleteItemFiles($editId);
     dbRun('DELETE FROM inv_items WHERE item_id = :edit_id LIMIT 1', ['edit_id' => $editId]);
 
     redirectWith(

@@ -289,6 +289,39 @@ function formatQuantity($value): string
 }
 
 /**
+ * A file size in the units a person would say it in.
+ */
+function formatFileSize($bytes): string
+{
+    $bytes = max(0, (int)$bytes);
+
+    if ($bytes < 1024) {
+        return $bytes . 'B';
+    }
+
+    $units = ['KB', 'MB', 'GB'];
+    $size = $bytes / 1024;
+    $unit = 0;
+
+    while ($size >= 1024 && $unit < count($units) - 1) {
+        $size /= 1024;
+        $unit++;
+    }
+
+    // One decimal place below 10, so 1.4MB keeps its detail and 240KB is not
+    // given precision it does not have.
+    return round($size, $size < 10 ? 1 : 0) . $units[$unit];
+}
+
+/**
+ * The documents kept against an item, with the form for adding more.
+ */
+function renderItemFiles(array $files, $itemId): void
+{
+    template('item/files', ['files' => $files, 'itemId' => $itemId]);
+}
+
+/**
  * Item photo thumbnail, or nothing when the item has no photo.
  */
 function itemThumb(?string $image, string $alt = '', string $class = 'item-thumb'): string

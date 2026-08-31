@@ -85,6 +85,32 @@ CREATE TABLE IF NOT EXISTS `inv_tool_loans` (
   KEY `idx_loan_open` (`loan_item_id`,`loan_in_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+
+--
+-- Table structure for table `inv_item_files`
+--
+-- Documents and extra pictures kept against an item: spec sheets, manuals,
+-- drawings. The item's own photo is not one of these; it stays in
+-- inv_items.item_image, see inc/uploads.php.
+--
+-- file_stored_name is the generated name on disk under assets/uploads/files/;
+-- file_name is what it was called when it was uploaded, which is all the
+-- original name is ever used for. file_description is what it was given to
+-- say afterwards, since a filename is often no help at all.
+--
+
+CREATE TABLE IF NOT EXISTS `inv_item_files` (
+  `file_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `file_item_id` int(11) NOT NULL,
+  `file_stored_name` varchar(255) NOT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_description` varchar(255) DEFAULT NULL,
+  `file_size` int(11) UNSIGNED NOT NULL DEFAULT 0,
+  `file_uploaded_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`file_id`),
+  KEY `idx_file_item` (`file_item_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- --------------------------------------------------------
 
 --
@@ -312,6 +338,12 @@ ALTER TABLE `categories_items`
 --
 ALTER TABLE `inv_locations`
   ADD CONSTRAINT `fk_loc_parent` FOREIGN KEY (`loc_parent_id`) REFERENCES `inv_locations` (`loc_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+--
+-- Constraints for table `inv_item_files`
+--
+ALTER TABLE `inv_item_files`
+  ADD CONSTRAINT `fk_file_item` FOREIGN KEY (`file_item_id`) REFERENCES `inv_items` (`item_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `inv_stock_movements`

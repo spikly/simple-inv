@@ -151,7 +151,19 @@ function sortTableByColumn(table, index, headerCell) {
     const rows = Array.from(table.rows).slice(1);
     const ascending = headerCell.dataset.sortDirection !== "asc";
 
-    const cellValue = row => (row.cells[index] ? row.cells[index].textContent.trim() : "");
+    // A cell holding a control is worth what the control says, not what the
+    // cell reads as, which for an <input> is nothing at all.
+    const cellValue = row => {
+        const cell = row.cells[index];
+
+        if (!cell) {
+            return "";
+        }
+
+        const field = cell.querySelector("input:not([type=submit]):not([type=hidden]), select, textarea");
+
+        return (field ? field.value : cell.textContent).trim();
+    };
 
     // Treat a column as numeric only when every value in it looks like a number.
     const asNumber = value => {

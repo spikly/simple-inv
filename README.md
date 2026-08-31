@@ -20,6 +20,8 @@ Very much work in progress. Designed for an average sized home workshop and almo
 * Put sub-locations inside a location, so a set of drawers is one location with a sub-location per drawer
 * Give these items a status (stored, broken, on loan etc)
 * Attach a photo to an item, so you can see the thing you are looking for
+* Keep spec sheets, manuals, drawings and extra pictures against an item as documents, alongside that photo
+* Say what each of those documents is, so a file called `DS_74HC595_R3.pdf` is findable as a datasheet
 * Put an item in more than one category
 * Record a colour and a link to the product page an item came from, on parts and tools alike
 * Filter and search items by name, part number, colour, notes, manufacturer, supplier, category, location and status
@@ -60,7 +62,9 @@ Older/newer versions may also and probably will work fine but are untested.
 
 4) Enter your database details into the newly created `user.config.php`
 
-5) Make `assets/uploads/items/` writable by the webserver if you want to attach photos:
+5) Make `assets/uploads/` writable by the webserver if you want to attach photos
+and documents. Photos are kept in `items/` and documents in `files/`, both of
+which are created on the first upload:
 
 ```
 chmod -R 775 assets/uploads
@@ -82,8 +86,8 @@ columns, stops an item being filed under the same category twice, adds the
 part/tool flag to categories, turns the deployments table into the tool
 sign-out table, adds the stock movement log, restates the quantities assemblies
 have reserved, adds the sub-location column to locations, puts an `https://` on
-any supplier website stored without one, and drops the unused
-`item_deployed_loc` column. That last column has not been read or written since
+any supplier website stored without one, adds the table item documents are
+recorded in, and drops the unused `item_deployed_loc` column. That last column has not been read or written since
 deployments moved into their own table, but check it is empty first if you have
 been running this since before then:
 

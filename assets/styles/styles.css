@@ -1378,6 +1378,67 @@ table td.col-thumb .item-thumb {
 }
 
 /* =========================================================
+   Item documents
+   ========================================================= */
+#item-files-form {
+    padding-top: 10px;
+}
+
+/* The accepted types, said in the label rather than in a paragraph of their
+   own, so the hint sits with the control it is about. */
+form label small.field-hint {
+    display: block;
+    margin-top: 3px;
+    color: var(--color-text-muted);
+    font-size: 1.2rem;
+    font-weight: 400;
+}
+
+/* A column holding nothing but a button, kept to the width of one. */
+table td.table-action,
+table th.table-action {
+    width: 1%;
+    white-space: nowrap;
+}
+
+/* The description column takes what the rest of the row does not need, since
+   it is the one cell holding a sentence. */
+table td.table-description,
+table th.table-description {
+    width: 40%;
+    min-width: 180px;
+}
+
+/* These inputs belong to the form below the table rather than sitting inside
+   it, so the form rules above do not reach them and they are dressed here.
+   Kept plainer than a form field: a grid of boxed inputs reads as a wall. */
+table td input[type="text"] {
+    width: 100%;
+    padding: 7px 9px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 1.4rem;
+}
+
+table td input[type="text"]:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
+}
+
+/* A form inside a table cell is only ever a single button, so it loses the
+   spacing a form on its own would want and the button shrinks to suit a row. */
+table td form {
+    margin: 0;
+}
+
+table td form input[type="submit"] {
+    min-height: 0;
+    padding: 5px 12px;
+    font-size: 1.3rem;
+    box-shadow: none;
+}
+
+/* =========================================================
    Pagination
    ========================================================= */
 

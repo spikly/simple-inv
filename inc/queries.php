@@ -242,6 +242,60 @@ function fetchItemFormOptions(string $type = 'part'): array
 }
 
 /*
+ * Item attachments
+ */
+
+/** Every document kept against an item, oldest first. */
+function fetchItemFiles($item_id): array
+{
+    return dbAll(
+        'SELECT * FROM inv_item_files WHERE file_item_id = :item_id
+         ORDER BY file_uploaded_at asc, file_id asc',
+        ['item_id' => $item_id]
+    );
+}
+
+/** One attachment, or false. The item id is what the page checks it against. */
+function fetchItemFile($file_id)
+{
+    return dbRow(
+        'SELECT * FROM inv_item_files WHERE file_id = :file_id LIMIT 1',
+        ['file_id' => $file_id]
+    );
+}
+
+/** Record a stored upload against an item. */
+function insertItemFile($item_id, string $stored, string $original, int $size, ?string $description = null): void
+{
+    dbRun(
+        'INSERT INTO inv_item_files
+            (file_item_id, file_stored_name, file_name, file_description, file_size)
+         VALUES (:item_id, :stored, :original, :description, :size)',
+        [
+            'item_id'     => $item_id,
+            'stored'      => $stored,
+            'original'    => $original,
+            'description' => $description,
+            'size'        => $size,
+        ]
+    );
+}
+
+/** Change what one attachment says it is. Null clears it. */
+function updateItemFileDescription($file_id, ?string $description): void
+{
+    dbRun(
+        'UPDATE inv_item_files SET file_description = :description WHERE file_id = :file_id LIMIT 1',
+        ['file_id' => $file_id, 'description' => $description]
+    );
+}
+
+function deleteItemFileRow($file_id): void
+{
+    dbRun('DELETE FROM inv_item_files WHERE file_id = :file_id LIMIT 1', ['file_id' => $file_id]);
+}
+
+/*
  * Dashboard
  */
 

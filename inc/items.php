@@ -313,6 +313,141 @@ function resolveItemPhoto(?string $current, bool $remove, bool $copy = false): a
 }
 
 /**
+ * The documents section is one form doing two jobs: taking new files and
+ * saving what the existing ones are described as. Both are handled together so
+ * a description typed while a file is being chosen is not lost on the way.
+ *
+ * Returns the message to show afterwards.
+ */
+function saveItemFiles($itemId, array $descriptions, array $upload): array
+{
+    $described = describeItemFiles($itemId, $descriptions);
+    [$stored, $errors] = storeItemFiles($itemId, $upload);
+
+    $done = [];
+
+    if ($stored) {
+        $done[] = $stored . ' ' . ($stored === 1 ? 'file' : 'files') . ' uploaded';
+    }
+
+    if ($described) {
+        $done[] = $described . ' ' . ($described === 1 ? 'description' : 'descriptions') . ' saved';
+    }
+
+    $summary = $done ? ucfirst(implode(' and ', $done)) . '.' : 'Nothing to save.';
+
+    if (!$errors) {
+        return successMessage($summary);
+    }
+
+    // What did get through is said as well, so the list that appears on the
+    // page is explained rather than looking like part of what went wrong.
+    return errorMessage($done ? array_merge([$summary], $errors) : $errors);
+}
+
+/**
+ * Store every file chosen in one upload against an item, as [kept, problems].
+ *
+ * Each file is judged on its own: one that is too large, or of a type that is
+ * not accepted, is named and passed over while the rest are still kept, so a
+ * batch of ten does not come to nothing over the one that was wrong.
+ */
+function storeItemFiles($itemId, array $upload): array
+{
+    $stored = 0;
+    $errors = [];
+
+    foreach (uploadedFileList($upload) as $file) {
+        $result = storeItemFile($file);
+
+        if (isset($result['error'])) {
+            // The name came from the browser and a message is drawn as HTML,
+            // so it is escaped here rather than anywhere further on.
+            $errors[] = escapeHtml(basename(str_replace('\\', '/', (string)$file['name'])))
+                . ': ' . $result['error'];
+            continue;
+        }
+
+        insertItemFile($itemId, $result['name'], $result['original'], $result['size']);
+        $stored++;
+    }
+
+    return [$stored, $errors];
+}
+
+/**
+ * Save the descriptions submitted for an item's documents, as the number that
+ * actually changed.
+ *
+ * The item's own files are what is walked, and only a description offered for
+ * one of them is read, so an id belonging to something else cannot be reached
+ * by putting it in the form.
+ */
+function describeItemFiles($itemId, array $descriptions): int
+{
+    $changed = 0;
+
+    foreach (fetchItemFiles($itemId) as $file) {
+        $id = (int)$file['file_id'];
+
+        if (!array_key_exists($id, $descriptions)) {
+            continue;
+        }
+
+        // 255 is what the column holds, and mb_substr so a long line is not
+        // cut through the middle of a character.
+        $wanted = mb_substr(trim((string)$descriptions[$id]), 0, 255);
+        $wanted = ($wanted === '') ? null : $wanted;
+
+        if ($wanted !== $file['file_description']) {
+            updateItemFileDescription($id, $wanted);
+            $changed++;
+        }
+    }
+
+    return $changed;
+}
+
+/**
+ * Remove every document kept against an item, from the disk and the database
+ * alike.
+ *
+ * Deleting the item would take the rows with it, but not the files those rows
+ * point at, so this runs first and the item is deleted after.
+ */
+function deleteItemFiles($itemId): void
+{
+    foreach (fetchItemFiles($itemId) as $file) {
+        deleteItemFile($file['file_stored_name']);
+        deleteItemFileRow($file['file_id']);
+    }
+}
+
+/**
+ * Give a duplicated item its own copy of every document the original holds,
+ * the same as it gets its own copy of the photo.
+ *
+ * A file that cannot be copied is left out rather than recorded as a row
+ * pointing at nothing.
+ */
+function copyItemFiles($fromItemId, $toItemId): void
+{
+    foreach (fetchItemFiles($fromItemId) as $file) {
+        $copy = copyItemFile($file['file_stored_name']);
+
+        if ($copy !== null) {
+            insertItemFile(
+                $toItemId,
+                $copy,
+                $file['file_name'],
+                (int)$file['file_size'],
+                $file['file_description']
+            );
+        }
+    }
+}
+
+/**
  * The listing behind the Parts, Tools and Items pages.
  *
  * $type pins the page to one kind of thing and picks the columns that suit it;

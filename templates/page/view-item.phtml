@@ -14,6 +14,7 @@
  *
  * Set only when the item was found:
  * @var array   $categories    Its category ids.
+ * @var array   $files         Documents kept against it.
  * @var array   $loans         Sign-out history (tools).
  * @var array   $loanSlice     Its slice (tools).
  * @var array   $assemblyUsage Assemblies holding this part (parts).
@@ -153,6 +154,9 @@ if ($type === 'tool') {
     renderToolLoans($loans);
     renderPagination($loanSlice, 'sign-outs');
 
+    sectionHeader('Documents' . countBadge(count($files)));
+    renderItemFiles($files, $item['item_id']);
+
     renderItemNotes($item);
 
     return;
@@ -203,5 +207,8 @@ sectionHeader('Stock History', [
 
 renderStockMovements($movements, $item);
 renderPagination($moveSlice, 'movements');
+
+sectionHeader('Documents' . countBadge(count($files)));
+renderItemFiles($files, $item['item_id']);
 
 renderItemNotes($item);

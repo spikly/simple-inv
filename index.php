@@ -13,8 +13,8 @@ if (isset($_GET['page'])) {
 }
 
 // Sends its own headers, so it must run before any markup.
-if ($currentPage === 'export-items') {
-    include __DIR__ . '/pages/export-items.php';
+if (in_array($currentPage, ['export-items', 'download-file'], true)) {
+    include __DIR__ . '/pages/' . $currentPage . '.php';
     exit();
 }
 

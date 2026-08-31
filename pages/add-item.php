@@ -1,11 +1,5 @@
 <?php
 
-/**
- * A new part or a new tool. The kind is settled before the form is drawn,
- * either by the listing it was reached from (?type=tool) or by the item being
- * duplicated, because it decides which fields and categories are on offer.
- */
-
 $values = [];
 $formMessage = takeFlash();
 $type = itemType(queryParam('kind'));
@@ -42,7 +36,7 @@ if (isset($_POST['add_item_submit'])) {
     if ($errors) {
         $formMessage = errorMessage($errors);
     } else {
-        $itemId = dbTransaction(function () use ($photo, $type) {
+        $itemId = dbTransaction(function () use ($photo, $type, $source) {
             $id = dbInsert(
                 'INSERT INTO inv_items
                     (item_name, item_part_no, item_colour, item_product_url,
@@ -56,6 +50,10 @@ if (isset($_POST['add_item_submit'])) {
             );
 
             saveItemCategories($id, itemCategoryIds($_POST));
+
+            if ($source) {
+                copyItemFiles($source['item_id'], $id);
+            }
 
             if ($type === 'part') {
                 recordStockMovement($id, (float)$_POST['item_quantity'], 'created');
