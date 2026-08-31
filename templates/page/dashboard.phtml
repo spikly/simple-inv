@@ -32,7 +32,7 @@ $stockTable = static function (array $items) {
             return [
                 '<a href="index.php?page=view-item&item_id=' . $item['item_id'] . '">'
                     . escapeHtml($item['item_name']) . '</a>',
-                escapeHtml($item['loc_name'] ?? ''),
+                locationCell($item),
                 escapeHtml($item['item_quantity']) . escapeHtml($item['unit_symbol']),
                 stockCell($item),
                 (int)$item['item_min_quantity'] > 0 ? escapeHtml($item['item_min_quantity']) : '-',
@@ -100,7 +100,7 @@ renderTable(
                 ? '<span class="stock ' . ($late ? 'stock-over' : 'stock-ok') . '">'
                     . escapeHtml(formatDate($loan['loan_due_at'])) . '</span>'
                 : '-',
-            escapeHtml($loan['loc_name'] ?? ''),
+            locationCell($loan),
         ];
     }
 );
@@ -147,7 +147,7 @@ renderTable(
             '<a href="index.php?page=view-item&item_id=' . $item['item_id'] . '">'
                 . escapeHtml($item['item_name']) . '</a>',
             ITEM_TYPES[itemTypeOf($item)],
-            escapeHtml($item['loc_name'] ?? ''),
+            locationCell($item),
             escapeHtml($item['status_name'] ?? ''),
             escapeHtml(formatDate($item['item_created_at'])),
         ];

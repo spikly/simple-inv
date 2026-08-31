@@ -414,9 +414,7 @@ function itemListingColumns(?string $type): array
         };
     }
 
-    $columns['Location'] = function (array $item) {
-        return nameOrDeleted($item['loc_name'] ?? null);
-    };
+    $columns['Location'] = 'locationCell';
 
     $columns['Status'] = function (array $item) {
         return nameOrDeleted($item['status_name'] ?? null);

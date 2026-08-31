@@ -11,7 +11,7 @@ $labels = [];
 if ($type === 'location') {
     foreach (taxonomyRows(taxonomy('location')) as $row) {
         $labels[] = [
-            'title' => $row['loc_name'],
+            'title' => locationPath($row),
             'url'   => baseUrl() . 'index.php?page=items&location_id=' . $row['loc_id'],
         ];
     }

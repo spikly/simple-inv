@@ -20,7 +20,9 @@ if (!$rows): ?>
 <p>
     <strong>Name</strong>, <strong>Manufacturer</strong>, <strong>Categories</strong>,
     <strong>Location</strong> and <strong>Status</strong> are required. Put more than one category in a cell
-    by separating them with <code>|</code>. Manufacturers, suppliers, categories, locations and statuses that
+    by separating them with <code>|</code>. Put an item in a sub-location by naming both, as
+    <code>Tool Chest &gt; Drawer 1</code>; a single name is always a location of its own.
+    Manufacturers, suppliers, categories, locations and statuses that
     do not exist yet are created. A file exported before manufacturers were renamed still works: its
     <strong>Brand</strong> column is read as <strong>Manufacturer</strong>.
     <strong>Unit</strong> must match a measurement unit's symbol or name.

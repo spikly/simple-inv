@@ -35,8 +35,10 @@ renderTable(
         $id = $row[$tax['id']];
 
         $cells = [
-            '<a href="index.php?page=items&' . $tax['param'] . '=' . $id . '">'
-                . escapeHtml($row[$nameField]) . '</a>',
+            isset($tax['nameCell'])
+                ? $tax['nameCell']($row)
+                : '<a href="index.php?page=items&' . $tax['param'] . '=' . $id . '">'
+                    . escapeHtml($row[$nameField]) . '</a>',
             $usage[$id] ?? 0,
         ];
 

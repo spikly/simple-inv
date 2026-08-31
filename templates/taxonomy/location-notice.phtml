@@ -1,0 +1,10 @@
+<?php
+/**
+ * @var int $children How many locations are inside this one.
+ */
+?>
+<p>
+    This location holds <?php echo $children . ' sub-' . ($children === 1 ? 'location' : 'locations'); ?>,
+    so it cannot itself go inside another location. Sub-locations go one level deep:
+    a chest holds its drawers, and the items are filed in the drawers.
+</p>

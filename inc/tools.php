@@ -67,10 +67,11 @@ function fetchToolLoans($item_id, ?array $slice = null): array
 function fetchOpenToolLoans(): array
 {
     return dbAll(
-        'SELECT l.*, i.item_name, loc.loc_name
+        'SELECT l.*, i.item_name, loc.loc_name, locp.loc_name AS loc_parent_name
          FROM inv_tool_loans l
          INNER JOIN inv_items i ON i.item_id = l.loan_item_id
          LEFT JOIN inv_locations loc ON loc.loc_id = i.item_loc_id
+         LEFT JOIN inv_locations locp ON locp.loc_id = loc.loc_parent_id
          WHERE l.loan_in_at IS NULL AND ' . ITEM_IS_TOOL . '
          ORDER BY (l.loan_due_at IS NOT NULL AND l.loan_due_at < CURDATE()) DESC,
                   l.loan_due_at IS NULL, l.loan_due_at ASC, l.loan_out_at ASC'

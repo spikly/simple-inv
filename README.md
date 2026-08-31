@@ -17,6 +17,7 @@ Very much work in progress. Designed for an average sized home workshop and almo
 * Mark a category as filing either parts or tools, which is what decides how the things in it behave
 * Add parts, tools, materials etc and categorise them by type and manufacturer
 * Give these items a location in your workshop where they are kept
+* Put sub-locations inside a location, so a set of drawers is one location with a sub-location per drawer
 * Give these items a status (stored, broken, on loan etc)
 * Attach a photo to an item, so you can see the thing you are looking for
 * Put an item in more than one category
@@ -78,7 +79,8 @@ It is safe to run more than once, so anything already applied is skipped. It
 adds the part number, reorder level, photo and timestamp columns, stops an item
 being filed under the same category twice, adds the part/tool flag to
 categories, turns the deployments table into the tool sign-out table, adds the
-stock movement log, restates the quantities assemblies have reserved, and drops
+stock movement log, restates the quantities assemblies have reserved, adds the
+sub-location column to locations, and drops
 the unused `item_deployed_loc` column. That last column has not been read or written since
 deployments moved into their own table, but check it is empty first if you have
 been running this since before then:
@@ -150,6 +152,23 @@ stock a project has reserved, or a tool that has been signed out before. The
 category page names the items so you know what to sort out. Anything becoming a
 tool loses its quantity and reorder level, since a tool has no stock.
 
+## Locations and sub-locations
+
+A location can sit inside one other location, so a set of drawers is stored as
+the chest plus a location per drawer, and the item is filed in the drawer rather
+than in a location of its own. Not every location needs them: one with nothing
+inside it works exactly as it always has.
+
+Add one from **Locations** with the **Add sub-location** link on the row it goes
+inside, or by picking what it is **Inside** on the add and edit forms. Nesting
+stops there: a location that already holds sub-locations is not offered one of
+its own, so a name is never more than two deep, and a location cannot be deleted
+while anything is still inside it.
+
+Asking for what is in a location includes everything in its sub-locations, so
+the chest lists what is in all of its drawers and each drawer lists only its
+own.
+
 ## Settings
 
 Beyond the database details, `config/user.config.php` takes:
@@ -167,10 +186,12 @@ Beyond the database details, `config/user.config.php` takes:
 
 ## QR labels
 
-**Locations &rarr; Labels** prints a code per location, and the **Labels** link
+**Locations &rarr; Labels** prints a code per location, sub-locations included
+and each named in full, and the **Labels** link
 on the Parts and Tools pages prints one per item in the current filter.
 Scanning a location label opens the list of what is in it, so a code stuck on a
-drawer tells you what should be inside without opening it. The address encoded is worked out from how you
+drawer tells you what should be inside without opening it, and one on the chest
+covers every drawer in it. The address encoded is worked out from how you
 reached the page; set `site.url` if that is not how the workshop reaches this
 machine.
 
@@ -179,7 +200,9 @@ machine.
 **Parts &rarr; Import** takes a CSV with a heading row using the same columns as
 the export, so the simplest route is to export what you have, edit it in a
 spreadsheet, and bring it back. `Name`, `Manufacturer`, `Categories`, `Location`
-and `Status` are required; separate multiple categories with `|`. A `Brand`
+and `Status` are required; separate multiple categories with `|`. Name a
+sub-location with both locations, as `Tool Chest > Drawer 1`, which is how the
+export writes one; a single name is always a location of its own. A `Brand`
 column from an older export is read as `Manufacturer`. Manufacturers, suppliers,
 categories, locations and statuses that do not exist yet are created.
 

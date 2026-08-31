@@ -153,7 +153,8 @@ function parseItemCsv(array $upload): array
  *
  * Categories are kept as name => the kind it files, which answers both whether
  * one exists and whether it agrees with the row naming it. The rest are plain
- * lists of names.
+ * lists of names, locations named in full so a sub-location is recognised as
+ * the one inside the location it names rather than as a new one.
  */
 function importKnownNames(): array
 {
@@ -321,6 +322,64 @@ function resolveTaxonomyId(string $key, string $name, bool $create, array $extra
 }
 
 /**
+ * Find a location by name, creating it when asked to.
+ *
+ * A value naming two locations, "Tool Chest > Drawer 1", is the drawer inside
+ * the chest, which is how the export writes one and how a sub-location is read
+ * back. Nesting goes one level deep, so anything past the second name is taken
+ * as part of the sub-location's own name rather than as another level.
+ *
+ * A single name is always a location at the top level, never a sub-location
+ * that happens to be called that, since one name on its own does not say which
+ * of them it means.
+ */
+function resolveLocationId(string $value, bool $create): ?int
+{
+    $names = array_values(array_filter(
+        array_map('trim', explode(LOCATION_PATH_SEPARATOR, $value)),
+        'strlen'
+    ));
+
+    if (!$names) {
+        return null;
+    }
+
+    $parentId = locationIdByName(array_shift($names), null, $create);
+
+    if (!$names || $parentId === null) {
+        return $parentId;
+    }
+
+    return locationIdByName(implode(LOCATION_PATH_SEPARATOR, $names), $parentId, $create);
+}
+
+/**
+ * The location of this name inside $parentId, or at the top level when that is
+ * null, creating it when asked to.
+ */
+function locationIdByName(string $name, ?int $parentId, bool $create): ?int
+{
+    $id = dbValue(
+        'SELECT loc_id FROM inv_locations WHERE loc_name = :name'
+        . ' AND loc_parent_id ' . ($parentId === null ? 'IS NULL' : '= :parent')
+        . ' LIMIT 1',
+        ($parentId === null) ? ['name' => $name] : ['name' => $name, 'parent' => $parentId]
+    );
+
+    if ($id !== null) {
+        return (int)$id;
+    }
+
+    if (!$create) {
+        return null;
+    }
+
+    $result = taxonomyInsert('location', ['loc_name' => $name, 'loc_parent_id' => $parentId]);
+
+    return $result['success'] ? (int)$result['newId'] : null;
+}
+
+/**
  * Write the reviewed rows. Rows carrying an error are skipped.
  *
  * The whole import runs in one transaction, so a failure leaves nothing behind.
@@ -340,7 +399,10 @@ function importItemRows(array $rows): array
             $ids = [];
 
             foreach (IMPORT_TAXONOMY_COLUMNS as $key => $column) {
-                $ids[$key] = resolveTaxonomyId($key, $row[$column], true);
+                // Locations nest, so their column can name two of them.
+                $ids[$key] = ($key === 'location')
+                    ? resolveLocationId($row[$column], true)
+                    : resolveTaxonomyId($key, $row[$column], true);
             }
 
             // Worked out once, because the stock history has to record the

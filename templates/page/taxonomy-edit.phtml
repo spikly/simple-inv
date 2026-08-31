@@ -11,6 +11,8 @@
  * @var mixed  $editId      The id being edited.
  * @var int    $inUse       How many items use this row, which is what stops it
  *                          being deleted.
+ * @var ?string $blocker    Anything else standing in the way of deleting it,
+ *                          such as the sub-locations inside a location.
  */
 
 pageHeader('Edit ' . $tax['label'], ['Back to ' . $tax['plural'] => $indexUrl]);
@@ -22,12 +24,11 @@ if (!$row):
     return;
 endif;
 
-// A row that decides how other rows behave says so before it is changed.
 if (isset($tax['notice'])) {
     $tax['notice']($row);
 }
 
-taxonomyForm($tax, 'edit', $values, $formMessage);
+taxonomyForm($tax, 'edit', $values, $formMessage, [], $editId);
 
 if ($inUse > 0):
     sectionHeader('Delete ' . $tax['label']); ?>
@@ -37,6 +38,13 @@ if ($inUse > 0):
         echo $inUse . ' ' . ($inUse === 1 ? 'item' : 'items');
     ?></a>. Move <?php echo $inUse === 1 ? 'it' : 'them'; ?> elsewhere before deleting.
 </p>
+<?php
+    return;
+endif;
+
+if ($blocker !== null):
+    sectionHeader('Delete ' . $tax['label']); ?>
+<p><?php echo escapeHtml($blocker); ?></p>
 <?php
     return;
 endif;

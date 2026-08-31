@@ -1251,6 +1251,21 @@ table th.is-sorted-desc::after {
     opacity: 1;
 }
 
+/* A location that sits inside another one, shown under it on the listing. */
+
+table td .sub-location {
+    display: inline-block;
+    position: relative;
+    padding-left: 2.2rem;
+}
+
+table td .sub-location::before {
+    content: "\21B3";
+    position: absolute;
+    left: 0.4rem;
+    opacity: 0.45;
+}
+
 table td small.row-note {
     display: block;
     margin-top: 2px;

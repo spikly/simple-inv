@@ -104,6 +104,12 @@ $properties = [
         $link = '<a href="index.php?page=items&' . $tax['param'] . '=' . $item[$tax['id']] . '">'
             . escapeHtml($item[taxonomyNameField($tax)]) . '</a>';
 
+        if ($key === 'location' && isset($item['loc_parent_name'])) {
+            $link = '<a href="index.php?page=items&location_id=' . (int)$item['loc_parent_id'] . '">'
+                . escapeHtml($item['loc_parent_name']) . '</a>'
+                . escapeHtml(LOCATION_PATH_SEPARATOR) . $link;
+        }
+
         if ($key === 'supplier' && $item['sup_website']) {
             $link .= ' | <a href="' . escapeHtml($item['sup_website']) . '" target="_blank">Website</a>';
         }

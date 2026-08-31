@@ -15,6 +15,7 @@ const ITEM_JOINS = '
     LEFT JOIN inv_brands b ON b.brand_id = i.item_brand_id
     LEFT JOIN inv_suppliers sp ON sp.sup_id = i.item_sup_id
     LEFT JOIN inv_locations l ON l.loc_id = i.item_loc_id
+    LEFT JOIN inv_locations lp ON lp.loc_id = l.loc_parent_id
     LEFT JOIN inv_measurement_units mu ON mu.unit_id = i.item_measurement_unit
     LEFT JOIN inv_statuses s ON s.status_id = i.item_status
     LEFT JOIN categories_items ci ON ci.item_id = i.item_id
@@ -124,7 +125,8 @@ function fetchItems(string $where, array $params, ?array $slice = null): array
 {
     return dbAll(
         'SELECT i.item_id, i.item_name, i.item_part_no, i.item_quantity, i.item_min_quantity, i.item_image,
-                mu.unit_symbol, b.brand_name, sp.sup_name, l.loc_name, s.status_name,'
+                mu.unit_symbol, b.brand_name, sp.sup_name,
+                l.loc_name, lp.loc_name AS loc_parent_name, s.status_name,'
         . ITEM_STOCK_COLUMNS
         . ITEM_JOINS . $where
         . ' GROUP BY i.item_id ORDER BY i.item_name asc'
@@ -154,7 +156,7 @@ function fetchItemsForExport(string $where, array $params): array
                 b.brand_name AS `Manufacturer`,
                 sp.sup_name AS `Supplier`,
                 GROUP_CONCAT(DISTINCT c.cat_name ORDER BY c.cat_name SEPARATOR \'|\') AS `Categories`,
-                l.loc_name AS `Location`,
+                CONCAT_WS(\'' . LOCATION_PATH_SEPARATOR . '\', lp.loc_name, l.loc_name) AS `Location`,
                 s.status_name AS `Status`,
                 i.item_quantity AS `Quantity`,
                 i.item_min_quantity AS `Min Quantity`,
@@ -172,7 +174,8 @@ function fetchSingleItem($item_id)
 {
     return dbRow(
         'SELECT i.*, mu.unit_symbol, mu.unit_label, b.brand_id, b.brand_name,
-                sp.sup_id, sp.sup_name, sp.sup_website, l.loc_id, l.loc_name,
+                sp.sup_id, sp.sup_name, sp.sup_website,
+                l.loc_id, l.loc_name, l.loc_parent_id, lp.loc_name AS loc_parent_name,
                 s.status_id, s.status_name,'
         . ITEM_STOCK_COLUMNS
         . ITEM_JOINS
@@ -268,7 +271,7 @@ function fetchStockWarnings(string $mode): array
 
     return dbAll(
         'SELECT i.item_id, i.item_name, i.item_quantity, i.item_min_quantity,
-                mu.unit_symbol, l.loc_name, sp.sup_name,'
+                mu.unit_symbol, l.loc_name, lp.loc_name AS loc_parent_name, sp.sup_name,'
         . ITEM_STOCK_COLUMNS
         . ITEM_JOINS
         . ' WHERE ' . ITEM_IS_PART
@@ -284,10 +287,11 @@ function fetchRecentItems(string $column, int $limit = 6): array
 
     return dbAll(
         'SELECT i.item_id, i.item_name, i.item_image, i.item_created_at, i.item_updated_at,
-                l.loc_name, s.status_name,
+                l.loc_name, lp.loc_name AS loc_parent_name, s.status_name,
                 ' . ITEM_IS_TOOL . ' AS item_is_tool
          FROM inv_items i
          LEFT JOIN inv_locations l ON l.loc_id = i.item_loc_id
+         LEFT JOIN inv_locations lp ON lp.loc_id = l.loc_parent_id
          LEFT JOIN inv_statuses s ON s.status_id = i.item_status
          ORDER BY ' . $order . ' DESC, i.item_id DESC
          LIMIT ' . (int)$limit

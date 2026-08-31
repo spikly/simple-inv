@@ -187,3 +187,28 @@ INSERT INTO `inv_stock_movements`
       SELECT 1 FROM `categories_items` ci
         INNER JOIN `inv_categories` c ON c.cat_id = ci.cat_id
       WHERE ci.item_id = i.item_id AND c.cat_type = 'tool');
+
+-- Locations may now sit inside other locations, so a set of drawers is one
+-- location with a location per drawer under it and the items filed in the
+-- drawer. Everything already stored stays a top level location.
+--
+-- Only one level deep: loc_parent_id always names a location that has no
+-- parent of its own, which is what the app offers and enforces.
+ALTER TABLE `inv_locations`
+  ADD COLUMN IF NOT EXISTS `loc_parent_id` int(11) DEFAULT NULL AFTER `loc_name`,
+  ADD KEY IF NOT EXISTS `idx_loc_parent` (`loc_parent_id`);
+
+-- A parent cannot be deleted while anything is inside it, which the app says
+-- rather than letting this refuse the delete; the constraint is the backstop.
+SET @sql = IF(
+  (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inv_locations'
+      AND CONSTRAINT_NAME = 'fk_loc_parent') > 0,
+  'DO 0',
+  'ALTER TABLE `inv_locations`
+     ADD CONSTRAINT `fk_loc_parent` FOREIGN KEY (`loc_parent_id`)
+     REFERENCES `inv_locations` (`loc_id`) ON DELETE RESTRICT ON UPDATE CASCADE'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;

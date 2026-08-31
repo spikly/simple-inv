@@ -116,11 +116,17 @@ CREATE TABLE IF NOT EXISTS `inv_items` (
 --
 -- Table structure for table `inv_locations`
 --
+-- A location may sit inside another one, so a set of drawers is one location
+-- with a location per drawer under it and the items filed in the drawer. Only
+-- one level deep: loc_parent_id always names a location that has none itself.
+--
 
 CREATE TABLE IF NOT EXISTS `inv_locations` (
   `loc_id` int(11) NOT NULL AUTO_INCREMENT,
   `loc_name` text NOT NULL,
-  PRIMARY KEY (`loc_id`)
+  `loc_parent_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`loc_id`),
+  KEY `idx_loc_parent` (`loc_parent_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
@@ -298,6 +304,12 @@ CREATE TABLE IF NOT EXISTS inv_assembly_items (
 ALTER TABLE `categories_items`
   ADD CONSTRAINT `categories_items_ibfk_1` FOREIGN KEY (`cat_id`) REFERENCES `inv_categories` (`cat_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `categories_items_ibfk_2` FOREIGN KEY (`item_id`) REFERENCES `inv_items` (`item_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `inv_locations`
+--
+ALTER TABLE `inv_locations`
+  ADD CONSTRAINT `fk_loc_parent` FOREIGN KEY (`loc_parent_id`) REFERENCES `inv_locations` (`loc_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
 -- Constraints for table `inv_stock_movements`

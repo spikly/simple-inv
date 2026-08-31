@@ -197,6 +197,20 @@ function nameOrDeleted($name): string
 }
 
 /**
+ * Where an item is kept, with the location it sits inside named underneath, so
+ * a drawer is never shown without saying which chest it is in.
+ *
+ * Reads loc_name and loc_parent_name, which every item query brings back.
+ */
+function locationCell(array $row): string
+{
+    return nameOrDeleted($row['loc_name'] ?? null)
+        . (isset($row['loc_parent_name'])
+            ? '<small class="row-note">in ' . escapeHtml($row['loc_parent_name']) . '</small>'
+            : '');
+}
+
+/**
  * Notes/description block with links made clickable.
  */
 function notesBox($text): void

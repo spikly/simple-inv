@@ -39,7 +39,7 @@ endif;
 ?>
 <p>
     <strong>Tool:</strong> <?php echo escapeHtml($item['item_name']); ?>
-    - kept in <?php echo escapeHtml($item['loc_name'] ?? 'no location'); ?>
+    - kept in <?php echo escapeHtml(locationPath($item) ?: 'no location'); ?>
 </p>
 <?php
 // A save redirects, so anything reaching here left the loan as it was found.

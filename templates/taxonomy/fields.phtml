@@ -5,30 +5,52 @@
  * @var array $tax    Its definition; fields is ordered, name column first.
  * @var array $values Current field values.
  * @var array $locked Column => value fixed by the page that asked for the form.
+ * @var mixed $id     The row being edited, or null on an add form, for a field
+ *                    whose choices depend on which row they are for.
  */
 
 foreach ($tax['fields'] as $column => $field) {
     $label = is_array($field) ? $field['label'] : $field;
     $value = $values[$column] ?? (is_array($field) ? ($field['default'] ?? '') : '');
+    $placeholder = is_array($field) ? ($field['placeholder'] ?? null) : null;
+
+    $isSelect = is_array($field) && ($field['type'] ?? '') === 'select';
+    $options = $isSelect ? taxonomyFieldOptions($field, $id) : [];
+
+    // A select with nothing to offer is settled by what it belongs to rather
+    // than by the page: a location already holding sub-locations cannot be put
+    // inside another one. Shown as a statement, the same as a locked field,
+    // instead of as a control that does nothing.
+    if ($isSelect && !$options && !array_key_exists($column, $locked)) {
+        $locked[$column] = '';
+    }
 
     // Fixed to one choice by the page that asked for the form, so it is shown
     // as a statement rather than a control.
     if (array_key_exists($column, $locked)) {
+        $chosen = $locked[$column];
+
         formRow(
             $column,
             $label,
             templateHtml('taxonomy/locked-field', [
                 'column' => $column,
-                'value'  => $locked[$column],
-                'label'  => $field['options'][$locked[$column]] ?? $locked[$column],
+                'value'  => $chosen,
+                'label'  => $options[$chosen] ?? (($chosen === '') ? (string)$placeholder : $chosen),
             ]),
             false
         );
         continue;
     }
 
-    if (is_array($field) && ($field['type'] ?? '') === 'select') {
-        selectField($column, $label, $field['options'], $value);
+    if ($isSelect) {
+        selectField(
+            $column,
+            $label,
+            $options,
+            $value,
+            ($placeholder === null) ? '' : '<option value="">' . escapeHtml($placeholder) . '</option>'
+        );
         continue;
     }
 

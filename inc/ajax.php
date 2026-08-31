@@ -63,10 +63,15 @@ switch ($request['requestType'] ?? '') {
         $key = taxonomyFor($request['dropdownId'] ?? null, 'item_');
         $multiple = !empty($request['multiple']);
 
-        // Keep what was already chosen and add whatever was just created.
+        $newId = $request['newId'] ?? null;
         $selected = $request['selected'] ?? [];
         $selected = is_array($selected) ? $selected : [$selected];
-        $selected[] = $request['newId'] ?? null;
+
+        if (!$multiple && $newId !== null && $newId !== '') {
+            $selected = [];
+        }
+
+        $selected[] = $newId;
         $selected = array_filter($selected, function ($value) {
             return $value !== null && $value !== '';
         });
