@@ -41,7 +41,12 @@ endif; ?>
 <?php foreach ($bySupplier as $supplier => $supplierRows):
     $website = $supplierRows[0]['sup_website'] ?? '';
 
-    sectionHeader(escapeHtml($supplier), $website ? ['Visit Website' => escapeHtml($website)] : []);
+    // Only linked when it is an address that can be, since a supplier stored
+    // before that was checked on save can hold anything.
+    sectionHeader(
+        escapeHtml($supplier),
+        ($website !== '' && isWebUrl($website)) ? ['Visit Website' => escapeHtml($website)] : []
+    );
 
     renderTable(
         ['Item', 'Part No', 'Required', 'Installed', 'Reserved', 'Still To Reserve', 'From Stock', 'To Buy'],

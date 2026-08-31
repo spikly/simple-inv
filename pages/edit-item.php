@@ -55,6 +55,8 @@ if ($item && isset($_POST['edit_item_submit'])) {
                 'UPDATE inv_items SET
                     item_name = :item_name,
                     item_part_no = :item_part_no,
+                    item_colour = :item_colour,
+                    item_product_url = :item_product_url,
                     item_quantity = :item_quantity,
                     item_min_quantity = :item_min_quantity,
                     item_measurement_unit = :item_measurement_unit,

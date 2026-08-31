@@ -99,6 +99,8 @@ CREATE TABLE IF NOT EXISTS `inv_items` (
   `item_status` int(11) NOT NULL,
   `item_name` text NOT NULL,
   `item_part_no` text DEFAULT NULL,
+  `item_colour` varchar(50) DEFAULT NULL,
+  `item_product_url` varchar(255) DEFAULT NULL,
   `item_quantity` int(11) NOT NULL DEFAULT 1,
   `item_min_quantity` int(11) NOT NULL DEFAULT 0,
   `item_measurement_unit` int(11) NOT NULL DEFAULT 8,

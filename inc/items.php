@@ -101,6 +101,10 @@ function validateItem(array $post, string $type): array
         $errors['item_min_quantity'] = 'The reorder level cannot be negative';
     }
 
+    if (!isWebUrl(textOrNull($post, 'item_product_url'))) {
+        $errors['item_product_url'] = 'The product page must be a web address starting http:// or https://';
+    }
+
     return $errors;
 }
 
@@ -130,14 +134,16 @@ function itemColumns(array $post, ?string $image, string $type): array
         ];
 
     return $stock + [
-        'item_name'     => trim($post['item_name']),
-        'item_part_no'  => textOrNull($post, 'item_part_no'),
-        'item_brand'    => $post['item_brand'],
-        'item_supplier' => ($post['item_supplier'] >= 1) ? $post['item_supplier'] : null,
-        'item_location' => $post['item_location'],
-        'item_status'   => $post['item_status'],
-        'item_notes'    => textOrNull($post, 'item_notes'),
-        'item_image'    => $image,
+        'item_name'        => trim($post['item_name']),
+        'item_part_no'     => textOrNull($post, 'item_part_no'),
+        'item_colour'      => textOrNull($post, 'item_colour'),
+        'item_product_url' => textOrNull($post, 'item_product_url'),
+        'item_brand'       => $post['item_brand'],
+        'item_supplier'    => ($post['item_supplier'] >= 1) ? $post['item_supplier'] : null,
+        'item_location'    => $post['item_location'],
+        'item_status'      => $post['item_status'],
+        'item_notes'       => textOrNull($post, 'item_notes'),
+        'item_image'       => $image,
     ];
 }
 
@@ -151,6 +157,8 @@ function itemFormValues(array $item): array
         'item_type'             => itemTypeOf($item),
         'item_name'             => $item['item_name'],
         'item_part_no'          => $item['item_part_no'],
+        'item_colour'           => $item['item_colour'],
+        'item_product_url'      => $item['item_product_url'],
         'item_quantity'         => $item['item_quantity'],
         'item_min_quantity'     => $item['item_min_quantity'],
         'item_measurement_unit' => $item['item_measurement_unit'],

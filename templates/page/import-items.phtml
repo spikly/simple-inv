@@ -26,6 +26,8 @@ if (!$rows): ?>
     do not exist yet are created. A file exported before manufacturers were renamed still works: its
     <strong>Brand</strong> column is read as <strong>Manufacturer</strong>.
     <strong>Unit</strong> must match a measurement unit's symbol or name.
+    <strong>Colour</strong> is free text; <strong>Product URL</strong> is the page the thing was bought
+    from and must start <code>http://</code> or <code>https://</code>.
     <strong>Type</strong> is <code>Part</code> or <code>Tool</code> and defaults to <code>Part</code>; it
     decides which kind any categories the file creates will file, and a row naming a category that already
     files the other kind is skipped. The Allocated column is ignored, because that comes from projects.

@@ -106,9 +106,10 @@ function itemFilters(?string $pinnedKind = null): array
     $search = trim((string)queryParam('q'));
 
     if ($search !== '') {
-        // One placeholder over the three searchable columns: named parameters
-        // cannot be reused while prepare emulation is off.
-        $clauses[] = "CONCAT_WS(' ', i.item_name, i.item_part_no, i.item_notes) LIKE :search";
+        // One placeholder over the searchable columns: named parameters cannot
+        // be reused while prepare emulation is off.
+        $clauses[] = "CONCAT_WS(' ', i.item_name, i.item_part_no, i.item_colour, i.item_notes)"
+            . ' LIKE :search';
         $params['search'] = '%' . $search . '%';
     }
 
@@ -153,6 +154,8 @@ function fetchItemsForExport(string $where, array $params): array
     return dbAll(
         'SELECT i.item_name AS `Name`,
                 i.item_part_no AS `Part No`,
+                i.item_colour AS `Colour`,
+                i.item_product_url AS `Product URL`,
                 b.brand_name AS `Manufacturer`,
                 sp.sup_name AS `Supplier`,
                 GROUP_CONCAT(DISTINCT c.cat_name ORDER BY c.cat_name SEPARATOR \'|\') AS `Categories`,

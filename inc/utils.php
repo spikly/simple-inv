@@ -32,6 +32,24 @@ function text2link($string)
     );
 }
 
+/**
+ * Whether an address is one that can safely be put in an href. Null passes, so
+ * an optional field left empty is not an error.
+ *
+ * The scheme is checked as well as the shape: a browser runs a javascript:
+ * address when the link is clicked, and escaping does nothing about that, so
+ * anything but a link to a page is turned away rather than stored.
+ */
+function isWebUrl(?string $url): bool
+{
+    if ($url === null) {
+        return true;
+    }
+
+    return filter_var($url, FILTER_VALIDATE_URL) !== false
+        && in_array(strtolower((string)parse_url($url, PHP_URL_SCHEME)), ['http', 'https'], true);
+}
+
 function calculatePercentage($number1, $number2)
 {
     if ($number1 == 0) {

@@ -9,6 +9,8 @@
 const IMPORT_COLUMNS = [
     'name'         => true,
     'part no'      => false,
+    'colour'       => false,
+    'product url'  => false,
     'manufacturer' => true,
     'supplier'     => false,
     'categories'   => true,
@@ -51,7 +53,7 @@ const IMPORT_TAXONOMY_COLUMNS = [
 
 const IMPORT_SESSION_KEY = 'import_rows';
 
-const IMPORT_ROW_VERSION = 2;
+const IMPORT_ROW_VERSION = 3;
 
 function storeImportPreview(array $rows): void
 {
@@ -191,6 +193,8 @@ function importRow(array $record, array $columns, array $known, int $line): arra
         'line'         => $line,
         'name'         => $value('name'),
         'part_no'      => $value('part no'),
+        'colour'       => $value('colour'),
+        'product_url'  => $value('product url'),
         'manufacturer' => $value('manufacturer'),
         'supplier'     => $value('supplier'),
         'categories'   => $categories,
@@ -229,6 +233,13 @@ function importRow(array $record, array $columns, array $known, int $line): arra
 
     if ($row['min_quantity'] !== '' && !is_numeric($row['min_quantity'])) {
         $row['error'] = 'Min Quantity "' . $row['min_quantity'] . '" is not a number.';
+
+        return $row;
+    }
+
+    if (!isWebUrl($row['product_url'] !== '' ? $row['product_url'] : null)) {
+        $row['error'] = 'Product URL "' . $row['product_url']
+            . '" is not a web address starting http:// or https://.';
 
         return $row;
     }
@@ -413,14 +424,18 @@ function importItemRows(array $rows): array
 
             $itemId = dbInsert(
                 'INSERT INTO inv_items
-                    (item_name, item_part_no, item_quantity, item_min_quantity, item_measurement_unit,
+                    (item_name, item_part_no, item_colour, item_product_url,
+                     item_quantity, item_min_quantity, item_measurement_unit,
                      item_brand_id, item_sup_id, item_loc_id, item_status, item_notes)
                  VALUES
-                    (:item_name, :item_part_no, :item_quantity, :item_min_quantity, :item_measurement_unit,
+                    (:item_name, :item_part_no, :item_colour, :item_product_url,
+                     :item_quantity, :item_min_quantity, :item_measurement_unit,
                      :item_brand, :item_supplier, :item_location, :item_status, :item_notes)',
                 [
                     'item_name'             => $row['name'],
                     'item_part_no'          => $row['part_no'] !== '' ? $row['part_no'] : null,
+                    'item_colour'           => $row['colour'] !== '' ? $row['colour'] : null,
+                    'item_product_url'      => $row['product_url'] !== '' ? $row['product_url'] : null,
                     // A tool is one object with no stock behind it, whatever
                     // the spreadsheet happened to say.
                     'item_quantity'         => $quantity,

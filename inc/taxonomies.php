@@ -43,7 +43,11 @@ function taxonomies(): array
             'routes'     => ['index' => 'suppliers', 'add' => 'add-supplier', 'edit' => 'edit-supplier'],
             'fields'     => [
                 'sup_name'    => 'Supplier Name',
-                'sup_website' => ['label' => 'Supplier Website (optional)', 'type' => 'url'],
+                'sup_website' => [
+                    'label'   => 'Supplier Website (optional)',
+                    'type'    => 'url',
+                    'invalid' => 'The supplier website must be a web address starting http:// or https://',
+                ],
             ],
             'columns'    => ['Website' => 'supplierWebsiteCell'],
         ],
@@ -290,9 +294,17 @@ function categoryTypeNotice(array $row): void
 /** Extra listing column for suppliers. */
 function supplierWebsiteCell(array $row): string
 {
-    return $row['sup_website']
-        ? '<a href="' . escapeHtml($row['sup_website']) . '" target="_blank">Visit Website</a>'
-        : '';
+    $website = (string)$row['sup_website'];
+
+    if ($website === '') {
+        return '';
+    }
+
+    // A row stored before the address was checked on save can hold anything,
+    // so one that cannot be linked to is shown as the text it is.
+    return isWebUrl($website)
+        ? '<a href="' . escapeHtml($website) . '" target="_blank">Visit Website</a>'
+        : escapeHtml($website);
 }
 
 /** Columns written on save but not shown on the form. */
@@ -663,11 +675,15 @@ function taxonomyUsageCounts(array $tax, array $ids): array
 
 /**
  * Turn submitted input into the columns to write, or ['errors' => [...]] keyed
- * by the field, when the required name is missing.
+ * by the field, when something is wrong with them.
  *
  * $id is the row being edited, for a field whose choices depend on it: a
  * location cannot be put inside itself, so it is not among the options its own
  * edit form offers.
+ *
+ * Every save comes through here -- the add page, the edit page, the "+" modal
+ * on the item form and the CSV import -- so it is the one place a field has to
+ * be checked to be checked everywhere.
  */
 function taxonomyValues(array $tax, array $input, $id = null): array
 {
@@ -692,9 +708,25 @@ function taxonomyValues(array $tax, array $input, $id = null): array
     }
 
     $nameField = taxonomyNameField($tax);
+    $errors = [];
 
     if ($values[$nameField] === '') {
-        return ['errors' => [$nameField => $tax['label'] . ' name cannot be empty']];
+        $errors[$nameField] = $tax['label'] . ' name cannot be empty';
+    }
+
+    // A url field is checked here rather than left to the browser, which only
+    // asks nicely: type="url" is skipped by anything posting straight to the
+    // page, and the value ends up in an href. See isWebUrl().
+    foreach ($tax['fields'] as $column => $field) {
+        if (is_array($field) && ($field['type'] ?? '') === 'url'
+            && !isWebUrl(($values[$column] === '') ? null : $values[$column])) {
+            $errors[$column] = $field['invalid']
+                ?? 'That must be a web address starting http:// or https://';
+        }
+    }
+
+    if ($errors) {
+        return ['errors' => $errors];
     }
 
     if (isset($tax['derived'])) {

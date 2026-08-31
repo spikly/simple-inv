@@ -212,3 +212,40 @@ SET @sql = IF(
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- Colour and the product page it was bought from, shown on the item pages and
+-- carried through the CSV import and export. Both optional, for parts and
+-- tools alike.
+ALTER TABLE `inv_items`
+  ADD COLUMN IF NOT EXISTS `item_colour` varchar(50) DEFAULT NULL AFTER `item_part_no`,
+  ADD COLUMN IF NOT EXISTS `item_product_url` varchar(255) DEFAULT NULL AFTER `item_colour`;
+
+-- Supplier websites are now checked when they are saved: the address has to
+-- start http:// or https://, because it is put straight into a link and a
+-- browser will run a javascript: address when the link is clicked.
+--
+-- A bare domain typed in before that check existed, "example.com", still shows
+-- fine but would be refused the next time that supplier is edited, so it is
+-- given the https:// it was missing.
+--
+-- Only what is unambiguously a domain is touched: something already carrying a
+-- scheme, or holding a colon, a space or no dot at all, is left exactly as it
+-- is rather than guessed at. Running this again changes nothing, since
+-- everything it fixes then starts with https://.
+UPDATE `inv_suppliers`
+  SET `sup_website` = CONCAT('https://', `sup_website`)
+  WHERE `sup_website` <> ''
+    AND `sup_website` NOT LIKE 'http://%'
+    AND `sup_website` NOT LIKE 'https://%'
+    AND `sup_website` NOT LIKE '%:%'
+    AND `sup_website` NOT LIKE '% %'
+    AND `sup_website` NOT LIKE '/%'
+    AND `sup_website` LIKE '%.%';
+
+-- Anything still not a usable address is left for you to put right by hand,
+-- because there is no safe way to guess what was meant. It is shown as plain
+-- text rather than as a link until then. List them with:
+--
+--   SELECT sup_id, sup_name, sup_website FROM inv_suppliers
+--   WHERE sup_website <> '' AND sup_website NOT LIKE 'http://%'
+--     AND sup_website NOT LIKE 'https://%';

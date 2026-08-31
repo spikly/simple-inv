@@ -21,7 +21,8 @@ Very much work in progress. Designed for an average sized home workshop and almo
 * Give these items a status (stored, broken, on loan etc)
 * Attach a photo to an item, so you can see the thing you are looking for
 * Put an item in more than one category
-* Filter and search items by name, part number, notes, manufacturer, supplier, category, location and status
+* Record a colour and a link to the product page an item came from, on parts and tools alike
+* Filter and search items by name, part number, colour, notes, manufacturer, supplier, category, location and status
 * Sign a tool out to whoever is borrowing it, with a due date, and sign it back in again
 * Keep every sign-out as history, so a tool remembers where it has been
 * See what is out and what is overdue on the dashboard
@@ -76,12 +77,13 @@ mariadb -u YOUR_USER -p YOUR_DATABASE < database-updates.sql
 ```
 
 It is safe to run more than once, so anything already applied is skipped. It
-adds the part number, reorder level, photo and timestamp columns, stops an item
-being filed under the same category twice, adds the part/tool flag to
-categories, turns the deployments table into the tool sign-out table, adds the
-stock movement log, restates the quantities assemblies have reserved, adds the
-sub-location column to locations, and drops
-the unused `item_deployed_loc` column. That last column has not been read or written since
+adds the part number, reorder level, photo, timestamp, colour and product URL
+columns, stops an item being filed under the same category twice, adds the
+part/tool flag to categories, turns the deployments table into the tool
+sign-out table, adds the stock movement log, restates the quantities assemblies
+have reserved, adds the sub-location column to locations, puts an `https://` on
+any supplier website stored without one, and drops the unused
+`item_deployed_loc` column. That last column has not been read or written since
 deployments moved into their own table, but check it is empty first if you have
 been running this since before then:
 

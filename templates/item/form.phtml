@@ -22,6 +22,14 @@ formMessage($formMessage);
 <?php
 textField('item_name', ITEM_TYPES[$type] . ' Name', $values['item_name'] ?? '');
 textField('item_part_no', 'Manufacturers Part Number (optional)', $values['item_part_no'] ?? '');
+textField('item_colour', 'Colour (optional)', $values['item_colour'] ?? '');
+textField(
+    'item_product_url',
+    'Product Page URL (optional)',
+    $values['item_product_url'] ?? '',
+    'url',
+    ' placeholder="https://"'
+);
 
 if ($type === 'part') {
     textField('item_quantity', 'Item Quantity', $values['item_quantity'] ?? 1, 'number', ' min="0"');

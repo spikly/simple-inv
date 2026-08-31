@@ -57,6 +57,17 @@ $properties = [
         itemProperty('Manufacturers Part No', '<p>' . escapeHtml($item['item_part_no']) . '</p>');
     }
 
+    if (isset($item['item_colour'])) {
+        itemProperty('Colour', '<p>' . escapeHtml($item['item_colour']) . '</p>');
+    }
+
+    // Checked again on the way out rather than trusted from the form, since
+    // anything stored before the field was validated could be any old text.
+    if (isset($item['item_product_url']) && isWebUrl($item['item_product_url'])) {
+        itemProperty('Product Page', '<p><a href="' . escapeHtml($item['item_product_url'])
+            . '" target="_blank" rel="noopener">Visit Product Page</a></p>');
+    }
+
     if ($type === 'tool') {
         // A tool is one object, so the only quantity worth showing is whether
         // it is here or with somebody.
@@ -110,7 +121,9 @@ $properties = [
                 . escapeHtml(LOCATION_PATH_SEPARATOR) . $link;
         }
 
-        if ($key === 'supplier' && $item['sup_website']) {
+        // Checked rather than trusted, the same as the product page above: a
+        // supplier stored before the address was validated can hold anything.
+        if ($key === 'supplier' && $item['sup_website'] && isWebUrl($item['sup_website'])) {
             $link .= ' | <a href="' . escapeHtml($item['sup_website']) . '" target="_blank">Website</a>';
         }
 

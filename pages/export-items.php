@@ -15,8 +15,8 @@ $fileHandle = fopen($tempFile, 'w');
 // The query aliases each column to its heading.
 $headings = $items
     ? array_keys($items[0])
-    : ['Name', 'Part No', 'Manufacturer', 'Supplier', 'Categories', 'Location', 'Status',
-       'Quantity', 'Min Quantity', 'Unit', 'Type', 'Allocated', 'Notes'];
+    : ['Name', 'Part No', 'Colour', 'Product URL', 'Manufacturer', 'Supplier', 'Categories',
+       'Location', 'Status', 'Quantity', 'Min Quantity', 'Unit', 'Type', 'Allocated', 'Notes'];
 
 fputcsv($fileHandle, $headings, ',', '"', '\\');
 
