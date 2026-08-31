@@ -1,23 +1,18 @@
 <?php
 
 /**
- * Hand back one of an item's documents.
- *
- * Files are served through here rather than linked to directly so they keep
- * the name they were uploaded with: on disk they are all
- * "9f8a7b6c5d4e3f21.pdf", which is no use to anyone saving one.
- *
- * It also settles how the browser treats each one. A picture or a PDF is shown
- * in a tab; anything else is sent as a download, because a file the browser
- * would render is a file that could carry a script, and a download cannot run.
+ * Served through here rather than linked to directly, so a file keeps the name
+ * it was uploaded with and so the browser is told how to treat it: a picture
+ * or a PDF in a tab, everything else as a download, since a file the browser
+ * would render could carry a script and a download cannot run.
  *
  * Sends its own headers, so index.php includes this before any markup.
  */
 
 $file = fetchItemFile(queryId('file_id'));
 
-// The stored name is checked against the pattern the app generates, so nothing
-// but a file this app wrote can be read, whatever is in the database.
+// Checked against the pattern the app generates, so nothing but a file this
+// app wrote can be read, whatever is in the database.
 $stored = $file ? (string)$file['file_stored_name'] : '';
 $path = preg_match(ITEM_FILE_NAME_PATTERN, $stored) ? itemFilePath($stored) : '';
 
@@ -30,9 +25,8 @@ if (!$path || !is_file($path)) {
     return;
 }
 
-// A name for the saved copy that cannot break out of the header it sits in.
-// filename* carries the real one for anything that understands it, and the
-// plain filename is the stripped-back fallback for anything that does not.
+// A name that cannot break out of the header. filename* carries the real one;
+// the plain filename is the fallback for anything that cannot read it.
 $name = preg_replace('/[^A-Za-z0-9._ -]/', '_', (string)$file['file_name']);
 $name = trim($name) !== '' ? $name : 'download';
 
@@ -44,9 +38,8 @@ header('Content-Length: ' . filesize($path));
 header('X-Content-Type-Options: nosniff');
 header('Cache-Control: private, max-age=0, must-revalidate');
 
-// bootstrap.php buffers the page so a redirect can still send headers. Nothing
-// is waiting here, and a 16MB document should not be held in memory to be
-// handed over in one piece, so the buffer is dropped and the file streamed.
+// Nothing is waiting in the buffer, and a large document should not be held in
+// memory to be handed over in one piece, so it is dropped and the file streamed.
 while (ob_get_level() > 0) {
     ob_end_clean();
 }

@@ -1,9 +1,6 @@
 <?php
 
-/**
- * CSV import for items. The columns are the ones the export produces, so a
- * file exported from here can be edited in a spreadsheet and read back.
- */
+/** The columns the export produces, so an export can be edited and read back. */
 
 /** Column heading => whether a value is required. */
 const IMPORT_COLUMNS = [
@@ -23,9 +20,7 @@ const IMPORT_COLUMNS = [
     'notes'        => false,
 ];
 
-/**
- * Headings an older export used, read as the column that replaced them.
- */
+/** Headings an older export used, read as the column that replaced them. */
 const IMPORT_COLUMN_ALIASES = [
     'brand' => 'manufacturer',
     'category' => 'categories',
@@ -40,15 +35,9 @@ const IMPORT_TAXONOMY_COLUMNS = [
 ];
 
 /*
- * Reviewed rows live in the session between the preview and the confirm, so a
- * preview can outlive the code that made it: an update lands, or a tab is left
- * open through one, and the rows waiting there are no longer the shape the
- * preview table reads.
- *
- * A version stamp lets that be spotted and the preview thrown away. Bump
- * IMPORT_ROW_VERSION whenever importRow() changes what a row holds; anything
- * unstamped, including the bare list rows were kept as before this existed, is
- * treated as out of date.
+ * Reviewed rows live in the session between preview and confirm, so a preview
+ * can outlive the code that made it. Bump IMPORT_ROW_VERSION whenever
+ * importRow() changes what a row holds; anything unstamped is out of date.
  */
 
 const IMPORT_SESSION_KEY = 'import_rows';
@@ -66,10 +55,8 @@ function clearImportPreview(): void
 }
 
 /**
- * The preview waiting in the session, as ['rows' => [...], 'stale' => bool].
- *
- * A preview from an older version is cleared and reported as stale, so the
- * page can say why it is asking for the file again.
+ * ['rows' => [...], 'stale' => bool]. One from an older version is cleared and
+ * reported stale, so the page can say why it is asking for the file again.
  */
 function storedImportPreview(): array
 {
@@ -89,10 +76,8 @@ function storedImportPreview(): array
 }
 
 /**
- * Read an uploaded CSV into rows ready for review.
- *
- * Returns ['error' => message] or ['rows' => [...]] where each row carries the
- * values, anything that would be created, and its own error if it has one.
+ * Returns ['error' => message] or ['rows' => [...]], each row carrying its
+ * values, anything it would create, and its own error if it has one.
  */
 function parseItemCsv(array $upload): array
 {
@@ -151,12 +136,9 @@ function parseItemCsv(array $upload): array
 
 /**
  * What already exists, lowercased, so a row can be judged before anything is
- * written.
- *
- * Categories are kept as name => the kind it files, which answers both whether
- * one exists and whether it agrees with the row naming it. The rest are plain
- * lists of names, locations named in full so a sub-location is recognised as
- * the one inside the location it names rather than as a new one.
+ * written. Categories are name => the kind it files, which answers both
+ * whether one exists and whether it agrees with the row. Locations are named
+ * in full, so a sub-location is recognised rather than created again.
  */
 function importKnownNames(): array
 {
@@ -173,12 +155,7 @@ function importKnownNames(): array
     return $known;
 }
 
-/**
- * Turn one CSV record into a reviewable row.
- *
- * Changing which keys a row holds means bumping IMPORT_ROW_VERSION, or a
- * preview stored by the old code will be handed to a table expecting the new.
- */
+/** Changing which keys a row holds means bumping IMPORT_ROW_VERSION. */
 function importRow(array $record, array $columns, array $known, int $line): array
 {
     $value = function (string $column) use ($record, $columns) {
@@ -259,8 +236,7 @@ function importRow(array $record, array $columns, array $known, int $line): arra
         }
     }
 
-    // Categories decide whether the item is a part or a tool, so an existing
-    // one filing the other kind is a contradiction rather than a detail.
+    // An existing category filing the other kind is a contradiction.
     foreach ($categories as $category) {
         $files = $known['category'][strtolower($category)] ?? null;
 
@@ -298,11 +274,7 @@ function resolveUnitId(?string $value): ?int
     return ($id === null) ? null : (int)$id;
 }
 
-/**
- * Find a taxonomy row by name, creating it when asked to. $extra is written
- * onto anything created, which is how an imported category ends up filing the
- * kind of thing the row said it was.
- */
+/** $extra is written onto anything created, eg the kind a category files. */
 function resolveTaxonomyId(string $key, string $name, bool $create, array $extra = []): ?int
 {
     $name = trim($name);
@@ -333,16 +305,9 @@ function resolveTaxonomyId(string $key, string $name, bool $create, array $extra
 }
 
 /**
- * Find a location by name, creating it when asked to.
- *
- * A value naming two locations, "Tool Chest > Drawer 1", is the drawer inside
- * the chest, which is how the export writes one and how a sub-location is read
- * back. Nesting goes one level deep, so anything past the second name is taken
- * as part of the sub-location's own name rather than as another level.
- *
- * A single name is always a location at the top level, never a sub-location
- * that happens to be called that, since one name on its own does not say which
- * of them it means.
+ * "Tool Chest > Drawer 1" is the drawer inside the chest. Nesting goes one
+ * level, so anything past the second name belongs to the sub-location's own
+ * name. A single name is always top level, since it does not say which is meant.
  */
 function resolveLocationId(string $value, bool $create): ?int
 {
@@ -364,10 +329,7 @@ function resolveLocationId(string $value, bool $create): ?int
     return locationIdByName(implode(LOCATION_PATH_SEPARATOR, $names), $parentId, $create);
 }
 
-/**
- * The location of this name inside $parentId, or at the top level when that is
- * null, creating it when asked to.
- */
+/** Inside $parentId, or at the top level when that is null. */
 function locationIdByName(string $name, ?int $parentId, bool $create): ?int
 {
     $id = dbValue(
@@ -390,11 +352,7 @@ function locationIdByName(string $name, ?int $parentId, bool $create): ?int
     return $result['success'] ? (int)$result['newId'] : null;
 }
 
-/**
- * Write the reviewed rows. Rows carrying an error are skipped.
- *
- * The whole import runs in one transaction, so a failure leaves nothing behind.
- */
+/** Rows carrying an error are skipped. One transaction, so a failure leaves nothing. */
 function importItemRows(array $rows): array
 {
     $imported = 0;
@@ -416,8 +374,7 @@ function importItemRows(array $rows): array
                     : resolveTaxonomyId($key, $row[$column], true);
             }
 
-            // Worked out once, because the stock history has to record the
-            // same figure that gets written to the item.
+            // Once, so the history records the figure written to the item.
             $quantity = ($row['type'] === 'tool' || $row['quantity'] === '')
                 ? 1
                 : (int)$row['quantity'];
@@ -436,8 +393,7 @@ function importItemRows(array $rows): array
                     'item_part_no'          => $row['part_no'] !== '' ? $row['part_no'] : null,
                     'item_colour'           => $row['colour'] !== '' ? $row['colour'] : null,
                     'item_product_url'      => $row['product_url'] !== '' ? $row['product_url'] : null,
-                    // A tool is one object with no stock behind it, whatever
-                    // the spreadsheet happened to say.
+                    // A tool has no stock, whatever the spreadsheet said.
                     'item_quantity'         => $quantity,
                     'item_min_quantity'     => $row['type'] === 'tool'
                         ? 0

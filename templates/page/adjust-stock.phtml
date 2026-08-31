@@ -1,10 +1,6 @@
 <?php
 /**
- * Taking a delivery in, or writing stock off.
- *
- * The edit page sets what is held to a figure. This changes it by one, because
- * buying five more of something is a change of five and not a sum to work out
- * in your head first.
+ * The edit page sets what is held; this changes it by an amount.
  *
  * @var mixed  $item        The part, or false when there is no such id.
  * @var string $itemUrl     Back to the part.
@@ -54,7 +50,6 @@ itemProperty('Free', '<p>' . stockCell($item) . '</p>');
 </div>
 <form method="post">
 <?php
-// First, because it is what marks the fields the last save was rejected over.
 formMessage($formMessage);
 
 textField('stock_amount', 'Amount', $amount, 'number', ' min="1" step="1" required autofocus');

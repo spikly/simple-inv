@@ -1,13 +1,10 @@
 <?php
 
 /*
- * Buffer the page.
- *
- * Pages are included part way down the layout in index.php, so by the time one
- * of them finishes handling a POST the markup above it has already been
- * written. Holding it all until the request ends keeps header() usable, which
- * is what the redirect after a successful save relies on. It also lets the
- * error handler throw away a half rendered page before showing its own.
+ * Buffer the page. A page is included part way down the layout, so the markup
+ * above it is already written by the time it handles a POST; holding it all
+ * until the request ends keeps header() usable for the redirect after a save,
+ * and lets the error handler throw away a half rendered page.
  */
 ob_start();
 

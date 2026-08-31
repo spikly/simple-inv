@@ -31,7 +31,6 @@ itemProperty('Available to Take', '<p>' . formatQuantity($available) . $unit . '
 </div>
 <form method="post">
 <?php
-// First, because it is what marks the fields the last save was rejected over.
 formMessage($formMessage);
 
 renderAssemblyItemFields($values, formatQuantity($available) . $unit . ' available');

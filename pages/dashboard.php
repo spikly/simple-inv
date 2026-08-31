@@ -1,10 +1,6 @@
 <?php
 
-/**
- * How many rows each section of the dashboard shows. The tiles above count
- * everything, so a section that has more than this says so rather than
- * quietly disagreeing with the number over it.
- */
+/** Rows per section. The tiles count everything, so a longer section says so. */
 const DASHBOARD_ROWS = 10;
 
 $toolsOut = fetchOpenToolLoans();

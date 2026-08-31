@@ -12,10 +12,7 @@ function startSession(): void
     }
 }
 
-/**
- * Store a message created by successMessage()/errorMessage() for the next
- * request, then send the browser to $url.
- */
+/** Hold a message for the next request, then send the browser to $url. */
 function redirectWith(string $url, array $message): void
 {
     startSession();
@@ -26,9 +23,8 @@ function redirectWith(string $url, array $message): void
 
 function redirect(string $url): void
 {
-    // Output is buffered in bootstrap.php so this is the normal path. If a
-    // page has somehow already flushed, send the browser on with markup
-    // rather than failing outright.
+    // Buffered in bootstrap.php, so this is the normal path. A page that has
+    // already flushed is sent on with markup rather than failing outright.
     if (headers_sent()) {
         template('redirect', compact('url'));
         exit;
@@ -43,9 +39,7 @@ function redirect(string $url): void
     exit;
 }
 
-/**
- * The message stored by the previous request, removed as it is read.
- */
+/** The message stored by the previous request, removed as it is read. */
 function takeFlash()
 {
     startSession();

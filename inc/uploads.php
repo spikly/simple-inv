@@ -1,22 +1,15 @@
 <?php
 
 /**
- * Item photos and item attachments.
- *
- * Both are stored with a generated name, so nothing a browser sends is ever
- * used as a path: photos under assets/uploads/items/, attachments under
- * assets/uploads/files/. The folder above them turns PHP off and sends
- * X-Content-Type-Options, see assets/uploads/.htaccess.
- *
+ * Item photos and item attachments. Both are stored with a generated name, so
+ * nothing a browser sends is ever used as a path: photos under
+ * assets/uploads/items/, attachments under assets/uploads/files/. The folder
+ * above them turns PHP off, see assets/uploads/.htaccess.
  */
 
 const UPLOAD_MAX_BYTES = 8388608; // 8MB
 
-/**
- * Longest side an item photo is stored at. A photo is scaled down so neither
- * side is larger than this, keeping its proportions, so a 1200x900 shot ends
- * up 300x225 rather than being squashed into a square.
- */
+/** Longest side a photo is stored at, keeping its proportions. */
 const UPLOAD_MAX_DIMENSION = 300;
 
 /** Image types accepted, mapped to the extension they are saved with. */
@@ -38,12 +31,7 @@ function itemImageUrl(?string $file): ?string
     return $file ? 'assets/uploads/items/' . rawurlencode($file) : null;
 }
 
-/**
- * Save one uploaded photo.
- *
- * Returns ['name' => storedFilename], ['name' => null] when no file was
- * chosen, or ['error' => message] when the upload is not usable.
- */
+/** Returns ['name' => filename], ['name' => null] if none chosen, or ['error' => message]. */
 function storeItemImage(array $upload): array
 {
     if (($upload['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
@@ -55,7 +43,7 @@ function storeItemImage(array $upload): array
     }
 
     if ($upload['size'] > UPLOAD_MAX_BYTES) {
-        return ['error' => 'The photo must be 8MB or smaller.'];
+        return ['error' => 'The photo must be ' . formatFileSize(UPLOAD_MAX_BYTES) . ' or smaller.'];
     }
 
     if (!is_uploaded_file($upload['tmp_name'])) {
@@ -89,9 +77,8 @@ function storeItemImage(array $upload): array
 }
 
 /**
- * Scale a stored photo down to UPLOAD_MAX_DIMENSION and straighten it if the
- * camera recorded it sideways. The file is left alone when it is already small
- * enough and the right way up, so nothing is re-encoded for no reason.
+ * Scale down to UPLOAD_MAX_DIMENSION and straighten a sideways photo. One
+ * already small enough and upright is left alone rather than re-encoded.
  */
 function shrinkImage(string $path, int $type, int $width, int $height): void
 {
@@ -108,8 +95,7 @@ function shrinkImage(string $path, int $type, int $width, int $height): void
         return;
     }
 
-    // Reading a very large photo can take more memory than PHP is allowed.
-    // Keeping the original at full size is better than failing the upload.
+    // Keeping the original at full size beats failing the upload on memory.
     if (!isset($loaders[$type]) || !function_exists($loaders[$type]) || !imageFitsInMemory($width, $height)) {
         return;
     }
@@ -231,10 +217,7 @@ function deleteItemImage(?string $file): void
     }
 }
 
-/**
- * Copy a stored photo under a new name, so a duplicated item owns its own
- * file. Returns the new name, or null when there was nothing to copy.
- */
+/** A duplicate owns its own file. Null when there was nothing to copy. */
 function copyItemImage(?string $file): ?string
 {
     if (!$file || !preg_match('/^[0-9a-f]{16}\.(jpg|png|gif|webp)$/', $file, $matches)) {
@@ -251,23 +234,19 @@ function copyItemImage(?string $file): ?string
 }
 
 /*
- * Item attachments: spec sheets, manuals, drawings and any other document or
- * extra picture kept against an item.
+ * Item attachments: spec sheets, manuals, drawings and extra pictures.
  *
- * Unlike the photo above, an attachment is never re-encoded or resized. It is
- * the document you uploaded, handed back byte for byte, so a drawing stays
- * readable and a PDF stays the PDF the manufacturer published.
+ * Unlike the photo above, an attachment is never re-encoded or resized, so a
+ * drawing stays readable and a PDF stays the one the manufacturer published.
  */
 
 /** Largest attachment accepted. PHP's own upload_max_filesize may be lower. */
 const ITEM_FILE_MAX_BYTES = 16777216; // 16MB
 
 /**
- * What may be uploaded, as the stored extension => the type it is served as.
- *
- * This list is the whole of what decides the extension a file is saved with,
- * so nothing the webserver would execute can ever be written: an upload whose
- * extension is not one of these keys is turned away rather than corrected.
+ * Stored extension => the type it is served as. This list is the whole of what
+ * decides the extension a file is saved with, so nothing the webserver would
+ * execute can be written: anything else is turned away, never corrected.
  */
 const ITEM_FILE_TYPES = [
     'pdf'  => 'application/pdf',
@@ -290,11 +269,7 @@ const ITEM_FILE_TYPES = [
 /** Extensions meaning one of the above under another name. */
 const ITEM_FILE_ALIASES = ['jpeg' => 'jpg'];
 
-/**
- * The types shown in the browser rather than downloaded. A picture and a PDF
- * are things you look at; everything else is a file you open in its own
- * program, so it is sent as a download.
- */
+/** Shown in the browser rather than downloaded. Everything else is a download. */
 const ITEM_FILE_INLINE = ['pdf', 'jpg', 'png', 'gif', 'webp'];
 
 /** The pattern every generated attachment name matches. */
@@ -305,16 +280,13 @@ function itemFilePath(string $file = ''): string
     return __DIR__ . '/../assets/uploads/files/' . $file;
 }
 
-/** A readable list of what may be uploaded, for the form and its errors. */
 function itemFileTypeList(): string
 {
     return strtoupper(implode(', ', array_keys(ITEM_FILE_TYPES)));
 }
 
 /**
- * Save one uploaded attachment.
- *
- * Returns ['name' => storedName, 'original' => whatItWasCalled, 'size' => bytes],
+ * Returns ['name' => stored, 'original' => as uploaded, 'size' => bytes],
  * ['name' => null] when nothing was chosen, or ['error' => message].
  */
 function storeItemFile(array $upload): array
@@ -328,7 +300,7 @@ function storeItemFile(array $upload): array
     }
 
     if ($upload['size'] > ITEM_FILE_MAX_BYTES) {
-        return ['error' => 'Each file must be 16MB or smaller.'];
+        return ['error' => 'Each file must be ' . formatFileSize(ITEM_FILE_MAX_BYTES) . ' or smaller.'];
     }
 
     if ($upload['size'] === 0) {
@@ -339,8 +311,7 @@ function storeItemFile(array $upload): array
         return ['error' => 'The file could not be read.'];
     }
 
-    // Only ever read for its extension; the name itself is never used as a
-    // path, and basename() keeps a directory out of what is shown.
+    // Read only for its extension; basename() keeps a directory out of it.
     $original = basename(str_replace('\\', '/', (string)$upload['name']));
     $extension = strtolower((string)pathinfo($original, PATHINFO_EXTENSION));
     $extension = ITEM_FILE_ALIASES[$extension] ?? $extension;
@@ -366,19 +337,15 @@ function storeItemFile(array $upload): array
 
     return [
         'name'     => $name,
-        // Kept only to show and to name the download; 255 is what the column
-        // holds, and mb_substr so a long name is not cut through a character.
+        // mb_substr, so a long name is not cut through a character.
         'original' => mb_substr($original, 0, 255),
         'size'     => (int)$upload['size'],
     ];
 }
 
 /**
- * The $_FILES entry for each file chosen in one multiple upload control, as
- * the single-file shape the rest of this file works in.
- *
  * PHP turns <input name="x[]" multiple> inside out, giving one array per
- * property rather than one entry per file, which nothing else here expects.
+ * property rather than one entry per file. This puts it back.
  */
 function uploadedFileList(array $files): array
 {
@@ -429,10 +396,7 @@ function deleteItemFile(?string $stored): void
     }
 }
 
-/**
- * Copy a stored attachment under a new name, so a duplicated item owns its own
- * files. Returns the new name, or null when there was nothing to copy.
- */
+/** A duplicate owns its own files. Null when there was nothing to copy. */
 function copyItemFile(?string $stored): ?string
 {
     if (!$stored || !preg_match(ITEM_FILE_NAME_PATTERN, $stored) || !is_file(itemFilePath($stored))) {

@@ -17,8 +17,7 @@ if (isset($_POST['edit_assembly_item_submit'])) {
     $values = assemblyItemColumns($_POST);
     $errors = validateAssemblyItem($values);
 
-    // What is free to install is only worth working out once the figure asking
-    // for it makes sense on its own.
+    // Only worth working out once the figure asking for it makes sense.
     if (!isset($errors['quantity_installed'])) {
         $errors += validateAssemblyInstall(
             $assemblyItem['item_id'],
@@ -53,8 +52,7 @@ if (isset($_POST['edit_assembly_item_submit'])) {
         );
     }
 } elseif (isset($_POST['delete_assembly_item_submit'])) {
-    // Removing the part gives up its reservation, which then goes to whatever
-    // else is waiting on the item. Installed units stay spent.
+    // Its reservation goes to whatever else waits on the item; installs stay spent.
     dbTransaction(function () use ($assemblyItemId, $assemblyItem) {
         dbRun('DELETE FROM inv_assembly_items WHERE assembly_item_id = :assembly_item_id', [
             'assembly_item_id' => $assemblyItemId,

@@ -9,7 +9,6 @@
 ?>
 <form method="post">
 <?php
-// First, because it is what marks the fields the last save was rejected over.
 formMessage($formMessage);
 
 textField('assembly_name', 'Assembly Name', $values['assembly_name'] ?? '', 'text', ' required');

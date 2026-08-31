@@ -1,10 +1,7 @@
 <?php
 /**
- * The shell every page is drawn inside.
- *
- * The page itself is included part way down rather than passed in as markup,
- * so a page that decides to redirect can still do so; see the buffering note
- * in inc/bootstrap.php.
+ * The page is included part way down rather than passed in as markup, so one
+ * that decides to redirect can still do so; see inc/bootstrap.php.
  *
  * @var string $currentPage The page file to include, without its extension.
  * @var array  $navigation  Main nav, label => route.

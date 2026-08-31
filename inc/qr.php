@@ -35,9 +35,7 @@ const QR_VERSION_INFO = [7 => 0x07C94, 8 => 0x085BC, 9 => 0x09A99, 10 => 0x0A4D3
 /** Error correction level indicator bits. */
 const QR_EC_BITS = ['L' => 1, 'M' => 0, 'Q' => 3, 'H' => 2];
 
-/**
- * Exponent and logarithm tables for GF(256) with primitive polynomial 0x11D.
- */
+/** Exponent and logarithm tables for GF(256) with primitive polynomial 0x11D. */
 function qrGaloisTables(): array
 {
     static $tables = null;
@@ -557,9 +555,7 @@ function qrWriteFormat(array &$matrix, int $size, string $ecLevel, int $mask): v
     }
 }
 
-/**
- * The QR code for $text as a self contained SVG, sized in pixels.
- */
+/** The QR code for $text as a self contained SVG, sized in pixels. */
 function qrSvg(string $text, int $pixels = 120, string $ecLevel = 'M'): string
 {
     $matrix = qrMatrix($text, $ecLevel);

@@ -19,8 +19,7 @@ if (isset($_POST['add_assembly_item_submit'])) {
     if (empty($itemId)) {
         $errors = ['item_id' => 'Please select an item.'] + $errors;
     } elseif (!isset($errors['quantity_installed'])) {
-        // What is free to install is only worth working out once the figure
-        // asking for it makes sense on its own.
+        // Only worth working out once the figure asking for it makes sense.
         $errors += validateAssemblyInstall($itemId, 0, $columns['quantity_installed'], 0);
     }
 
@@ -28,8 +27,7 @@ if (isset($_POST['add_assembly_item_submit'])) {
         $values = $columns + ['item_id' => $itemId];
         $formMessage = errorMessage($errors);
     } else {
-        // The part is stored holding nothing, then settling the stock reserves
-        // what it can spare for it and takes anything installed out of stock.
+        // Stored holding nothing; settling reserves what can be spared.
         $stock = dbTransaction(function () use ($columns, $assemblyId, $itemId) {
             $assemblyItemId = dbInsert(
                 'INSERT INTO inv_assembly_items

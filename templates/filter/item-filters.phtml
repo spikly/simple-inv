@@ -1,7 +1,6 @@
 <?php
 /**
- * The items listing filter bar: one dropdown per taxonomy plus a text search,
- * all combined with AND. Current selections come from the query string.
+ * One dropdown per taxonomy plus a search, combined with AND.
  *
  * @var string $page       Page the form submits back to.
  * @var string $search     What is being searched for now.
@@ -36,14 +35,12 @@ if ($kind === null) {
 foreach (taxonomies() as $key => $tax) {
     $id = 'filter_' . $tax['param'];
 
-    // On a listing narrowed to one kind, the categories filing the other kind
-    // would only ever filter it down to nothing.
+    // On a listing pinned to one kind, the other kind's categories match nothing.
     $options = ($key === 'category' && $kind !== null)
         ? categoryOptions($kind)
         : taxonomyOptions($key);
 
-    // The "Any ..." option doubles as the dropdown's resting label, so the bar
-    // reads clearly without a row of headings above it.
+    // "Any ..." doubles as the resting label, so the bar needs no headings.
     filterField(
         $id,
         $tax['label'],

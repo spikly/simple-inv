@@ -1,9 +1,6 @@
 <?php
 /**
- * Signing a tool out and back in again.
- *
- * The same page does both, because which one it offers is not a choice: a tool
- * that is here can go out, and one that is out can come back.
+ * One page for both, since which it offers is settled by where the tool is.
  *
  * @var mixed  $item        The tool, or false when there is no such id.
  * @var mixed  $loan        Its open sign-out, or null when it is here.
@@ -65,8 +62,7 @@ if ($loan):
 <?php else: ?>
 <form method="post">
 <?php
-    // First, because it is what marks the fields the last save was rejected over.
-    formMessage($formMessage);
+        formMessage($formMessage);
 
     textField('loan_to', 'Signed Out To', $values['loan_to'] ?? '', 'text', ' required');
     textField('loan_due_at', 'Due Back (optional)', $values['loan_due_at'] ?? '', 'date');

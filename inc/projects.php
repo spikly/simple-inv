@@ -1,12 +1,7 @@
 <?php
 
-/**
- * Form handling shared by the project, assembly and assembly part pages.
- */
+/** Form handling shared by the project, assembly and assembly part pages. */
 
-/**
- * Submitted project data as the columns to write.
- */
 function projectColumns(array $post): array
 {
     return [
@@ -28,9 +23,6 @@ function renderProjectForm(array $values, string $submitName, $formMessage = fal
     ]);
 }
 
-/**
- * Submitted assembly data as the columns to write.
- */
 function assemblyColumns(array $post): array
 {
     return [
@@ -46,12 +38,7 @@ function renderAssemblyForm(array $values, string $submitName, $formMessage = fa
     template('project/assembly-form', compact('values', 'submitName', 'formMessage'));
 }
 
-/**
- * Submitted assembly part data as the columns to write.
- *
- * The allocated quantity is not among them: stock reserves itself against the
- * part, see inc/allocation.php.
- */
+/** The allocated quantity is not among them; see inc/allocation.php. */
 function assemblyItemColumns(array $post): array
 {
     return [
@@ -61,10 +48,7 @@ function assemblyItemColumns(array $post): array
     ];
 }
 
-/**
- * Everything wrong with submitted assembly part data, keyed by the field it
- * belongs to, or an empty array when it is fine.
- */
+/** Problems with submitted assembly part data, keyed by field. */
 function validateAssemblyItem(array $columns): array
 {
     $errors = [];
@@ -76,8 +60,7 @@ function validateAssemblyItem(array $columns): array
     if ($columns['quantity_installed'] < 0) {
         $errors['quantity_installed'] = 'Installed quantity cannot be negative.';
     } elseif (!$errors && $columns['quantity_installed'] > $columns['quantity_required']) {
-        // Only worth saying once the required quantity is a figure the
-        // installed one could sensibly be measured against.
+        // Only worth saying once the required quantity is a usable figure.
         $errors['quantity_installed'] = 'Installed quantity cannot exceed the quantity required.';
     }
 
@@ -86,8 +69,7 @@ function validateAssemblyItem(array $columns): array
 
 /**
  * Installing takes units out of stock for good, so the increase since the last
- * save has to be covered by what the item has left once the other assemblies
- * have had their share.
+ * save has to be covered by what the item has left.
  */
 function validateAssemblyInstall($item_id, $assembly_item_id, float $installed, float $installedBefore): array
 {
@@ -107,9 +89,7 @@ function validateAssemblyInstall($item_id, $assembly_item_id, float $installed, 
     return [];
 }
 
-/**
- * How a save went for the stock behind a part, added to its success message.
- */
+/** How a save went for the stock behind a part, added to its success message. */
 function assemblyStockMessage(array $stock): string
 {
     $message = ' Reserved ' . formatQuantity($stock['allocated']) . ' from stock';
@@ -119,12 +99,7 @@ function assemblyStockMessage(array $stock): string
         : $message . '.';
 }
 
-/**
- * The quantity and notes fields shared by the add and edit part forms.
- *
- * $stockNote is shown against the required field, so the free stock is in
- * front of whoever is deciding the quantity.
- */
+/** $stockNote sits against the required field, in front of whoever sets it. */
 function renderAssemblyItemFields(array $values, string $stockNote = ''): void
 {
     template('project/assembly-item-fields', compact('values', 'stockNote'));

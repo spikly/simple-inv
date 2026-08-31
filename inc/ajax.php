@@ -6,22 +6,21 @@ require __DIR__ . '/bootstrap.php';
 
 $request = json_decode(file_get_contents('php://input'), true) ?: [];
 
-/**
- * The item form names its controls after the taxonomy they edit, so
- * "add_new_brand" and "item_brand" both resolve to the "brand" taxonomy.
- */
+/** "add_new_brand" and "item_brand" both resolve to the "brand" taxonomy. */
 function taxonomyFor(?string $control, string $prefix): ?string
 {
-    $key = substr((string)$control, strlen($prefix));
+    $control = (string)$control;
+
+    if (strpos($control, $prefix) !== 0) {
+        return null;
+    }
+
+    $key = substr($control, strlen($prefix));
 
     return isset(taxonomies()[$key]) ? $key : null;
 }
 
-/**
- * The kind of item the form doing the asking is for. A category added from
- * the item form has to file that kind, and the category dropdown only ever
- * offers the categories that do.
- */
+/** A category added from the item form has to file the kind that item is. */
 $requestedType = itemType($request['itemType'] ?? 'part');
 
 switch ($request['requestType'] ?? '') {

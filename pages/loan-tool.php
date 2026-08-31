@@ -1,11 +1,6 @@
 <?php
 
-/**
- * Signing a tool out and back in again.
- *
- * The same page does both, because which one it offers is not a choice: a
- * tool that is here can go out, and one that is out can come back.
- */
+/** One page for both, since which it offers is settled by where the tool is. */
 
 $itemId = queryParam('item_id');
 $item = $itemId ? fetchSingleItem($itemId) : false;
@@ -30,8 +25,7 @@ if ($item && isset($_POST['sign_out_submit'])) {
         $values = $_POST;
         $formMessage = errorMessage($errors);
 
-        // One reason to be here is that it went out from somewhere else while
-        // this form was open, so what is on screen is read again.
+        // It may have gone out elsewhere while this form was open.
         $loan = fetchOpenToolLoan($itemId);
     } else {
         redirectWith($itemUrl, successMessage('Signed out to '

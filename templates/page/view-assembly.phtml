@@ -34,8 +34,7 @@ if ($items):
         ['Item', 'Required', 'Allocated', 'Installed', 'Remaining', ''],
         $items,
         static function ($item) {
-            // Anything the item could not spare, so a part that is waiting on
-            // stock says so where it is being looked at.
+            // Anything the item could not spare, said where it is looked at.
             $outstanding = max(0, (float)$item['quantity_required'] - (float)$item['quantity_installed']);
             $short = $outstanding - (float)$item['quantity_allocated'];
 

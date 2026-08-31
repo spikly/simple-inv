@@ -5,9 +5,7 @@
  */
 
 /**
- * Joins shared by every item listing.
- *
- * The two derived tables give a per item total, so they stay correct when the
+ * The derived tables give a per item total, so they stay correct when the
  * category join multiplies rows for an item in several categories.
  */
 const ITEM_JOINS = '
@@ -30,15 +28,13 @@ const ITEM_JOINS = '
 ';
 
 /**
- * The figures every item listing exposes.
- *
  * is_tool    whether the categories it is filed under file tools
  * allocated  quantity set aside for project assemblies
  * free       what is left of item_quantity once that is taken off
  * loan_*     the open sign-out a tool is on, null while it is here
  *
- * A tool has only ever one open loan, so MAX over the join picks that row out
- * without the category join multiplying it.
+ * A tool has only ever one open loan, so MAX picks that row out without the
+ * category join multiplying it.
  */
 const ITEM_STOCK_COLUMNS = '
     COALESCE(MAX(c.cat_type = \'tool\'), 0) AS item_is_tool,
@@ -52,11 +48,8 @@ const ITEM_STOCK_COLUMNS = '
 ';
 
 /**
- * Whether the item joined as `i` is a tool, asked of its categories, since
- * that is the only place the answer is kept.
- *
- * ITEM_KIND_FILTER is the same question with the kind bound, for narrowing a
- * listing to whichever one it is showing.
+ * Asked of the categories, since that is the only place the answer is kept.
+ * ITEM_KIND_FILTER is the same question with the kind bound.
  */
 const ITEM_IS_TOOL = "EXISTS (SELECT 1 FROM categories_items tci
     INNER JOIN inv_categories tc ON tc.cat_id = tci.cat_id
@@ -69,13 +62,9 @@ const ITEM_KIND_FILTER = 'EXISTS (SELECT 1 FROM categories_items kci
     WHERE kci.item_id = i.item_id AND kc.cat_type = :item_kind)';
 
 /**
- * The ?brand_id=1 style filters present in the query string.
- *
- * $pinnedKind fixes the listing to parts or tools whatever the query string
- * says, which is how the Parts and Tools pages differ from each other; the
- * mixed Items listing leaves it to the ?kind= filter instead.
- *
  * Returns [sql fragment, bound params, taxonomy keys applied, kind or null].
+ * $pinnedKind fixes the listing to one kind whatever the query string says,
+ * which is how Parts and Tools differ from the mixed Items listing.
  */
 function itemFilters(?string $pinnedKind = null): array
 {
@@ -106,8 +95,8 @@ function itemFilters(?string $pinnedKind = null): array
     $search = trim((string)queryParam('q'));
 
     if ($search !== '') {
-        // One placeholder over the searchable columns: named parameters cannot
-        // be reused while prepare emulation is off.
+        // One placeholder, since named parameters cannot be reused while
+        // prepare emulation is off.
         $clauses[] = "CONCAT_WS(' ', i.item_name, i.item_part_no, i.item_colour, i.item_notes)"
             . ' LIKE :search';
         $params['search'] = '%' . $search . '%';
@@ -116,12 +105,7 @@ function itemFilters(?string $pinnedKind = null): array
     return [$clauses ? ' WHERE ' . implode(' AND ', $clauses) : '', $params, $applied, $kind];
 }
 
-/**
- * Items for the listing page, honouring the query string filters.
- *
- * $slice limits it to one page. Export and labels pass nothing, because those
- * are meant to cover everything the filters match.
- */
+/** $slice limits it to one page; export and labels pass nothing. */
 function fetchItems(string $where, array $params, ?array $slice = null): array
 {
     return dbAll(
@@ -137,11 +121,8 @@ function fetchItems(string $where, array $params, ?array $slice = null): array
 }
 
 /**
- * How many items the same filters match, for the heading and the page count.
- *
- * The joins are the ones fetchItems() uses, so any filter that works there
- * works here; counting distinct items undoes the category join multiplying
- * anything filed in more than one.
+ * The joins fetchItems() uses, so any filter working there works here.
+ * COUNT(DISTINCT) undoes the category join multiplying a multi-category item.
  */
 function countItems(string $where, array $params): int
 {
@@ -215,10 +196,7 @@ function saveItemCategories($item_id, array $categoryIds): void
     }
 }
 
-/**
- * Dropdown options for the item add/edit form, keyed by form field name.
- * Measurement units are grouped by the unit type stored against them.
- */
+/** Keyed by form field name; measurement units grouped by their unit type. */
 function fetchItemFormOptions(string $type = 'part'): array
 {
     $units = [];
@@ -231,8 +209,7 @@ function fetchItemFormOptions(string $type = 'part'): array
     $options = ['item_measurement_unit' => $units];
 
     foreach (array_keys(taxonomies()) as $key) {
-        // Categories are what decide whether an item is a part or a tool, so
-        // the form only offers the ones that agree with what it is editing.
+        // Categories decide the kind, so only the agreeing ones are offered.
         $options['item_' . $key] = ($key === 'category')
             ? categoryOptions($type)
             : taxonomyOptions($key);
@@ -264,7 +241,6 @@ function fetchItemFile($file_id)
     );
 }
 
-/** Record a stored upload against an item. */
 function insertItemFile($item_id, string $stored, string $original, int $size, ?string $description = null): void
 {
     dbRun(
@@ -299,7 +275,6 @@ function deleteItemFileRow($file_id): void
  * Dashboard
  */
 
-/** Headline counts for the dashboard tiles. */
 function fetchDashboardTotals(): array
 {
     return dbRow('
@@ -314,12 +289,7 @@ function fetchDashboardTotals(): array
     ');
 }
 
-/**
- * Items needing attention.
- *
- * $mode "low" is stock at or under its reorder level, "over" is stock
- * committed beyond what is actually held.
- */
+/** $mode "low" is at or under the reorder level, "over" is committed beyond stock. */
 function fetchStockWarnings(string $mode): array
 {
     $having = ($mode === 'over')
@@ -337,7 +307,6 @@ function fetchStockWarnings(string $mode): array
     );
 }
 
-/** Most recently added or changed items. */
 function fetchRecentItems(string $column, int $limit = 6): array
 {
     $order = ($column === 'created') ? 'i.item_created_at' : 'i.item_updated_at';
@@ -412,10 +381,8 @@ function getProjectSummary($project_id)
 }
 
 /**
- * What a project still needs, one row per item across all of its assemblies.
- *
- * free_elsewhere is the stock not already committed anywhere, so the shortfall
- * worked out from it is what actually has to be bought.
+ * One row per item across every assembly. free_elsewhere is stock not already
+ * committed, so the shortfall from it is what has to be bought.
  */
 function fetchProjectRequirements($project_id): array
 {
@@ -520,10 +487,7 @@ function fetchAssemblyItem($assembly_item_id)
     ', ['id' => $assembly_item_id]);
 }
 
-/**
- * Items an assembly is holding stock of. Read before deleting one, so the
- * reservations it gives up can be shared out again.
- */
+/** Read before deleting one, so the reservations it frees can be shared out. */
 function fetchAssemblyItemIds($assembly_id): array
 {
     return array_column(dbAll(
@@ -563,10 +527,7 @@ function fetchAvailableItemsForAssembly($assembly_id): array
     ', ['assembly_id' => $assembly_id]);
 }
 
-/**
- * Every assembly holding stock of an item, for the item page. Shows where the
- * reserved and installed quantities on an item have gone.
- */
+/** Where an item's reserved and installed quantities have gone. */
 function fetchItemAssemblyUsage($item_id): array
 {
     return dbAll('

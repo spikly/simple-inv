@@ -1,9 +1,6 @@
 <?php
 
-/**
- * Correcting one sign-out record: the wrong name, a date that moved, or an
- * entry made by mistake.
- */
+/** Correcting one sign-out record. */
 
 $loanId = queryParam('loan_id');
 $itemId = queryParam('item_id');

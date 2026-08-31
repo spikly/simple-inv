@@ -1,9 +1,6 @@
 <?php
 /**
- * Everything known about one part or tool, and what has happened to it.
- *
- * A tool's history is who has had it; a part's is what its stock has done and
- * which assemblies are holding some of it.
+ * A tool's history is who has had it; a part's is what its stock has done.
  *
  * @var mixed   $item        The item row, or false when there is no such id.
  * @var string  $type        'part' or 'tool'.
@@ -32,7 +29,6 @@ if (!$item): ?>
     return;
 endif;
 
-// Headings for the taxonomies shown as item properties, in display order.
 $properties = [
     'brand'    => 'Manufacturer',
     'supplier' => 'Supplier',
@@ -62,16 +58,14 @@ $properties = [
         itemProperty('Colour', '<p>' . escapeHtml($item['item_colour']) . '</p>');
     }
 
-    // Checked again on the way out rather than trusted from the form, since
-    // anything stored before the field was validated could be any old text.
+    // Anything stored before the field was validated could be any old text.
     if (isset($item['item_product_url']) && isWebUrl($item['item_product_url'])) {
         itemProperty('Product Page', '<p><a href="' . escapeHtml($item['item_product_url'])
             . '" target="_blank" rel="noopener">Visit Product Page</a></p>');
     }
 
     if ($type === 'tool') {
-        // A tool is one object, so the only quantity worth showing is whether
-        // it is here or with somebody.
+        // One object, so the only quantity is whether it is here.
         $overdue = $isOut && loanIsOverdue($item['loan_due_at']);
 
         itemProperty(
@@ -108,7 +102,6 @@ $properties = [
     foreach ($properties as $key => $heading) {
         $tax = taxonomy($key);
 
-        // Suppliers are optional.
         if ($key === 'supplier' && !isset($item['sup_id'])) {
             continue;
         }
@@ -122,8 +115,7 @@ $properties = [
                 . escapeHtml(LOCATION_PATH_SEPARATOR) . $link;
         }
 
-        // Checked rather than trusted, the same as the product page above: a
-        // supplier stored before the address was validated can hold anything.
+        // As with the product page above: an old row can hold anything.
         if ($key === 'supplier' && $item['sup_website'] && isWebUrl($item['sup_website'])) {
             $link .= ' | <a href="' . escapeHtml($item['sup_website']) . '" target="_blank">Website</a>';
         }

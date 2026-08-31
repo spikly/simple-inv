@@ -1,19 +1,13 @@
 <?php
 
 /**
- * Tools going in and out of the workshop.
- *
- * A tool is one physical object rather than a quantity, so it is either here
- * or it is with somebody. Signing it out opens a row in inv_tool_loans and
- * signing it back in stamps loan_in_at rather than deleting the row, so every
- * tool keeps a history of where it has been. It is out while one of those rows
- * has loan_in_at still null, and it can only have one at a time.
+ * Tools going in and out of the workshop. Signing one out opens a row in
+ * inv_tool_loans; signing it in stamps loan_in_at rather than deleting the
+ * row, so the history is kept. A tool is out while one row has loan_in_at
+ * null, and it can only have one at a time.
  */
 
-/**
- * The measurement unit tools are stored against. They have no quantity, but
- * the column is not nullable, so they are counted in whole pieces.
- */
+/** Tools have no quantity, but the column is not nullable, so: whole pieces. */
 function pieceUnitId(): int
 {
     static $unitId = null;
@@ -58,11 +52,9 @@ function fetchToolLoans($item_id, ?array $slice = null): array
 }
 
 /**
- * Every tool that is out right now, overdue ones first.
- *
- * Only loans against something that is actually a tool. Upgrading deployments
- * can leave rows against items since filed as parts; they are kept as history,
- * but a part is not out with anybody, so nothing counting tools sees them.
+ * Out right now, overdue first. Only loans against something that is actually
+ * a tool: upgrading deployments can leave rows against items since filed as
+ * parts, and a part is not out with anybody.
  */
 function fetchOpenToolLoans(): array
 {
@@ -78,7 +70,6 @@ function fetchOpenToolLoans(): array
     );
 }
 
-/** How many of a set of open loans are past their due date. */
 function countOverdueLoans(array $loans): int
 {
     $overdue = array_filter($loans, function (array $loan) {
@@ -94,11 +85,7 @@ function loanIsOverdue(?string $dueAt, ?string $inAt = null): bool
     return $inAt === null && $dueAt !== null && $dueAt !== '' && $dueAt < date('Y-m-d');
 }
 
-/**
- * The submitted sign-out data as the columns to write, or ['errors' => [...]]
- * keyed by the field each message belongs to. Both fields are checked, so a
- * form with two things wrong says both.
- */
+/** The columns to write, or ['errors' => [...]] keyed by field. Checks both fields. */
 function toolLoanValues(array $post): array
 {
     $errors = [];
@@ -125,10 +112,7 @@ function toolLoanValues(array $post): array
     ]];
 }
 
-/**
- * Sign a tool out. Returns an error message when it is already with somebody,
- * since one tool cannot be in two places.
- */
+/** Returns an error when it is already with somebody; one tool, one place. */
 function signToolOut($item_id, array $values): ?string
 {
     if (fetchOpenToolLoan($item_id)) {
@@ -155,11 +139,8 @@ function signToolIn($loan_id): void
 }
 
 /**
- * The returned-at value submitted on the edit form, as something the database
- * will take, or ['errors' => [...]] keyed by the field.
- *
- * Clearing it puts the tool back out with whoever had it, which only works
- * while nothing else has it.
+ * The returned-at value the database will take, or ['errors' => [...]].
+ * Clearing it reopens the loan, which only works while nothing else has it.
  */
 function toolReturnValue(array $loan, array $post): array
 {
@@ -191,7 +172,6 @@ function toolReturnValue(array $loan, array $post): array
  * Presentation
  */
 
-/** Who has a tool right now, for a listing cell. */
 function toolBorrowerCell(array $item): string
 {
     if (empty($item['loan_to'])) {
@@ -204,7 +184,6 @@ function toolBorrowerCell(array $item): string
         . '<small class="row-note">out since ' . escapeHtml(formatDate($item['loan_out_at'])) . '</small>';
 }
 
-/** When a tool is due back, for a listing cell. */
 function toolDueCell(array $item): string
 {
     if (empty($item['loan_to'])) {
@@ -219,9 +198,6 @@ function toolDueCell(array $item): string
         . (loanIsOverdue($item['loan_due_at']) ? '<small class="row-note">overdue</small>' : '');
 }
 
-/**
- * A tool's history: who had it, when it went and when it came back.
- */
 function renderToolLoans(array $loans): void
 {
     template('tool/loans', compact('loans'));

@@ -1,10 +1,6 @@
 <?php
 /**
- * The add/edit form for a part or a tool.
- *
- * $type decides both which fields appear and which categories are offered, so
- * the categories an item ends up with always match the kind it was filled in
- * as.
+ * $type decides which fields appear and which categories are offered.
  *
  * @var array  $values      Current field values.
  * @var string $submitName  Submit button name, which is what the page tests for.
@@ -15,7 +11,6 @@
 ?>
 <form method="post" enctype="multipart/form-data">
 <?php
-// First, because it is what marks the fields the last save was rejected over.
 formMessage($formMessage);
 ?>
     <input type="hidden" name="item_type" value="<?php echo $type; ?>">

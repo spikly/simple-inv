@@ -28,8 +28,7 @@ if (isset($_POST['edit_assembly_submit'])) {
         redirectWith('index.php?page=edit-assembly&assembly_id=' . $assemblyId, successMessage('Assembly updated!'));
     }
 } elseif (isset($_POST['delete_assembly_submit'])) {
-    // Its parts go with it, so the stock they were holding is shared out
-    // again over whatever else is waiting on those items.
+    // Its parts go too, so the stock they held is shared out again.
     dbTransaction(function () use ($assemblyId) {
         $itemIds = fetchAssemblyItemIds($assemblyId);
 

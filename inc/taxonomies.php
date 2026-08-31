@@ -1,20 +1,16 @@
 <?php
 
 /**
- * The simple "lookup" entities (manufacturer, supplier, category, location,
- * status).
- *
- * Every one of them is a table with an id, a required name and the odd extra
- * column, so a single definition drives their listing, add and edit pages, the
- * item form dropdowns and the "add new" modal served over AJAX.
+ * The lookup entities (manufacturer, supplier, category, location, status).
+ * Each is a table with an id, a required name and the odd extra column, so one
+ * definition drives their pages, the item form dropdowns and the modal.
  *
  * fields is ordered; the first field is the required name column.
  */
 function taxonomies(): array
 {
     return [
-        // Shown as "Manufacturer" throughout. The key and the columns behind it
-        // keep the original brand naming, so the database is left alone.
+        // Shown as "Manufacturer"; the columns keep the original brand naming.
         'brand' => [
             'label'      => 'Manufacturer',
             'plural'     => 'Manufacturers',
@@ -51,9 +47,8 @@ function taxonomies(): array
             ],
             'columns'    => ['Website' => 'supplierWebsiteCell'],
         ],
-        // The one taxonomy that changes how its items behave: a category files
-        // either parts or tools, and an item takes its kind from the
-        // categories it is in. See itemType() in inc/items.php.
+        // The one taxonomy that changes how its items behave: an item takes
+        // its kind from the categories it is in. See itemType().
         'category' => [
             'label'      => 'Category',
             'plural'     => 'Categories',
@@ -81,19 +76,16 @@ function taxonomies(): array
             'notice'     => 'categoryTypeNotice',
             'onSave'     => 'categoryTypeApply',
         ],
-        // The one taxonomy whose rows nest: a set of drawers is one location
-        // with a location per drawer inside it, and the items are filed in the
-        // drawer. Only one level deep, so a sub-location never holds any of
-        // its own. See locationPath() and the helpers below it.
+        // The one taxonomy whose rows nest, and only one level deep, so a
+        // sub-location never holds any of its own.
         'location' => [
             'label'      => 'Location',
             'plural'     => 'Locations',
             'table'      => 'inv_locations',
             'id'         => 'loc_id',
             'param'      => 'location_id',
-            // Drilling into a location shows what is inside its sub-locations
-            // as well, so the code stuck on a chest covers all of its drawers.
-            // One placeholder, because named parameters cannot be reused.
+            // A chest covers its drawers. One placeholder, since named
+            // parameters cannot be reused.
             'itemFilter' => 'EXISTS (SELECT 1 FROM inv_locations fl
                 WHERE fl.loc_id = i.item_loc_id
                   AND :location_id IN (fl.loc_id, fl.loc_parent_id))',
@@ -114,9 +106,8 @@ function taxonomies(): array
             'select'        => 'parent.loc_name AS loc_parent_name,
                 (SELECT COUNT(*) FROM inv_locations child
                  WHERE child.loc_parent_id = t.loc_id) AS child_count',
-            // Each location followed by whatever is inside it, so the listing
-            // reads as the shelving does. The id keeps two same-named parents
-            // from interleaving their children.
+            // Each location followed by what is inside it. The id keeps two
+            // same-named parents from interleaving their children.
             'orderBy'       => 'COALESCE(parent.loc_name, t.loc_name) asc,
                 COALESCE(t.loc_parent_id, t.loc_id) asc,
                 t.loc_parent_id IS NOT NULL asc,
@@ -149,19 +140,14 @@ function taxonomy(string $key): array
     return taxonomies()[$key];
 }
 
-/** Extra listing column for categories. */
 function categoryTypeCell(array $row): string
 {
     return escapeHtml(ITEM_TYPE_PLURALS[$row['cat_type']] ?? $row['cat_type']);
 }
 
 /**
- * What stops the items in a category all becoming $newType, as one phrase per
- * item that has something against it.
- *
- * Two things do: another category of the other kind, which would leave the
- * item disagreeing with itself about what it is, and the item's own records,
- * which is itemsBlockingKindChange()'s question.
+ * One phrase per item with something against it. Two things count: another
+ * category of the other kind, and the item's own records.
  */
 function categoryConversionBlockers($cat_id, string $newType): array
 {
@@ -214,11 +200,9 @@ function categoryConversionBlockers($cat_id, string $newType): array
 }
 
 /**
- * A category's kind decides how everything filed under it behaves, so
- * switching it takes every item in it along. Allowed, but only where each of
- * those items can make the move, since converting one that cannot would leave
- * it in a state nothing else expects. The first few offenders are named, a
- * count alone leaving you to hunt for them.
+ * Switching a category takes every item in it along, so it is allowed only
+ * where each of those items can make the move. The first few offenders are
+ * named, a count alone leaving you to hunt for them.
  */
 function categoryTypeGuard($id, array $values): ?string
 {
@@ -245,13 +229,10 @@ function categoryTypeGuard($id, array $values): ?string
 }
 
 /**
- * The items a switched category takes with it.
- *
- * They convert themselves, since nothing on an item says which kind it is; all
- * that needs writing is stock. A tool has none, and the columns are not
- * nullable, so they go back to the single piece itemColumns() stores, leaving
- * the movements already against the item as history. The other direction
- * writes nothing: there is no earlier quantity to put back.
+ * Items convert themselves, since nothing on one says which kind it is; only
+ * stock needs writing. A tool has none, so it goes back to the single piece
+ * itemColumns() stores; the other direction writes nothing, there being no
+ * earlier quantity to put back.
  *
  * Runs before the category's own update and in the same transaction, so
  * cat_type still says what it was.
@@ -272,10 +253,7 @@ function categoryTypeApply($id, array $values): void
     );
 }
 
-/**
- * What switching this category would do, said above the form, since it reaches
- * further than the row being edited.
- */
+/** Said above the form, since it reaches further than the row being edited. */
 function categoryTypeNotice(array $row): void
 {
     $inUse = taxonomyUsageCount(taxonomy('category'), $row['cat_id']);
@@ -291,7 +269,6 @@ function categoryTypeNotice(array $row): void
     ]);
 }
 
-/** Extra listing column for suppliers. */
 function supplierWebsiteCell(array $row): string
 {
     $website = (string)$row['sup_website'];
@@ -300,8 +277,7 @@ function supplierWebsiteCell(array $row): string
         return '';
     }
 
-    // A row stored before the address was checked on save can hold anything,
-    // so one that cannot be linked to is shown as the text it is.
+    // A row stored before this was checked on save can hold anything.
     return isWebUrl($website)
         ? '<a href="' . escapeHtml($website) . '" target="_blank">Visit Website</a>'
         : escapeHtml($website);
@@ -316,22 +292,17 @@ function categorySlug(array $values): array
 /*
  * Locations
  *
- * A location may sit inside one other location, so a set of drawers is stored
- * as the chest plus a location per drawer, and an item is filed in the drawer
- * rather than in a location of its own. Nesting stops there: a location that
- * already holds sub-locations is not offered a parent of its own, which keeps
- * every path two names long at most and the dropdowns readable.
+ * A location may sit inside one other, and no deeper: one that already holds
+ * sub-locations is offered no parent of its own, which keeps every path two
+ * names long at most.
  */
 
 /** How a location and the one it sits inside are written as one name. */
 const LOCATION_PATH_SEPARATOR = ' > ';
 
 /**
- * A location named in full, eg "Tool Chest > Drawer 1".
- *
- * Works on anything carrying loc_name with the parent alongside it as
- * loc_parent_name, which is how both the location rows and the item listings
- * read it, so a drawer is never shown without saying which chest it is in.
+ * A location named in full, eg "Tool Chest > Drawer 1". Works on anything
+ * carrying loc_name with loc_parent_name alongside it.
  */
 function locationPath(array $row): string
 {
@@ -357,12 +328,8 @@ function locationName($id): ?string
 }
 
 /**
- * Locations as a value => label map for a <select>, each sub-location named in
- * full and following the one it is inside.
- *
- * The full name rather than an indent, because the searchable dropdowns reorder
- * what they match as you type, which would leave an indented drawer sitting
- * nowhere near its chest.
+ * Each sub-location named in full rather than indented, because the searchable
+ * dropdowns reorder what they match as you type.
  */
 function locationOptions(): array
 {
@@ -376,11 +343,9 @@ function locationOptions(): array
 }
 
 /**
- * The locations $id could be put inside, as a value => label map.
- *
- * Only locations that are not inside something themselves, and never itself.
- * Nothing at all is offered to a location that already holds sub-locations,
- * since moving it would take them a level deeper than anything here reads.
+ * Only locations not inside something themselves, and never $id itself. One
+ * that already holds sub-locations is offered nothing, since moving it would
+ * take them a level deeper than anything here reads.
  */
 function locationParentOptions($id = null): array
 {
@@ -401,7 +366,6 @@ function locationParentOptions($id = null): array
     );
 }
 
-/** How many locations sit inside this one. */
 function locationChildCount($id): int
 {
     return (int)dbValue(
@@ -412,11 +376,9 @@ function locationChildCount($id): int
 }
 
 /**
- * How many items each of these locations holds, counting whatever is in its
- * sub-locations, so the figure matches the listing the name links to.
- *
- * COUNT(DISTINCT) because an item filed in the parent itself would otherwise
- * be counted once per sub-location the join brings back.
+ * Counts sub-locations too, so the figure matches the listing the name links
+ * to. COUNT(DISTINCT) because the join would otherwise count an item filed in
+ * the parent once per sub-location.
  */
 function locationItemCounts(array $ids): array
 {
@@ -438,11 +400,7 @@ function locationItemCounts(array $ids): array
     ), 'total', 'id');
 }
 
-/**
- * The name cell on the locations listing: sub-locations indented under the one
- * they are inside, and named as well, since a search can bring a drawer back
- * without its chest.
- */
+/** Indented and named in full, since a search can return a drawer without its chest. */
 function locationNameCell(array $row): string
 {
     $link = '<a href="index.php?page=items&location_id=' . (int)$row['loc_id'] . '">'
@@ -471,10 +429,7 @@ function locationChildrenCell(array $row): string
         . (int)$row['loc_id'] . '">Add sub-location</a></small>';
 }
 
-/**
- * Why a location cannot be put inside another one, said above the form, since
- * the field it is about has nothing to offer.
- */
+/** Said above the form, since the field it is about has nothing to offer. */
 function locationParentNotice(array $row): void
 {
     $children = locationChildCount($row['loc_id']);
@@ -506,8 +461,6 @@ function taxonomyNameField(array $tax): string
 }
 
 /**
- * The name search a listing was asked for, as [sql fragment, bound params].
- *
  * Columns are qualified with the alias taxonomyRows() gives the table, since a
  * taxonomy that joins to itself has the same column name twice over.
  */
@@ -530,12 +483,7 @@ function taxonomyFrom(array $tax): string
         . (isset($tax['joins']) ? ' ' . $tax['joins'] : '');
 }
 
-/**
- * Rows ordered by name, optionally narrowed to a name search and to one page.
- *
- * The dropdowns and the label sheets pass no slice, because those want every
- * row rather than a screenful.
- */
+/** The dropdowns and label sheets pass no slice; they want every row. */
 function taxonomyRows(array $tax, string $search = '', ?array $slice = null): array
 {
     [$where, $params] = taxonomySearch($tax, $search);
@@ -557,12 +505,7 @@ function taxonomyRowCount(array $tax, string $search = ''): int
     return (int)dbValue('SELECT COUNT(*)' . taxonomyFrom($tax) . $where, $params, 0);
 }
 
-/**
- * Rows as a value => label map, for use in a <select>.
- *
- * A taxonomy whose rows nest builds its own labels, so a sub-location is named
- * in full rather than shown as a bare drawer number; see locationOptions().
- */
+/** A taxonomy whose rows nest builds its own labels; see locationOptions(). */
 function taxonomyOptions(string $key): array
 {
     $tax = taxonomy($key);
@@ -574,12 +517,7 @@ function taxonomyOptions(string $key): array
     return array_column(taxonomyRows($tax), taxonomyNameField($tax), $tax['id']);
 }
 
-/**
- * What one of a taxonomy's own select fields offers, either fixed in the
- * definition or worked out for the row being edited.
- *
- * $id is that row, so a location can be kept from being offered itself.
- */
+/** $id is the row being edited, so a location is not offered itself. */
 function taxonomyFieldOptions(array $field, $id = null): array
 {
     return isset($field['optionsFrom'])
@@ -587,10 +525,7 @@ function taxonomyFieldOptions(array $field, $id = null): array
         : ($field['options'] ?? []);
 }
 
-/**
- * Category rows as a value => label map, optionally only those filing one kind
- * of thing. The item form offers just the kind the item being edited is.
- */
+/** Optionally only the categories filing one kind, which is what the item form offers. */
 function categoryOptions(?string $type = null): array
 {
     $where = ($type === null) ? '' : ' WHERE cat_type = :cat_type';
@@ -637,19 +572,15 @@ function taxonomyName(string $key, $id): ?string
     );
 }
 
-/** How many items still refer to one row. */
 function taxonomyUsageCount(array $tax, $id): int
 {
     return (int)(taxonomyUsageCounts($tax, [$id])[(int)$id] ?? 0);
 }
 
 /**
- * The same for a set of rows at once, as id => count, so a listing does not
- * ask once per line. Ids with nothing against them are left out.
- *
- * A taxonomy whose rows nest counts its own, so a location is credited with
- * whatever is in its sub-locations as well: that is what its listing links to,
- * and what has to be moved before it can be deleted.
+ * The same for a set of rows, as id => count, so a listing does not ask once
+ * per line. A taxonomy whose rows nest counts its own, so a location is
+ * credited with what is in its sub-locations too.
  */
 function taxonomyUsageCounts(array $tax, array $ids): array
 {
@@ -674,16 +605,11 @@ function taxonomyUsageCounts(array $tax, array $ids): array
 }
 
 /**
- * Turn submitted input into the columns to write, or ['errors' => [...]] keyed
- * by the field, when something is wrong with them.
+ * The columns to write, or ['errors' => [...]] keyed by field. $id is the row
+ * being edited, for a field whose choices depend on it.
  *
- * $id is the row being edited, for a field whose choices depend on it: a
- * location cannot be put inside itself, so it is not among the options its own
- * edit form offers.
- *
- * Every save comes through here -- the add page, the edit page, the "+" modal
- * on the item form and the CSV import -- so it is the one place a field has to
- * be checked to be checked everywhere.
+ * Every save comes through here -- both pages, the modal and the CSV import --
+ * so it is the one place a field has to be checked to be checked everywhere.
  */
 function taxonomyValues(array $tax, array $input, $id = null): array
 {
@@ -693,9 +619,8 @@ function taxonomyValues(array $tax, array $input, $id = null): array
         $value = trim((string)($input[$column] ?? ''));
         $nullable = is_array($field) && !empty($field['nullable']);
 
-        // A field offering a set of choices only ever stores one of them,
-        // whatever was posted. One that may be left unset takes nothing as
-        // well, and stores it as nothing rather than as a choice.
+        // A field of choices only ever stores one of them, whatever was
+        // posted; a nullable one also takes nothing.
         if (is_array($field) && ($field['type'] ?? '') === 'select') {
             $options = taxonomyFieldOptions($field, $id);
 
@@ -714,9 +639,8 @@ function taxonomyValues(array $tax, array $input, $id = null): array
         $errors[$nameField] = $tax['label'] . ' name cannot be empty';
     }
 
-    // A url field is checked here rather than left to the browser, which only
-    // asks nicely: type="url" is skipped by anything posting straight to the
-    // page, and the value ends up in an href. See isWebUrl().
+    // type="url" is only a request: anything posting straight to the page
+    // skips it, and the value ends up in an href. See isWebUrl().
     foreach ($tax['fields'] as $column => $field) {
         if (is_array($field) && ($field['type'] ?? '') === 'url'
             && !isWebUrl(($values[$column] === '') ? null : $values[$column])) {
@@ -736,11 +660,7 @@ function taxonomyValues(array $tax, array $input, $id = null): array
     return ['values' => $values];
 }
 
-/**
- * A failed insert in the shape both callers want: 'errors' keyed by field for
- * the page form, and the same thing as one string for the modal, which has
- * only the one place to put it.
- */
+/** 'errors' keyed by field for the page form, and as one string for the modal. */
 function taxonomyInsertFailure(array $errors): array
 {
     return ['success' => false, 'errors' => $errors, 'error' => implode(' ', $errors)];
@@ -765,27 +685,24 @@ function taxonomyInsert(string $key, array $input): array
             $result['values']
         );
     } catch (\PDOException $e) {
-        // Most often a duplicate name, which is the field worth pointing at.
-        return taxonomyInsertFailure([taxonomyNameField($tax) => $e->getMessage()]);
+        // The driver's message carries the SQL and the value that broke it,
+        // and a form message is drawn as HTML.
+        error_log('[inventory] ' . $e->getMessage());
+
+        return taxonomyInsertFailure([taxonomyNameField($tax) => config('debug')
+            ? escapeHtml($e->getMessage())
+            : 'That ' . strtolower($tax['label']) . ' could not be saved.']);
     }
 
     return ['success' => true, 'newId' => $newId];
 }
 
-/**
- * The <p><label><input></p> blocks for a taxonomy's fields.
- *
- * $id is the row being edited, or null on an add form, for a field whose
- * choices depend on which row it belongs to.
- */
+/** $id is the row being edited, or null on an add form. */
 function taxonomyFields(array $tax, array $values = [], array $locked = [], $id = null): void
 {
     template('taxonomy/fields', compact('tax', 'values', 'locked', 'id'));
 }
 
-/**
- * Add/edit form: fields plus a save button.
- */
 function taxonomyForm(
     array $tax,
     string $action,
@@ -798,19 +715,15 @@ function taxonomyForm(
 }
 
 /**
- * The form loaded into the "add new" modal on the item pages.
- *
  * $locked pins a field to one value: a category added from the item form has
- * to file the kind of thing that item is, so there is nothing to choose.
+ * to file the kind that item is, so there is nothing to choose.
  */
 function taxonomyModalForm(string $key, array $locked = []): string
 {
     return templateHtml('taxonomy/modal-form', ['tax' => taxonomy($key), 'locked' => $locked]);
 }
 
-/**
- * Listing page: every row, searchable, linking through to the filtered items.
- */
+/** Listing page: every row, searchable, linking through to the filtered items. */
 function taxonomyIndexPage(string $key): void
 {
     $tax = taxonomy($key);
@@ -837,16 +750,12 @@ function taxonomyIndexPage(string $key): void
     ]);
 }
 
-/**
- * Add page.
- */
 function taxonomyAddPage(string $key): void
 {
     $tax = taxonomy($key);
     $formMessage = takeFlash();
 
-    // A field named in the query string starts filled in, which is how "Add
-    // sub-location" arrives with the location it goes inside already chosen.
+    // How "Add sub-location" arrives with its parent already chosen.
     $values = [];
 
     foreach (array_keys($tax['fields']) as $column) {
@@ -874,9 +783,7 @@ function taxonomyAddPage(string $key): void
     template('page/taxonomy-add', compact('tax', 'values', 'formMessage'));
 }
 
-/**
- * Edit page, including deletion.
- */
+/** Edit page, including deletion. */
 function taxonomyEditPage(string $key): void
 {
     $tax = taxonomy($key);
@@ -885,8 +792,7 @@ function taxonomyEditPage(string $key): void
     $editUrl = 'index.php?page=' . $tax['routes']['edit'] . '&' . $tax['param'] . '=' . urlencode((string)$editId);
     $indexUrl = 'index.php?page=' . $tax['routes']['index'];
 
-    // What a rejected save was trying to do, so the form comes back holding it
-    // rather than the stored row, the same as the add page does.
+    // A rejected save comes back holding what it tried, not the stored row.
     $posted = null;
 
     if (isset($_POST['edit_' . $tax['submit'] . '_submit'])) {
@@ -904,8 +810,7 @@ function taxonomyEditPage(string $key): void
             $posted = $_POST;
         } else {
             dbTransaction(function () use ($tax, $result, $editId) {
-                // A row that decides how other rows behave puts those right
-                // itself, first, while it can still see what it used to say.
+                // Runs first, while it can still see what it used to say.
                 if (isset($tax['onSave'])) {
                     $tax['onSave']($editId, $result['values']);
                 }
@@ -957,8 +862,7 @@ function taxonomyEditPage(string $key): void
         'indexUrl'    => $indexUrl,
         'editId'      => $editId,
         'inUse'       => $row ? taxonomyUsageCount($tax, $editId) : 0,
-        // Something other than the items filed under it standing in the way of
-        // deleting it, such as the sub-locations inside a location.
+        // Something other than the items filed under it, eg sub-locations.
         'blocker'     => ($row && isset($tax['deleteBlocker'])) ? $tax['deleteBlocker']($editId) : null,
     ]);
 }

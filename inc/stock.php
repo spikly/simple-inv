@@ -1,18 +1,12 @@
 <?php
 
 /**
- * The record of how a part's quantity got to be what it is.
- *
- * Every path that changes inv_items.item_quantity writes a row here saying
- * what changed, what it became and why, so a figure that looks wrong can be
- * traced back. Nothing reads a quantity out of it; the item still holds the
- * number. Tools have no stock, so nothing here applies to them.
+ * How a part's quantity got to be what it is. Every path that changes
+ * item_quantity writes a row here, so a figure that looks wrong can be traced
+ * back. Nothing reads a quantity out of it; the item still holds the number.
  */
 
-/**
- * Why a movement happened. The key is what is stored, so leave the keys alone
- * once rows exist; the label is only what the history table shows.
- */
+/** The key is stored, so leave keys alone once rows exist; the label is display. */
 const STOCK_MOVEMENT_REASONS = [
     'opening'     => 'Held when the log began',
     'created'     => 'Added to the inventory',
@@ -25,11 +19,8 @@ const STOCK_MOVEMENT_REASONS = [
 ];
 
 /**
- * Write down a change that has already been made. A change of nothing is not
- * one, and is not recorded.
- *
- * The quantity is read back rather than worked out, so what is recorded is
- * what the item actually holds now even where the column rounded it.
+ * Records a change already made; a change of nothing is not recorded. The
+ * quantity is read back rather than worked out, so it matches the column.
  */
 function recordStockMovement($item_id, float $change, string $reason, ?string $note = null): void
 {
@@ -56,13 +47,9 @@ function recordStockMovement($item_id, float $change, string $reason, ?string $n
 }
 
 /**
- * Take a delivery in, or write stock off, by changing what is held rather than
- * setting it. Buying five more of something is a change of five, which is what
- * the edit page cannot say.
- *
- * What is held decides what the assemblies can reserve, so their claims are
- * worked out again around the new figure: stock arriving reaches the parts
- * that were waiting on it, oldest first, and stock leaving is given back up.
+ * Change what is held rather than set it: buying five more is a change of
+ * five, which the edit page cannot say. Assembly claims are worked out again
+ * around the new figure.
  */
 function adjustItemStock($item_id, int $delta, ?string $note = null): void
 {
@@ -97,10 +84,7 @@ function fetchStockMovements($item_id, ?array $slice = null): array
     );
 }
 
-/**
- * A change, signed and coloured, so stock coming in reads differently from
- * stock going out at a glance.
- */
+/** Signed and coloured, so stock in reads differently from stock out. */
 function stockChangeCell($change, string $unit): string
 {
     $change = (float)$change;
@@ -110,7 +94,6 @@ function stockChangeCell($change, string $unit): string
         . ($change > 0 ? '+' : '&minus;') . formatQuantity(abs($change)) . $unit . '</span>';
 }
 
-/** The history table shown on a part's page. */
 function renderStockMovements(array $movements, array $item): void
 {
     template('stock/movements', compact('movements', 'item'));

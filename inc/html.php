@@ -1,50 +1,35 @@
 <?php
 
 /**
- * The shared markup kit.
- *
- * Nothing here writes HTML itself: each function works out what a template
- * needs and hands it over. The markup is in templates/, see inc/template.php.
+ * The shared markup kit. Nothing here writes HTML itself: each function works
+ * out what a template needs and hands it over.
  */
 
-/**
- * Heading row with an optional set of nav links.
- *
- * $title accepts HTML so callers can add count badges; escape any user data.
- * $links is a map of label => href, $extraHtml is appended inside the nav.
- */
+/** $title and $extraHtml are raw HTML; escape any user data first. */
 function headerRow(string $class, string $title, array $links = [], string $extraHtml = ''): void
 {
     template('header-row', compact('class', 'title', 'links', 'extraHtml'));
 }
 
-/** Heading at the top of a page. */
 function pageHeader(string $title, array $links = [], string $extraHtml = ''): void
 {
     headerRow('flex-nav', $title, $links, $extraHtml);
 }
 
-/** Heading that breaks a page into sections. */
 function sectionHeader(string $title, array $links = [], string $extraHtml = ''): void
 {
     headerRow('flex-nav extra-padding', $title, $links, $extraHtml);
 }
 
-/**
- * Count badge shown alongside a listing heading.
- */
 function countBadge(int $count, string $suffix = ''): string
 {
     return ' <span><span>' . $count . '</span>' . $suffix . '</span>';
 }
 
 /**
- * The messages waiting against each named form field, so the controls can be
- * marked up as wrong as they are drawn.
- *
- * formMessage() fills this in from the errors it renders, which is why it is
- * called at the top of a form rather than below the fields it applies to.
- * Passing an array replaces what is held; passing nothing reads it back.
+ * The messages waiting against each named field. formMessage() fills this in
+ * from the errors it renders, which is why it is called at the top of a form.
+ * An array replaces what is held; nothing reads it back.
  */
 function formFieldErrors(?array $errors = null): array
 {
@@ -63,11 +48,7 @@ function fieldError(string $name): string
     return formFieldErrors()[$name] ?? '';
 }
 
-/**
- * Attributes marking a control as the one at fault, so the highlight the form
- * row draws is announced rather than only seen. The id is the one the row
- * gives the message it puts below the control.
- */
+/** Marks a control as at fault, so the highlight is announced, not only seen. */
 function invalidAttributes(string $name): string
 {
     return fieldError($name)
@@ -76,8 +57,6 @@ function invalidAttributes(string $name): string
 }
 
 /**
- * Render a form status message created by successMessage()/errorMessage().
- *
  * Every error is listed, not just the first, and the ones naming a field are
  * handed to formFieldErrors() so the field itself is marked too.
  */
@@ -98,23 +77,17 @@ function formMessage($formMessage): void
     template('form/message', compact('messages', 'status'));
 }
 
-/**
- * One control in a filter bar.
- */
 function filterField(string $id, string $label, string $control, string $class = ''): void
 {
     template('filter/field', compact('id', 'label', 'control', 'class'));
 }
 
-/** Submit and clear buttons that close a filter bar. */
 function filterActions(string $page, bool $hasFilters, string $label = 'Filter'): void
 {
     template('filter/actions', compact('page', 'hasFilters', 'label'));
 }
 
-/**
- * Search box on its own, for listings that have nothing else to filter by.
- */
+/** Search box on its own, for listings that have nothing else to filter by. */
 function renderSearchBar(string $page, string $placeholder): void
 {
     template('filter/search-bar', [
@@ -125,22 +98,15 @@ function renderSearchBar(string $page, string $placeholder): void
 }
 
 /**
- * Table with a header row, wrapped in its scrolling container.
- *
- * $rows receives each item and returns the cells for one row as an array of
- * HTML strings. Headings are clickable to sort, see assets/js/app.js.
- *
- * $columnClasses maps a column's position to a class put on both its heading
- * and its cells, which is how a column gets sized differently from the rest.
+ * $rows takes one item and returns its cells as HTML strings. $columnClasses
+ * maps a column position to a class put on both its heading and its cells.
  */
 function renderTable(array $headings, array $items, callable $rows, array $columnClasses = []): void
 {
     template('table', compact('headings', 'items', 'rows', 'columnClasses'));
 }
 
-/**
- * Heading plus a plain "this cannot be undone" delete form.
- */
+/** Heading plus a plain "this cannot be undone" delete form. */
 function deleteSection(
     string $heading,
     string $submitName,
@@ -156,17 +122,13 @@ function deleteSection(
     ]);
 }
 
-/**
- * Delete form guarded by a browser confirmation dialog.
- */
+/** Delete form guarded by a browser confirmation dialog. */
 function confirmDeleteForm(string $submitName, string $buttonLabel, string $confirmText): void
 {
     template('form/confirm-delete', compact('submitName', 'buttonLabel', 'confirmText'));
 }
 
-/**
- * <option> markup for a map of value => label.
- */
+/** <option> markup for a map of value => label. */
 function selectOptions(array $options, $selected): string
 {
     $chosen = array_map('strval', is_array($selected) ? $selected : [$selected]);
@@ -181,27 +143,20 @@ function selectOptions(array $options, $selected): string
         }
 
         $isSelected = in_array((string)$value, $chosen, true) ? ' selected' : '';
-        $html .= '<option value="' . $value . '"' . $isSelected . '>' . escapeHtml($label) . '</option>';
+        $html .= '<option value="' . escapeHtml((string)$value) . '"' . $isSelected . '>'
+            . escapeHtml($label) . '</option>';
     }
 
     return $html;
 }
 
-/**
- * A name read through a LEFT JOIN. Rows can outlive the manufacturer or
- * location they point at, so a missing one is said rather than left blank.
- */
+/** Rows outlive what they point at, so a missing name is said, not left blank. */
 function nameOrDeleted($name): string
 {
     return isset($name) ? escapeHtml($name) : '<i>Deleted</i>';
 }
 
-/**
- * Where an item is kept, with the location it sits inside named underneath, so
- * a drawer is never shown without saying which chest it is in.
- *
- * Reads loc_name and loc_parent_name, which every item query brings back.
- */
+/** Reads loc_name and loc_parent_name, so a drawer names its chest. */
 function locationCell(array $row): string
 {
     return nameOrDeleted($row['loc_name'] ?? null)
@@ -210,27 +165,21 @@ function locationCell(array $row): string
             : '');
 }
 
-/**
- * Notes/description block with links made clickable.
- */
+/** Notes/description block with links made clickable. */
 function notesBox($text): void
 {
     template('notes-box', ['text' => nl2p(text2link(escapeHtml($text)))]);
 }
 
-/**
- * One tile inside an .item-property-container. $body is raw HTML.
- */
+/** One tile inside an .item-property-container. $body is raw HTML. */
 function itemProperty(string $heading, string $body, string $class = ''): void
 {
     template('item-property', compact('heading', 'body', 'class'));
 }
 
 /**
- * Labelled form control. $control is raw HTML.
- *
- * $hasControl says whether there is something focusable for the label to point
- * at; see templates/form/row.phtml for why that matters.
+ * $control is raw HTML. $hasControl says whether there is something focusable
+ * for the label to point at; see templates/form/row.phtml.
  */
 function formRow(string $name, string $label, string $control, bool $hasControl = true): void
 {
@@ -243,9 +192,7 @@ function formRow(string $name, string $label, string $control, bool $hasControl 
     ]);
 }
 
-/**
- * <input> row. $attributes is raw HTML appended to the tag, eg ' required'.
- */
+/** <input> row. $attributes is raw HTML appended to the tag, eg ' required'. */
 function textField(string $name, string $label, $value = '', string $type = 'text', string $attributes = ''): void
 {
     formRow($name, $label, templateHtml('form/input', compact('name', 'type', 'value', 'attributes')));
@@ -256,9 +203,7 @@ function textareaField(string $name, string $label, $value = ''): void
     formRow($name, $label, templateHtml('form/textarea', compact('name', 'value')));
 }
 
-/**
- * <select> row. $firstOption is raw HTML for an optional leading placeholder.
- */
+/** <select> row. $firstOption is raw HTML for an optional leading placeholder. */
 function selectField(
     string $name,
     string $label,
@@ -278,9 +223,7 @@ function submitButton(string $name, string $label = 'Save'): void
     template('form/submit', compact('name', 'label'));
 }
 
-/**
- * Quantities are stored as DECIMAL(12,3); show them without trailing zeros.
- */
+/** Quantities are stored as DECIMAL(12,3); show them without trailing zeros. */
 function formatQuantity($value): string
 {
     $number = (float)$value;
@@ -288,9 +231,6 @@ function formatQuantity($value): string
     return rtrim(rtrim(number_format($number, 3, '.', ''), '0'), '.') ?: '0';
 }
 
-/**
- * A file size in the units a person would say it in.
- */
 function formatFileSize($bytes): string
 {
     $bytes = max(0, (int)$bytes);
@@ -308,22 +248,17 @@ function formatFileSize($bytes): string
         $unit++;
     }
 
-    // One decimal place below 10, so 1.4MB keeps its detail and 240KB is not
-    // given precision it does not have.
+    // One decimal below 10, so 1.4MB keeps its detail and 240KB is not padded.
     return round($size, $size < 10 ? 1 : 0) . $units[$unit];
 }
 
-/**
- * The documents kept against an item, with the form for adding more.
- */
+/** The documents kept against an item, with the form for adding more. */
 function renderItemFiles(array $files, $itemId): void
 {
     template('item/files', ['files' => $files, 'itemId' => $itemId]);
 }
 
-/**
- * Item photo thumbnail, or nothing when the item has no photo.
- */
+/** Item photo thumbnail, or nothing when the item has no photo. */
 function itemThumb(?string $image, string $alt = '', string $class = 'item-thumb'): string
 {
     $url = itemImageUrl($image);
@@ -333,9 +268,7 @@ function itemThumb(?string $image, string $alt = '', string $class = 'item-thumb
         : '';
 }
 
-/**
- * Free stock shown with a colour that reflects how tight it is.
- */
+/** Free stock shown with a colour that reflects how tight it is. */
 function stockCell(array $item): string
 {
     $free = (float)$item['item_free_count'];
@@ -353,9 +286,6 @@ function stockCell(array $item): string
         . escapeHtml($item['unit_symbol'] ?? '') . '</span>';
 }
 
-/**
- * Filter bar for the items listing.
- */
 function renderItemFilters(array $applied, ?string $kind = null, string $page = 'items'): void
 {
     $search = (string)queryParam('q');

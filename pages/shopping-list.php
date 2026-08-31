@@ -4,12 +4,9 @@ $projectId = queryId('project_id');
 $project = fetchProject($projectId);
 
 /*
- * still_to_allocate is what the project has not yet reserved, counting what it
- * has already installed as met. Anything that cannot come out of free stock
- * has to be bought.
- *
- * The rows are grouped by supplier, so the list can be worked through an order
- * at a time.
+ * still_to_allocate is what the project has not yet reserved, counting what is
+ * installed as met; anything free stock cannot cover has to be bought. Rows
+ * are grouped by supplier, so the list is worked through an order at a time.
  */
 $bySupplier = [];
 $toBuyTotal = 0;

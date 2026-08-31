@@ -1,14 +1,8 @@
 <?php
 /**
- * A labelled control.
- *
- * A field the last submission was rejected over is marked, and the reason is
- * repeated below the control so it is answered where it is fixed rather than
- * only in the summary at the top of the form.
- *
- * The row is a <div> rather than a <p> because some controls are built from
- * block elements, and a browser closes a paragraph as soon as it meets one:
- * the row would end where its control began, taking the mark with it.
+ * A <div> rather than a <p>: some controls are built from block elements, and
+ * a browser closes a paragraph as soon as it meets one, which would end the
+ * row where its control began and take the invalid mark with it.
  *
  * @var string $name       Field name, also the control's id.
  * @var string $label      Label HTML.

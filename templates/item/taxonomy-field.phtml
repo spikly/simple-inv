@@ -1,11 +1,8 @@
 <?php
 /**
- * One taxonomy dropdown on the item form, with the "+" button that opens the
- * add-new modal handled by assets/js/app.js.
- *
- * The kind of item is put on both controls, because a category added from here
- * has to file that kind and the refreshed options have to be narrowed to it;
- * assets/js/app.js reads it back off them and inc/ajax.php acts on it.
+ * One dropdown plus the "+" button opening the add-new modal. The kind of item
+ * is put on both controls, because a category added from here has to file that
+ * kind; assets/js/app.js reads it back off them and inc/ajax.php acts on it.
  *
  * @var string $key      Taxonomy key, eg 'brand'.
  * @var array  $tax      Its definition, for the label.

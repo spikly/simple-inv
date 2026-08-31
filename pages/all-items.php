@@ -1,5 +1,4 @@
 <?php
 
-// Parts and tools together, reached by drilling into a location, manufacturer
-// or supplier that holds both.
+// Parts and tools together, reached by drilling into something holding both.
 itemsIndexPage(null);

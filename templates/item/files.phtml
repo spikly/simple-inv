@@ -13,8 +13,7 @@ if ($files):
         ['Name', 'Description', 'Type', 'Size', 'Added', ''],
         $files,
         static function ($file) use ($itemId, $formId) {
-            // A picture or a PDF opens in a tab of its own; anything else is
-            // sent as a download, so it stays on this page. See pages/download-file.php.
+            // A picture or a PDF opens in a tab; anything else downloads.
             $inline = itemFileIsInline($file['file_stored_name']);
             $id = (int)$file['file_id'];
 
@@ -49,7 +48,8 @@ else: ?>
 formRow(
     'item_files',
     'Add Documents <small class="field-hint">' . escapeHtml(itemFileTypeList())
-        . '. Up to 16MB each, and you can choose more than one at a time.</small>',
+        . '. Up to ' . formatFileSize(ITEM_FILE_MAX_BYTES)
+        . ' each, and you can choose more than one at a time.</small>',
     '<input type="file" name="item_files[]" id="item_files" multiple'
         . ' accept="' . escapeHtml('.' . implode(',.', array_keys(ITEM_FILE_TYPES))) . '"'
         . invalidAttributes('item_files') . '>'

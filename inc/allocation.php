@@ -1,24 +1,17 @@
 <?php
 
 /**
- * Stock moving between the store and project assemblies. Parts only; tools
- * have no stock to move, see inc/tools.php.
+ * Stock moving between the store and project assemblies. Parts only.
  *
  * A part on an assembly reserves what it still needs out of its item's free
- * stock, so anything set aside for a project stops counting as available
- * elsewhere. Marking some of it installed takes those units out of stock for
- * good and releases the reservation holding them.
- *
- * Reservations are worked out here rather than typed in, which is what keeps
- * the item pages, the shopping list and the assemblies telling one story.
+ * stock; installing takes those units out of stock for good. Reservations are
+ * worked out here rather than typed in, which is what keeps the item pages,
+ * the shopping list and the assemblies telling one story.
  */
 
 /**
- * Stock a part could still claim: what is held, less what every other part has
- * already reserved.
- *
- * $exceptAssemblyItemId leaves one part's own reservation in the figure, so a
- * part can be recalculated without competing against itself.
+ * What is held, less what every other part has reserved.
+ * $exceptAssemblyItemId keeps a part from competing against itself.
  */
 function itemStockAvailable($item_id, $exceptAssemblyItemId = 0): float
 {
@@ -33,11 +26,7 @@ function itemStockAvailable($item_id, $exceptAssemblyItemId = 0): float
     );
 }
 
-/**
- * Reserve stock for one part. It claims what is still outstanding, which is
- * the required quantity less whatever has already been installed, or as much
- * of that as the item can spare. Returns the quantity now reserved.
- */
+/** Claims what is outstanding, or as much as the item can spare. */
 function allocateAssemblyItem($assembly_item_id): float
 {
     $part = dbRow(
@@ -63,11 +52,8 @@ function allocateAssemblyItem($assembly_item_id): float
 }
 
 /**
- * Share an item's free stock over every part that wants it, oldest part first.
- *
- * Run whenever the stock or the demand on it changes, so a delivery reaches
- * the assemblies that were left short and a part leaving an assembly hands its
- * units to the next one waiting.
+ * Share free stock over every part that wants it, oldest first. Run whenever
+ * stock or demand changes, so a delivery reaches the assemblies left short.
  */
 function reallocateItem($item_id): void
 {
@@ -81,8 +67,7 @@ function reallocateItem($item_id): void
         return;
     }
 
-    // Clear the reservations first so the order above decides who gets the
-    // stock, rather than whichever part happened to claim it earliest.
+    // Cleared first, so the order above decides who gets the stock.
     dbRun('UPDATE inv_assembly_items SET quantity_allocated = 0 WHERE item_id = :item_id', [
         'item_id' => (int)$item_id,
     ]);
@@ -100,10 +85,7 @@ function reallocateItems(array $item_ids): void
     }
 }
 
-/**
- * Take installed units out of an item's stock, or put them back when the
- * installed figure is corrected downwards.
- */
+/** Negative $quantity puts units back, for an installed figure corrected down. */
 function consumeItemStock($item_id, float $quantity): void
 {
     if ($quantity == 0.0) {
@@ -117,17 +99,13 @@ function consumeItemStock($item_id, float $quantity): void
 }
 
 /**
- * Settle the stock behind one part after its quantities have been written:
- * install whatever has been installed since the last save, then reserve what
- * is still outstanding across every part using that item.
- *
- * Returns the quantity reserved and how far short of the outstanding amount
- * that leaves the part.
+ * Install what has been installed since the last save, then reserve what is
+ * outstanding across every part using that item. Returns the quantity
+ * reserved and how far short of the outstanding amount that leaves it.
  */
 function settleAssemblyItemStock($assembly_item_id, float $installedDelta): array
 {
-    // The assembly's name comes along so the stock history can say where the
-    // units went, rather than only that they went.
+    // The assembly's name so the history can say where the units went.
     $part = dbRow(
         'SELECT ai.item_id, ai.quantity_required, ai.quantity_installed, a.assembly_name
          FROM inv_assembly_items ai

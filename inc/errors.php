@@ -1,9 +1,8 @@
 <?php
 
 /**
- * Turn uncaught errors into a readable page instead of a stack trace that
- * leaks file paths and SQL. Details always go to the PHP error log; they are
- * only shown on screen when 'debug' => true in user.config.php.
+ * A readable page instead of a stack trace leaking paths and SQL. Details
+ * always go to the error log, and on screen only when debug is true.
  */
 function registerErrorHandlers(): void
 {

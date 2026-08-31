@@ -1,11 +1,8 @@
 <?php
 
 /**
- * Taking a delivery in, or writing stock off.
- *
- * The edit page sets what is held to a figure. This changes it by one, because
- * buying five more of something is a change of five and not a sum to work out
- * in your head first.
+ * Taking a delivery in, or writing stock off. The edit page sets what is held;
+ * this changes it by an amount, so buying five more is a change of five.
  */
 
 $itemId = queryParam('item_id');
@@ -21,8 +18,7 @@ if ($item && !isTool($item) && (isset($_POST['add_stock_submit']) || isset($_POS
     $amount = trim((string)($_POST['stock_amount'] ?? ''));
     $note = trim((string)($_POST['stock_note'] ?? ''));
 
-    // The buttons say which way it goes, so the amount is always typed in as a
-    // plain number and never needs a minus sign.
+    // The buttons say which way it goes, so the amount is always positive.
     $delta = ctype_digit($amount) ? ((int)$amount * ($adding ? 1 : -1)) : 0;
     $errors = validateStockChange($item, $amount, $delta);
 

@@ -6,8 +6,7 @@ $formMessage = takeFlash();
 $values = $item ? itemFormValues($item) : [];
 $type = $item ? itemTypeOf($item) : 'part';
 
-// Switching an item between a part and a tool means switching its categories
-// too, so the form is redrawn for the other kind with nothing chosen.
+// Switching kind means switching categories, so the form is redrawn empty.
 if ($item && queryParam('kind') !== false && !isset($_POST['edit_item_submit'])) {
     $wanted = itemType(queryParam('kind'), $type);
     $blocked = itemKindChangeError($item, $wanted);
@@ -25,14 +24,12 @@ if ($item && isset($_POST['edit_item_submit'])) {
     $values = $_POST;
     $values['item_type'] = $type;
 
-    // A file input submits nothing when nothing was chosen, so the photo the
-    // item already has is put back for the form to draw again.
+    // A file input submits nothing when nothing was chosen.
     $values['item_image'] = $item['item_image'];
 
     $blocked = itemKindChangeError($item, $type);
 
-    // Becoming the other kind is about the item rather than any one field, so
-    // that message goes in without one, ahead of the rest.
+    // About the item rather than any one field, so it goes in without one.
     $errors = ($blocked !== null ? [$blocked] : []) + validateItem($_POST, $type);
     $photo = ['name' => $item['item_image']];
 
@@ -72,11 +69,9 @@ if ($item && isset($_POST['edit_item_submit'])) {
 
             saveItemCategories($editId, itemCategoryIds($_POST));
 
-            // A change in quantity is shared out again, so stock added here
-            // reaches the assemblies it was short for. A tool has none.
+            // Shared out again, so stock added reaches the assemblies short of it.
             if ($type === 'part') {
-                // This form sets the quantity rather than changing it, so what
-                // the history wants is the difference it made.
+                // This form sets the quantity, so the history wants the difference.
                 recordStockMovement($editId, (float)$_POST['item_quantity'] - $heldBefore, 'edited');
                 reallocateItem($editId);
             }

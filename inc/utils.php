@@ -33,12 +33,9 @@ function text2link($string)
 }
 
 /**
- * Whether an address is one that can safely be put in an href. Null passes, so
- * an optional field left empty is not an error.
- *
- * The scheme is checked as well as the shape: a browser runs a javascript:
- * address when the link is clicked, and escaping does nothing about that, so
- * anything but a link to a page is turned away rather than stored.
+ * Whether an address can safely go in an href; null passes. The scheme is
+ * checked as well as the shape, since a browser runs a javascript: address
+ * when the link is clicked and escaping does nothing about that.
  */
 function isWebUrl(?string $url): bool
 {
@@ -72,25 +69,18 @@ function utilisationBg($utilisation = 0)
     return 'green';
 }
 
-/**
- * A GET value, or false when it was not supplied.
- */
+/** A GET value, or false when it was not supplied. */
 function queryParam(string $name)
 {
     return $_GET[$name] ?? false;
 }
 
-/**
- * A GET value cast to an integer.
- */
 function queryId(string $name): int
 {
     return (int)($_GET[$name] ?? 0);
 }
 
-/**
- * A trimmed value from a submitted form, or null when it is blank.
- */
+/** A trimmed value from a submitted form, or null when it is blank. */
 function textOrNull(array $source, string $name)
 {
     $value = trim($source[$name] ?? '');
@@ -98,10 +88,7 @@ function textOrNull(array $source, string $name)
     return ($value === '') ? null : $value;
 }
 
-/**
- * A stored date or timestamp as something readable. Anything unparseable is
- * handed back untouched rather than turned into 1970.
- */
+/** Anything unparseable is handed back untouched rather than turned into 1970. */
 function formatDate($value, string $format = 'j M Y'): string
 {
     $value = trim((string)$value);
@@ -116,33 +103,22 @@ function successMessage(string $message): array
 }
 
 /**
- * A form result carrying every problem with a submission rather than only the
- * first, so a form can be put right in one go instead of once per attempt.
- *
- * $messages is a list, or a map keyed by the form field each message belongs
- * to. A field name is what lets formRow() highlight the control at fault, so
- * key by it whenever there is one to blame; anything about the submission as a
- * whole goes in without a key. A lone string is taken as one such message.
+ * Every problem with a submission, not only the first. $messages is a list, or
+ * a map keyed by field: a key is what lets formRow() highlight the control at
+ * fault, so key by it whenever there is one to blame.
  */
 function errorMessage($messages): array
 {
     return ['status' => 'error', 'messages' => is_array($messages) ? $messages : [$messages]];
 }
 
-/**
- * A string safe to drop into JavaScript inside an HTML attribute, quotes and
- * all. Used for the confirm() prompts on delete buttons.
- */
+/** Safe inside a JavaScript string in an HTML attribute, quotes and all. */
 function jsString(string $text): string
 {
     return escapeHtml(json_encode($text, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 }
 
-/**
- * Absolute URL of the folder the app is served from, used for QR labels.
- * Set 'site' => ['url' => '...'] in user.config.php when the guessed value is
- * wrong, for example behind a proxy.
- */
+/** Set site.url in user.config.php when the guess is wrong, eg behind a proxy. */
 function baseUrl(): string
 {
     $configured = config('site.url');
@@ -157,10 +133,7 @@ function baseUrl(): string
     return ($secure ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . $folder . '/';
 }
 
-/**
- * The cache buster on an asset's address, so a changed file is fetched again
- * rather than served from the browser's copy. $path is relative to assets/.
- */
+/** Cache buster, so a changed file is fetched again. $path is relative to assets/. */
 function assetVersion(string $path): string
 {
     $file = __DIR__ . '/../assets/' . $path;
