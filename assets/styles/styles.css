@@ -1321,6 +1321,12 @@ table td.col-thumb .item-thumb {
     max-width: none;
 }
 
+table th.col-location,
+table td.col-location {
+    max-width: 300px;
+    white-space: normal;
+}
+
 .item-thumb {
     display: block;
     width: 48px;
