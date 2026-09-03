@@ -1,0 +1,17 @@
+<?php
+/**
+ * The picture beside a document's name: the document itself scaled down when
+ * it is an image, a plain sheet of paper when it is anything else.
+ *
+ * @var array  $file   One row from fetchItemFiles().
+ * @var string $href   Where the document is served from.
+ * @var bool   $inline Whether it opens in a tab rather than downloading.
+ */
+
+$thumb = itemFileThumbUrl((string)$file['file_stored_name']);
+?>
+<a href="<?php echo $href; ?>" class="file-thumb"<?php
+    echo $inline ? ' target="_blank"' : '';
+?> aria-hidden="true" tabindex="-1"><?php if ($thumb): ?><img src="<?php
+    echo $thumb;
+?>" alt="" loading="lazy"><?php else: ?><svg viewBox="0 0 24 24" width="34" height="34" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 2.5H7A1.5 1.5 0 0 0 5.5 4v16A1.5 1.5 0 0 0 7 21.5h10a1.5 1.5 0 0 0 1.5-1.5V7.5z"/><path d="M13.5 2.5v5h5"/><path d="M8.5 12.5h7M8.5 16h7"/></svg><?php endif; ?></a>

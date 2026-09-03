@@ -22,6 +22,7 @@ Very much work in progress. Designed for an average sized home workshop and almo
 * Attach a photo to an item, so you can see the thing you are looking for
 * Keep spec sheets, manuals, drawings and extra pictures against an item as documents, alongside that photo
 * Say what each of those documents is, so a file called `DS_74HC595_R3.pdf` is findable as a datasheet
+* See a thumbnail of a document that is a picture, and a document icon for one that is not, either of which opens the file
 * Put an item in more than one category
 * Manufacturer, supplier, category, location and status names are unique, so nothing gets filed under two spellings of the same thing
 * Record a colour and a link to the product page an item came from, on parts and tools alike
@@ -64,8 +65,9 @@ Older/newer versions may also and probably will work fine but are untested.
 4) Enter your database details into the newly created `user.config.php`
 
 5) Make `assets/uploads/` writable by the webserver if you want to attach photos
-and documents. Photos are kept in `items/` and documents in `files/`, both of
-which are created on the first upload:
+and documents. Photos are kept in `items/`, documents in `files/` and the
+thumbnails of documents that are pictures in `files/thumbs/`, all of which are
+created when they are first needed:
 
 ```
 chmod -R 775 assets/uploads

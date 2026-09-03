@@ -10,15 +10,17 @@ $formId = 'item-files-form';
 
 if ($files):
     renderTable(
-        ['Name', 'Description', 'Type', 'Size', 'Added', ''],
+        ['', 'Name', 'Description', 'Type', 'Size', 'Added', ''],
         $files,
         static function ($file) use ($itemId, $formId) {
             // A picture or a PDF opens in a tab; anything else downloads.
             $inline = itemFileIsInline($file['file_stored_name']);
             $id = (int)$file['file_id'];
+            $href = 'index.php?page=download-file&file_id=' . $id;
 
             return [
-                '<a href="index.php?page=download-file&file_id=' . $id . '"'
+                templateHtml('item/file-thumb', compact('file', 'href', 'inline')),
+                '<a href="' . $href . '"'
                     . ($inline ? ' target="_blank"' : '') . '>'
                     . escapeHtml($file['file_name']) . '</a>',
                 '<input type="text" name="file_description[' . $id . ']"'
@@ -26,7 +28,7 @@ if ($files):
                     . ' form="' . $formId . '" maxlength="255"'
                     . ' aria-label="What ' . escapeHtml($file['file_name']) . ' is"'
                     . ' placeholder="What is it?">',
-                escapeHtml(strtoupper((string)pathinfo($file['file_stored_name'], PATHINFO_EXTENSION))),
+                escapeHtml(strtoupper(itemFileExtension($file['file_stored_name']))),
                 formatFileSize($file['file_size']),
                 escapeHtml(formatDate($file['file_uploaded_at'])),
                 templateHtml('item/file-delete', [
@@ -36,7 +38,7 @@ if ($files):
                 ]),
             ];
         },
-        [1 => 'table-description', 5 => 'table-action']
+        [0 => 'col-file-thumb', 2 => 'table-description', 6 => 'table-action']
     );
 else: ?>
 <p>Nothing is kept against this item yet.</p>

@@ -1394,6 +1394,43 @@ form label small.field-hint {
     font-weight: 400;
 }
 
+/* The thumbnail column, kept to the width of one thumbnail rather than given a
+   share of the leftover space. */
+table th.col-file-thumb,
+table td.col-file-thumb {
+    width: 1%;
+    padding-right: 0;
+}
+
+/* A fixed square whatever it holds, so a tall picture, a wide one and an icon
+   all leave the names beside them lining up. */
+.file-thumb {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    color: var(--color-text-muted);
+}
+
+.file-thumb img {
+    /* The stored copy is made at 50px, so this is its own size, not a scaling
+       down of something larger. */
+    max-width: 50px;
+    max-height: 50px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    background: var(--color-surface-muted);
+}
+
+.file-thumb:hover {
+    color: var(--color-primary);
+}
+
+.file-thumb:hover img {
+    border-color: var(--color-border-strong);
+}
+
 /* A column holding nothing but a button, kept to the width of one. */
 table td.table-action,
 table th.table-action {

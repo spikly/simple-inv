@@ -82,13 +82,6 @@ function storeItemImage(array $upload): array
  */
 function shrinkImage(string $path, int $type, int $width, int $height): void
 {
-    $loaders = [
-        IMAGETYPE_JPEG => 'imagecreatefromjpeg',
-        IMAGETYPE_PNG  => 'imagecreatefrompng',
-        IMAGETYPE_GIF  => 'imagecreatefromgif',
-        IMAGETYPE_WEBP => 'imagecreatefromwebp',
-    ];
-
     $rotation = ($type === IMAGETYPE_JPEG) ? exifRotation($path) : 0;
 
     if (max($width, $height) <= UPLOAD_MAX_DIMENSION && $rotation === 0) {
@@ -96,11 +89,11 @@ function shrinkImage(string $path, int $type, int $width, int $height): void
     }
 
     // Keeping the original at full size beats failing the upload on memory.
-    if (!isset($loaders[$type]) || !function_exists($loaders[$type]) || !imageFitsInMemory($width, $height)) {
+    if (!imageFitsInMemory($width, $height)) {
         return;
     }
 
-    $image = @$loaders[$type]($path);
+    $image = loadImage($path, $type);
 
     if (!$image) {
         return;
@@ -119,6 +112,23 @@ function shrinkImage(string $path, int $type, int $width, int $height): void
 
     saveImage($image, $path, $type);
     imagedestroy($image);
+}
+
+/** The image held in a file, or null when PHP cannot read that type. */
+function loadImage(string $path, int $type)
+{
+    $loaders = [
+        IMAGETYPE_JPEG => 'imagecreatefromjpeg',
+        IMAGETYPE_PNG  => 'imagecreatefrompng',
+        IMAGETYPE_GIF  => 'imagecreatefromgif',
+        IMAGETYPE_WEBP => 'imagecreatefromwebp',
+    ];
+
+    if (!isset($loaders[$type]) || !function_exists($loaders[$type])) {
+        return null;
+    }
+
+    return @$loaders[$type]($path) ?: null;
 }
 
 /** Degrees to rotate a JPEG by, from the orientation its camera recorded. */
@@ -272,12 +282,32 @@ const ITEM_FILE_ALIASES = ['jpeg' => 'jpg'];
 /** Shown in the browser rather than downloaded. Everything else is a download. */
 const ITEM_FILE_INLINE = ['pdf', 'jpg', 'png', 'gif', 'webp'];
 
+/**
+ * The attachments a thumbnail can be made from, mapped to the image type the
+ * extension promises. Anything else is shown as a document icon instead.
+ */
+const ITEM_FILE_IMAGE_TYPES = [
+    'jpg'  => IMAGETYPE_JPEG,
+    'png'  => IMAGETYPE_PNG,
+    'gif'  => IMAGETYPE_GIF,
+    'webp' => IMAGETYPE_WEBP,
+];
+
+/** Longest side a thumbnail is kept at, matching .file-thumb in the stylesheet. */
+const ITEM_FILE_THUMB_DIMENSION = 50;
+
 /** The pattern every generated attachment name matches. */
 const ITEM_FILE_NAME_PATTERN = '/^[0-9a-f]{16}\.[a-z0-9]{1,5}$/';
 
 function itemFilePath(string $file = ''): string
 {
     return __DIR__ . '/../assets/uploads/files/' . $file;
+}
+
+/** Thumbnails sit under the attachments themselves, in their own folder. */
+function itemFileThumbPath(string $file = ''): string
+{
+    return itemFilePath('thumbs/' . $file);
 }
 
 function itemFileTypeList(): string
@@ -373,26 +403,99 @@ function uploadedFileList(array $files): array
     return $list;
 }
 
+/** The extension a stored attachment was saved with, which decides its type. */
+function itemFileExtension(string $stored): string
+{
+    return strtolower((string)pathinfo($stored, PATHINFO_EXTENSION));
+}
+
 /** The type a stored attachment is served as, from the extension it was saved with. */
 function itemFileMime(string $stored): string
 {
-    $extension = strtolower((string)pathinfo($stored, PATHINFO_EXTENSION));
-
-    return ITEM_FILE_TYPES[$extension] ?? 'application/octet-stream';
+    return ITEM_FILE_TYPES[itemFileExtension($stored)] ?? 'application/octet-stream';
 }
 
 /** Whether a stored attachment is shown in the browser rather than downloaded. */
 function itemFileIsInline(string $stored): bool
 {
-    return in_array(strtolower((string)pathinfo($stored, PATHINFO_EXTENSION)), ITEM_FILE_INLINE, true);
+    return in_array(itemFileExtension($stored), ITEM_FILE_INLINE, true);
 }
 
-/** Remove a stored attachment, ignoring one that has already gone. */
+/** Whether a stored attachment is a picture, so it can be shown rather than named. */
+function itemFileIsImage(string $stored): bool
+{
+    return isset(ITEM_FILE_IMAGE_TYPES[itemFileExtension($stored)]);
+}
+
+/**
+ * Web path to a picture attachment's small copy, or null when there is not one
+ * to show: not a picture, or an image PHP could not read. Made on first use
+ * rather than at upload, so files attached before this existed get one too.
+ */
+function itemFileThumbUrl(string $stored): ?string
+{
+    // The generated name only, so nothing but a file this app wrote is read.
+    if (!preg_match(ITEM_FILE_NAME_PATTERN, $stored) || !itemFileIsImage($stored)) {
+        return null;
+    }
+
+    if (!is_file(itemFileThumbPath($stored)) && !makeItemFileThumb($stored)) {
+        return null;
+    }
+
+    return 'assets/uploads/files/thumbs/' . rawurlencode($stored);
+}
+
+/**
+ * Write the small copy of a picture attachment, which is what is put on the
+ * page: the original is left alone, and a 4MB drawing is never sent to fill a
+ * 50px square. False when it could not be made.
+ */
+function makeItemFileThumb(string $stored): bool
+{
+    $source = itemFilePath($stored);
+    $details = is_file($source) ? @getimagesize($source) : false;
+
+    // The extension it was saved with is the type it is written back as, so a
+    // file whose contents disagree with its name is left without a thumbnail.
+    if (!$details || $details[2] !== (ITEM_FILE_IMAGE_TYPES[itemFileExtension($stored)] ?? 0)) {
+        return false;
+    }
+
+    // Going without a thumbnail beats taking the page down over memory.
+    if (!imageFitsInMemory($details[0], $details[1])) {
+        return false;
+    }
+
+    if (!is_dir(itemFileThumbPath()) && !@mkdir(itemFileThumbPath(), 0775, true)) {
+        return false;
+    }
+
+    $image = loadImage($source, $details[2]);
+
+    if (!$image) {
+        return false;
+    }
+
+    $image = scaleToFit($image, ITEM_FILE_THUMB_DIMENSION, $details[2]);
+    $saved = saveImage($image, itemFileThumbPath($stored), $details[2]);
+    imagedestroy($image);
+
+    return $saved;
+}
+
+/** Remove a stored attachment and its thumbnail, ignoring one already gone. */
 function deleteItemFile(?string $stored): void
 {
     // Guard against anything that is not one of our generated names.
-    if ($stored && preg_match(ITEM_FILE_NAME_PATTERN, $stored) && is_file(itemFilePath($stored))) {
-        @unlink(itemFilePath($stored));
+    if (!$stored || !preg_match(ITEM_FILE_NAME_PATTERN, $stored)) {
+        return;
+    }
+
+    foreach ([itemFilePath($stored), itemFileThumbPath($stored)] as $path) {
+        if (is_file($path)) {
+            @unlink($path);
+        }
     }
 }
 
@@ -403,7 +506,8 @@ function copyItemFile(?string $stored): ?string
         return null;
     }
 
-    $name = bin2hex(random_bytes(8)) . '.' . strtolower((string)pathinfo($stored, PATHINFO_EXTENSION));
+    // The copy makes its own thumbnail when it is first shown.
+    $name = bin2hex(random_bytes(8)) . '.' . itemFileExtension($stored);
 
     return @copy(itemFilePath($stored), itemFilePath($name)) ? $name : null;
 }
