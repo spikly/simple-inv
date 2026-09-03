@@ -37,7 +37,10 @@ renderTable(
 
         return $cells;
     },
-    [0 => 'col-thumb']
+    [
+        0 => 'col-thumb',
+        2 => 'col-location'
+    ]
 );
 
 renderPagination($slice, strtolower($noun));
