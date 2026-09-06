@@ -7,6 +7,7 @@
  * @var array  $rows         The rows on this page.
  * @var array  $slice        The slice paginate() worked out.
  * @var string $search       What is being searched for now, or ''.
+ * @var string $filter       The taxonomy's own filter value, or '' for none.
  * @var array  $usage        Row id => how many items use it.
  * @var array  $links        Heading links, label => href.
  * @var string $nameField    The required name column.
@@ -16,11 +17,13 @@
 pageHeader($tax['plural'] . countBadge($slice['total']), $links);
 
 formMessage(takeFlash());
-renderSearchBar($tax['routes']['index'], 'Search ' . strtolower($tax['plural']) . '...');
+renderTaxonomyFilters($tax, $filter);
 
 if (!$rows):
     if ($search !== ''): ?>
 <p>No <?php echo strtolower($tax['plural']); ?> match &ldquo;<?php echo escapeHtml($search); ?>&rdquo;.</p>
+<?php elseif ($filter !== ''): ?>
+<p>No <?php echo strtolower($tax['plural']); ?> match.</p>
 <?php else: ?>
 <p>No <?php echo strtolower($tax['plural']); ?> yet.</p>
 <?php endif;

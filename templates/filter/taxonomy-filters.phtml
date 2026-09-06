@@ -1,0 +1,40 @@
+<?php
+/**
+ * A taxonomy listing's bar: a name search, plus the one dropdown the taxonomy
+ * defines for itself, which only categories do.
+ *
+ * @var string $page        Page the form submits back to.
+ * @var string $placeholder Wording inside the search box.
+ * @var string $search      What is being searched for now.
+ * @var ?array $filter      The taxonomy's own filter, or null for none.
+ * @var string $value       What that filter is set to now, or ''.
+ */
+?>
+<form method="get" class="filter-bar">
+    <input type="hidden" name="page" value="<?php echo $page; ?>">
+<?php
+filterField(
+    'q',
+    'Search',
+    '<input type="search" name="q" id="q" value="' . escapeHtml($search)
+        . '" placeholder="' . escapeHtml($placeholder) . '">',
+    'filter-search'
+);
+
+if ($filter) {
+    $id = 'filter_' . $filter['param'];
+
+    // "Any ..." doubles as the resting label, so the bar needs no headings.
+    filterField(
+        $id,
+        $filter['label'],
+        '<select name="' . $filter['param'] . '" id="' . $id . '">'
+            . '<option value="">' . escapeHtml($filter['any']) . '</option>'
+            . selectOptions($filter['options'], $value)
+            . '</select>'
+    );
+}
+
+filterActions($page, $search !== '' || $value !== '', $filter ? 'Filter' : 'Search');
+?>
+</form>

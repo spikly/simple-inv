@@ -71,6 +71,14 @@ function taxonomies(): array
                 ],
             ],
             'columns'    => ['Files' => 'categoryTypeCell'],
+            // The only taxonomy with anything to narrow its own listing by.
+            'filter'     => [
+                'param'   => 'type',
+                'column'  => 't.cat_type',
+                'label'   => 'Files',
+                'any'     => 'Any Type',
+                'options' => ITEM_TYPE_PLURALS,
+            ],
             'derived'    => 'categorySlug',
             'guard'      => 'categoryTypeGuard',
             'notice'     => 'categoryTypeNotice',
@@ -494,19 +502,42 @@ function taxonomyNameField(array $tax): string
 }
 
 /**
- * Columns are qualified with the alias taxonomyRows() gives the table, since a
- * taxonomy that joins to itself has the same column name twice over.
+ * What the listing is narrowed to: the name search, and the value chosen in
+ * the taxonomy's own filter where it has one. Columns are qualified with the
+ * alias taxonomyRows() gives the table, since a taxonomy that joins to itself
+ * has the same column name twice over.
  */
-function taxonomySearch(array $tax, string $search): array
+function taxonomySearch(array $tax, string $search, string $filter = ''): array
 {
-    if ($search === '') {
-        return ['', []];
+    $clauses = [];
+    $params = [];
+
+    if ($search !== '') {
+        $clauses[] = 't.' . taxonomyNameField($tax) . ' LIKE :search';
+        $params['search'] = '%' . $search . '%';
     }
 
-    return [
-        ' WHERE t.' . taxonomyNameField($tax) . ' LIKE :search',
-        ['search' => '%' . $search . '%'],
-    ];
+    if ($filter !== '') {
+        $clauses[] = $tax['filter']['column'] . ' = :filter';
+        $params['filter'] = $filter;
+    }
+
+    return [$clauses ? ' WHERE ' . implode(' AND ', $clauses) : '', $params];
+}
+
+/**
+ * The value the taxonomy's own filter is set to, or '' when it has no filter
+ * or the query string names something it does not offer.
+ */
+function taxonomyFilterValue(array $tax): string
+{
+    if (!isset($tax['filter'])) {
+        return '';
+    }
+
+    $value = (string)queryParam($tax['filter']['param']);
+
+    return isset($tax['filter']['options'][$value]) ? $value : '';
 }
 
 /** The table under the alias every taxonomy query reads it by, plus its joins. */
@@ -517,9 +548,9 @@ function taxonomyFrom(array $tax): string
 }
 
 /** The dropdowns and label sheets pass no slice; they want every row. */
-function taxonomyRows(array $tax, string $search = '', ?array $slice = null): array
+function taxonomyRows(array $tax, string $search = '', ?array $slice = null, string $filter = ''): array
 {
-    [$where, $params] = taxonomySearch($tax, $search);
+    [$where, $params] = taxonomySearch($tax, $search, $filter);
 
     return dbAll(
         'SELECT t.*' . (isset($tax['select']) ? ', ' . $tax['select'] : '')
@@ -531,9 +562,9 @@ function taxonomyRows(array $tax, string $search = '', ?array $slice = null): ar
 }
 
 /** How many rows that same search matches. */
-function taxonomyRowCount(array $tax, string $search = ''): int
+function taxonomyRowCount(array $tax, string $search = '', string $filter = ''): int
 {
-    [$where, $params] = taxonomySearch($tax, $search);
+    [$where, $params] = taxonomySearch($tax, $search, $filter);
 
     return (int)dbValue('SELECT COUNT(*)' . taxonomyFrom($tax) . $where, $params, 0);
 }
@@ -765,8 +796,9 @@ function taxonomyIndexPage(string $key): void
 {
     $tax = taxonomy($key);
     $search = trim((string)queryParam('q'));
-    $slice = paginate(taxonomyRowCount($tax, $search));
-    $rows = taxonomyRows($tax, $search, $slice);
+    $filter = taxonomyFilterValue($tax);
+    $slice = paginate(taxonomyRowCount($tax, $search, $filter));
+    $rows = taxonomyRows($tax, $search, $slice, $filter);
 
     $links = ['Add New ' . $tax['label'] => 'index.php?page=' . $tax['routes']['add']];
 
@@ -779,6 +811,7 @@ function taxonomyIndexPage(string $key): void
         'rows'         => $rows,
         'slice'        => $slice,
         'search'       => $search,
+        'filter'       => $filter,
         // One query for the whole page rather than one per line.
         'usage'        => taxonomyUsageCounts($tax, array_column($rows, $tax['id'])),
         'links'        => $links,

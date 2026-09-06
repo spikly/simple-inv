@@ -7,6 +7,8 @@
  * @var ?string $kind      The kind of item the page is pinned to, or null for
  *                         the mixed listing, which is the only one with both
  *                         kinds in it to choose between.
+ * @var bool   $inCategory Whether a category is chosen, which fixes the kind
+ *                         without the bar having to ask.
  * @var bool   $hasFilters Whether anything is in force to clear.
  */
 ?>
@@ -21,7 +23,7 @@ filterField(
     'filter-search'
 );
 
-if ($kind === null) {
+if ($kind === null && !$inCategory) {
     filterField(
         'filter_kind',
         'Type',

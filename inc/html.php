@@ -87,13 +87,18 @@ function filterActions(string $page, bool $hasFilters, string $label = 'Filter')
     template('filter/actions', compact('page', 'hasFilters', 'label'));
 }
 
-/** Search box on its own, for listings that have nothing else to filter by. */
-function renderSearchBar(string $page, string $placeholder): void
+/**
+ * A taxonomy listing's bar: a name search, plus the one dropdown a taxonomy
+ * defines for itself. $value is what that dropdown is set to now, or ''.
+ */
+function renderTaxonomyFilters(array $tax, string $value = ''): void
 {
-    template('filter/search-bar', [
-        'page'        => $page,
-        'placeholder' => $placeholder,
+    template('filter/taxonomy-filters', [
+        'page'        => $tax['routes']['index'],
+        'placeholder' => 'Search ' . strtolower($tax['plural']) . '...',
         'search'      => (string)queryParam('q'),
+        'filter'      => $tax['filter'] ?? null,
+        'value'       => $value,
     ]);
 }
 
@@ -294,6 +299,9 @@ function renderItemFilters(array $applied, ?string $kind = null, string $page = 
         'page'       => $page,
         'search'     => $search,
         'kind'       => $kind,
+        // A chosen category settles the kind on its own, so the bar has
+        // nothing left to ask.
+        'inCategory' => in_array('category', $applied, true),
         'hasFilters' => (bool)$applied || $search !== '' || (string)queryParam('kind') !== '',
     ]);
 }

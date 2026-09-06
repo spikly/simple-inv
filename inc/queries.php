@@ -85,6 +85,13 @@ function itemFilters(?string $pinnedKind = null): array
     }
 
     $requested = (string)queryParam('kind');
+
+    // A category files one kind, so choosing one has already answered the
+    // question; the bar drops its Type control to match.
+    if (in_array('category', $applied, true)) {
+        $requested = '';
+    }
+
     $kind = $pinnedKind ?? (isset(ITEM_TYPES[$requested]) ? $requested : null);
 
     if ($kind !== null) {
