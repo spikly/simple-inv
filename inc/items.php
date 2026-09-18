@@ -510,6 +510,39 @@ function itemListingColumns(?string $type): array
 }
 
 /**
+ * The table a listing of items is drawn as. The classes are found by heading
+ * rather than by position, since the mixed listing has a Type column that the
+ * pinned ones do not.
+ */
+function renderItemTable(array $items, array $columns): void
+{
+    $classes = [];
+
+    foreach (array_keys($columns) as $index => $heading) {
+        if ($heading === '') {
+            $classes[$index] = 'col-thumb';
+        } elseif ($heading === 'Location') {
+            $classes[$index] = 'col-location';
+        }
+    }
+
+    renderTable(
+        array_keys($columns),
+        $items,
+        static function (array $item) use ($columns) {
+            $cells = [];
+
+            foreach ($columns as $cell) {
+                $cells[] = $cell($item);
+            }
+
+            return $cells;
+        },
+        $classes
+    );
+}
+
+/**
  * What stands in the way of each of these items becoming $newType, as item id
  * => reason, leaving out the ones with nothing against them:
  *

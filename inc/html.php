@@ -291,6 +291,20 @@ function stockCell(array $item): string
         . escapeHtml($item['unit_symbol'] ?? '') . '</span>';
 }
 
+/**
+ * The dashboard's search bar: a name search across parts and tools, narrowed
+ * to one kind or left to both.
+ */
+function renderDashboardSearch(): void
+{
+    $search = (string)queryParam('q');
+
+    template('filter/dashboard-search', [
+        'search'     => $search,
+        'hasFilters' => $search !== '' || (string)queryParam('kind') !== '',
+    ]);
+}
+
 function renderItemFilters(array $applied, ?string $kind = null, string $page = 'items'): void
 {
     $search = (string)queryParam('q');

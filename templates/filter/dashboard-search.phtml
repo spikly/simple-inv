@@ -1,0 +1,29 @@
+<?php
+/**
+ * @var string $search     What is being searched for now.
+ * @var bool   $hasFilters Whether anything is in force to clear.
+ */
+?>
+<form method="get" class="filter-bar">
+    <input type="hidden" name="page" value="dashboard">
+<?php
+filterField(
+    'q',
+    'Search',
+    '<input type="search" name="q" id="q" value="' . escapeHtml($search)
+        . '" placeholder="Search parts and tools by name, part number or notes">',
+    'filter-search'
+);
+
+filterField(
+    'filter_kind',
+    'Type',
+    '<select name="kind" id="filter_kind">'
+        . '<option value="">Parts and Tools</option>'
+        . selectOptions(ITEM_TYPE_PLURALS, queryParam('kind'))
+        . '</select>'
+);
+
+filterActions('dashboard', $hasFilters, 'Search');
+?>
+</form>

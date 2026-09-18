@@ -25,22 +25,6 @@ if (!$items): ?>
     return;
 endif;
 
-renderTable(
-    array_keys($columns),
-    $items,
-    static function (array $item) use ($columns) {
-        $cells = [];
-
-        foreach ($columns as $cell) {
-            $cells[] = $cell($item);
-        }
-
-        return $cells;
-    },
-    [
-        0 => 'col-thumb',
-        2 => 'col-location'
-    ]
-);
+renderItemTable($items, $columns);
 
 renderPagination($slice, strtolower($noun));

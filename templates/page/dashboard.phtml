@@ -10,6 +10,7 @@
  * @var array $openProjects  Projects still being worked on.
  * @var array $recent        The last few items added.
  * @var int   $rowLimit      How many rows a section shows.
+ * @var ?array $results      What the search found, or null when none was made.
  */
 
 /** The first $rowLimit of a list, noting anything left off the end. */
@@ -50,6 +51,21 @@ pageHeader('Dashboard', [
 ]);
 
 formMessage(takeFlash());
+renderDashboardSearch();
+
+if ($results !== null):
+    sectionHeader(
+        'Search Results' . countBadge($results['slice']['total'], $results['badges']),
+        $results['links']
+    );
+
+    if ($results['items']) {
+        renderItemTable($results['items'], $results['columns']);
+        renderPagination($results['slice'], strtolower($results['noun']));
+    } else {
+        echo '<p>No ' . strtolower($results['noun']) . " match.</p>\n";
+    }
+endif;
 ?>
 <div class="item-property-container">
 <?php
