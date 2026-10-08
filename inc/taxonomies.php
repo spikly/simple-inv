@@ -514,7 +514,7 @@ function taxonomySearch(array $tax, string $search, string $filter = ''): array
 
     if ($search !== '') {
         $clauses[] = 't.' . taxonomyNameField($tax) . ' LIKE :search';
-        $params['search'] = '%' . $search . '%';
+        $params['search'] = '%' . likeEscape($search) . '%';
     }
 
     if ($filter !== '') {

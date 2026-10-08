@@ -63,54 +63,97 @@ const ITEM_KIND_FILTER = 'EXISTS (SELECT 1 FROM categories_items kci
 
 /**
  * How well a search matches, worked out from the item name and part number.
- * The weights add up, so "Drill press" (whole word, at the start) outscores
- * "Assorted drill bits" (whole word), which outscores "Drilling motor" (only
- * the start of a word). An item matched only by its colour or notes scores 0.
+ * Each word of the search is scored on its own and the scores add up, so
+ * "Drill press" (whole word, at the start) outscores "Assorted drill bits"
+ * (whole word), which outscores "Drilling motor" (only the start of a word).
+ * exact_* and phrase compare the search as typed. An item matched only by its
+ * colour or notes scores 0.
  */
 const ITEM_SEARCH_WEIGHTS = [
     'exact_name' => 100,
     'exact_part' => 100,
+    'phrase'     => 20,
     'whole_word' => 40,
     'name_start' => 20,
     'word_start' => 10,
     'in_name'    => 5,
 ];
 
+/** More words than this are dropped, which keeps the query a sensible size. */
+const ITEM_SEARCH_MAX_WORDS = 10;
+
+/**
+ * The words of a search, in any order, each to be matched on its own:
+ * "drill bit" finds "Bit set, drill". Repeats are dropped.
+ */
+function searchWords(string $search): array
+{
+    $words = [];
+
+    foreach (preg_split('/\s+/u', $search, -1, PREG_SPLIT_NO_EMPTY) as $word) {
+        $words[mb_strtolower($word)] = $word;
+    }
+
+    return array_slice(array_values($words), 0, ITEM_SEARCH_MAX_WORDS);
+}
+
+/** $text for a LIKE pattern, with its % and _ meaning themselves. */
+function likeEscape(string $text): string
+{
+    return addcslashes($text, '%_\\');
+}
+
 /**
  * Returns [ORDER BY fragment, bound params] putting the best matches for
  * $search first, shortest name first among equals, or ['', []] when there
- * is no search. The params are kept
- * apart from the filter's because countItems() has no use for them.
+ * is no search. The params are kept apart from the filter's because
+ * countItems() has no use for them.
  */
 function itemSearchRank(string $search): array
 {
-    if ($search === '') {
+    $words = searchWords($search);
+
+    if (!$words) {
         return ['', []];
     }
 
-    $like = addcslashes($search, '%_\\');
-
-    // [:alnum:] rather than \b, which older MySQL regex engines lack.
-    $word = preg_quote($search);
     $w = ITEM_SEARCH_WEIGHTS;
 
-    $score = '(i.item_name = :rank_exact_name) * ' . $w['exact_name']
-        . ' + (COALESCE(i.item_part_no = :rank_exact_part, 0)) * ' . $w['exact_part']
-        . ' + (i.item_name REGEXP :rank_whole_word) * ' . $w['whole_word']
-        . ' + (i.item_name LIKE :rank_name_start) * ' . $w['name_start']
-        . ' + (i.item_name REGEXP :rank_word_start) * ' . $w['word_start']
-        . ' + (i.item_name LIKE :rank_in_name) * ' . $w['in_name'];
+    $terms = [
+        '(i.item_name = :rank_exact_name) * ' . $w['exact_name'],
+        'COALESCE(i.item_part_no = :rank_exact_part, 0) * ' . $w['exact_part'],
+    ];
+    $params = [
+        'rank_exact_name' => $search,
+        'rank_exact_part' => $search,
+    ];
+
+    // Words kept together and in order: "Drill press" over "Press, drill".
+    if (count($words) > 1) {
+        $terms[] = '(i.item_name LIKE :rank_phrase) * ' . $w['phrase'];
+        $params['rank_phrase'] = '%' . likeEscape($search) . '%';
+    }
+
+    foreach ($words as $n => $word) {
+        $like = likeEscape($word);
+
+        // [:alnum:] rather than \b, which older MySQL regex engines lack.
+        $regex = preg_quote($word);
+
+        $terms[] = '(i.item_name REGEXP :rank_whole_word_' . $n . ') * ' . $w['whole_word'];
+        $terms[] = '(i.item_name LIKE :rank_name_start_' . $n . ') * ' . $w['name_start'];
+        $terms[] = '(i.item_name REGEXP :rank_word_start_' . $n . ') * ' . $w['word_start'];
+        $terms[] = '(i.item_name LIKE :rank_in_name_' . $n . ') * ' . $w['in_name'];
+
+        $params['rank_whole_word_' . $n] = '(^|[^[:alnum:]])' . $regex . '([^[:alnum:]]|$)';
+        $params['rank_name_start_' . $n] = $like . '%';
+        $params['rank_word_start_' . $n] = '(^|[^[:alnum:]])' . $regex;
+        $params['rank_in_name_' . $n] = '%' . $like . '%';
+    }
 
     // Among equal scores the shorter name is the closer match: "Hammer drill"
     // before "Hammer drill with SDS chuck".
-    return [$score . ' DESC, CHAR_LENGTH(i.item_name) asc, ', [
-        'rank_exact_name' => $search,
-        'rank_exact_part' => $search,
-        'rank_whole_word' => '(^|[^[:alnum:]])' . $word . '([^[:alnum:]]|$)',
-        'rank_name_start' => $like . '%',
-        'rank_word_start' => '(^|[^[:alnum:]])' . $word,
-        'rank_in_name'    => '%' . $like . '%',
-    ]];
+    return ['(' . implode(' + ', $terms) . ') DESC, CHAR_LENGTH(i.item_name) asc, ', $params];
 }
 
 /**
@@ -154,12 +197,13 @@ function itemFilters(?string $pinnedKind = null): array
 
     $search = trim((string)queryParam('q'));
 
-    if ($search !== '') {
-        // One placeholder, since named parameters cannot be reused while
-        // prepare emulation is off.
+    // Every word has to turn up somewhere, though not necessarily in the same
+    // field. One placeholder each, since named parameters cannot be reused
+    // while prepare emulation is off.
+    foreach (searchWords($search) as $n => $word) {
         $clauses[] = "CONCAT_WS(' ', i.item_name, i.item_part_no, i.item_colour, i.item_notes)"
-            . ' LIKE :search';
-        $params['search'] = '%' . $search . '%';
+            . ' LIKE :search_' . $n;
+        $params['search_' . $n] = '%' . likeEscape($word) . '%';
     }
 
     return [
