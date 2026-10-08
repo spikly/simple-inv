@@ -62,7 +62,60 @@ const ITEM_KIND_FILTER = 'EXISTS (SELECT 1 FROM categories_items kci
     WHERE kci.item_id = i.item_id AND kc.cat_type = :item_kind)';
 
 /**
- * Returns [sql fragment, bound params, taxonomy keys applied, kind or null].
+ * How well a search matches, worked out from the item name and part number.
+ * The weights add up, so "Drill press" (whole word, at the start) outscores
+ * "Assorted drill bits" (whole word), which outscores "Drilling motor" (only
+ * the start of a word). An item matched only by its colour or notes scores 0.
+ */
+const ITEM_SEARCH_WEIGHTS = [
+    'exact_name' => 100,
+    'exact_part' => 100,
+    'whole_word' => 40,
+    'name_start' => 20,
+    'word_start' => 10,
+    'in_name'    => 5,
+];
+
+/**
+ * Returns [ORDER BY fragment, bound params] putting the best matches for
+ * $search first, shortest name first among equals, or ['', []] when there
+ * is no search. The params are kept
+ * apart from the filter's because countItems() has no use for them.
+ */
+function itemSearchRank(string $search): array
+{
+    if ($search === '') {
+        return ['', []];
+    }
+
+    $like = addcslashes($search, '%_\\');
+
+    // [:alnum:] rather than \b, which older MySQL regex engines lack.
+    $word = preg_quote($search);
+    $w = ITEM_SEARCH_WEIGHTS;
+
+    $score = '(i.item_name = :rank_exact_name) * ' . $w['exact_name']
+        . ' + (COALESCE(i.item_part_no = :rank_exact_part, 0)) * ' . $w['exact_part']
+        . ' + (i.item_name REGEXP :rank_whole_word) * ' . $w['whole_word']
+        . ' + (i.item_name LIKE :rank_name_start) * ' . $w['name_start']
+        . ' + (i.item_name REGEXP :rank_word_start) * ' . $w['word_start']
+        . ' + (i.item_name LIKE :rank_in_name) * ' . $w['in_name'];
+
+    // Among equal scores the shorter name is the closer match: "Hammer drill"
+    // before "Hammer drill with SDS chuck".
+    return [$score . ' DESC, CHAR_LENGTH(i.item_name) asc, ', [
+        'rank_exact_name' => $search,
+        'rank_exact_part' => $search,
+        'rank_whole_word' => '(^|[^[:alnum:]])' . $word . '([^[:alnum:]]|$)',
+        'rank_name_start' => $like . '%',
+        'rank_word_start' => '(^|[^[:alnum:]])' . $word,
+        'rank_in_name'    => '%' . $like . '%',
+    ]];
+}
+
+/**
+ * Returns [sql fragment, bound params, taxonomy keys applied, kind or null,
+ * search rank for fetchItems()].
  * $pinnedKind fixes the listing to one kind whatever the query string says,
  * which is how Parts and Tools differ from the mixed Items listing.
  */
@@ -109,21 +162,32 @@ function itemFilters(?string $pinnedKind = null): array
         $params['search'] = '%' . $search . '%';
     }
 
-    return [$clauses ? ' WHERE ' . implode(' AND ', $clauses) : '', $params, $applied, $kind];
+    return [
+        $clauses ? ' WHERE ' . implode(' AND ', $clauses) : '',
+        $params,
+        $applied,
+        $kind,
+        itemSearchRank($search),
+    ];
 }
 
-/** $slice limits it to one page; export and labels pass nothing. */
-function fetchItems(string $where, array $params, ?array $slice = null): array
+/**
+ * $slice limits it to one page; export and labels pass nothing.
+ * $rank comes from itemSearchRank(), and orders a search by how well it matched.
+ */
+function fetchItems(string $where, array $params, ?array $slice = null, array $rank = ['', []]): array
 {
+    [$rankOrder, $rankParams] = $rank;
+
     return dbAll(
         'SELECT i.item_id, i.item_name, i.item_part_no, i.item_quantity, i.item_min_quantity, i.item_image,
                 mu.unit_symbol, b.brand_name, sp.sup_name,
                 l.loc_name, lp.loc_name AS loc_parent_name, s.status_name,'
         . ITEM_STOCK_COLUMNS
         . ITEM_JOINS . $where
-        . ' GROUP BY i.item_id ORDER BY i.item_name asc'
+        . ' GROUP BY i.item_id ORDER BY ' . $rankOrder . 'i.item_name asc'
         . ($slice ? paginationLimit($slice) : ''),
-        $params
+        $params + $rankParams
     );
 }
 

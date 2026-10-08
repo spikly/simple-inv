@@ -389,7 +389,7 @@ function copyItemFiles($fromItemId, $toItemId): void
 function itemsIndexPage(?string $type): void
 {
     // $kind is what the listing ended up narrowed to, filters included.
-    [$where, $params, $applied, $kind] = itemFilters($type);
+    [$where, $params, $applied, $kind, $rank] = itemFilters($type);
 
     $slice = paginate(countItems($where, $params));
     $noun = ($type === null) ? 'Items' : ITEM_TYPE_PLURALS[$type];
@@ -409,7 +409,7 @@ function itemsIndexPage(?string $type): void
 
     template('page/items-index', [
         'type'    => $type,
-        'items'   => fetchItems($where, $params, $slice),
+        'items'   => fetchItems($where, $params, $slice, $rank),
         'slice'   => $slice,
         'applied' => $applied,
         'noun'    => $noun,

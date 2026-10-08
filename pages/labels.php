@@ -25,9 +25,9 @@ if ($type === 'location') {
         ];
     }
 } else {
-    [$where, $params] = itemFilters();
+    [$where, $params, , , $rank] = itemFilters();
 
-    foreach (fetchItems($where, $params) as $item) {
+    foreach (fetchItems($where, $params, null, $rank) as $item) {
         $labels[] = [
             'title' => $item['item_name'],
             'url'   => baseUrl() . 'index.php?page=view-item&item_id=' . $item['item_id'],

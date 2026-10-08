@@ -7,7 +7,7 @@ const DASHBOARD_ROWS = 10;
  * The search bar only asks for a name and a kind, but the whole filter is read
  * so an address carried over from a listing still narrows what comes back.
  */
-[$where, $params, $applied, $kind] = itemFilters();
+[$where, $params, $applied, $kind, $rank] = itemFilters();
 
 $results = null;
 
@@ -17,7 +17,7 @@ if (trim((string)queryParam('q')) !== '' || $kind !== null || $applied) {
     $noun = ($kind === null) ? 'Items' : ITEM_TYPE_PLURALS[$kind];
 
     $results = [
-        'items'   => fetchItems($where, $params, $slice),
+        'items'   => fetchItems($where, $params, $slice, $rank),
         'slice'   => $slice,
         'columns' => itemListingColumns($kind),
         'badges'  => $badges,
