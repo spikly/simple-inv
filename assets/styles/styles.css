@@ -1356,6 +1356,23 @@ table td.col-location {
     border-radius: 8px;
 }
 
+@media (min-width: 960px) {
+    .item-overview {
+        display: flex;
+        align-items: flex-start;
+        gap: 30px;
+    }
+
+    .item-overview .item-photo {
+        flex: 0 0 300px;
+        padding: 10px 0 0;
+    }
+
+    .item-overview .item-property-container {
+        flex: 1;
+    }
+}
+
 .photo-field {
     display: block;
 }
