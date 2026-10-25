@@ -8,6 +8,7 @@
     --color-bg: #f7f8fa;
     --color-surface: #ffffff;
     --color-surface-muted: #f1f3f5;
+    --color-surface-subtle: #f8f9fa;
 
     --color-text: #0b1220;
     --color-text-muted: #374151;
@@ -1340,6 +1341,16 @@ table td.col-location {
     width: 96px;
     height: 96px;
     margin: 0 0 8px;
+}
+
+/* Stands in for a missing photo: a spanner for a tool, nuts for a part. */
+.item-placeholder {
+    background: var(--color-surface-subtle);
+}
+
+.item-photo-large.item-placeholder {
+    width: 300px;
+    max-width: 100%;
 }
 
 .item-photo {

@@ -273,6 +273,17 @@ function itemThumb(?string $image, string $alt = '', string $class = 'item-thumb
         : '';
 }
 
+/** Item photo, or a spanner for a tool and nuts for a part when it has none. */
+function itemImage(array $item, string $class = 'item-thumb'): string
+{
+    if ($item['item_image']) {
+        return itemThumb($item['item_image'], $item['item_name'], $class);
+    }
+
+    return '<img src="assets/images/placeholder-' . itemTypeOf($item) . '.svg" alt=""'
+        . ' class="' . $class . ' item-placeholder">';
+}
+
 /** Free stock shown with a colour that reflects how tight it is. */
 function stockCell(array $item): string
 {

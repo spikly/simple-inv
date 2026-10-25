@@ -41,13 +41,15 @@ $properties = [
     <?php echo escapeHtml($item['item_name']); ?>
 </p>
 <div class="item-overview">
-<?php if ($item['item_image']): ?>
     <p class="item-photo">
+<?php if ($item['item_image']): ?>
         <a href="<?php echo itemImageUrl($item['item_image']); ?>" target="_blank">
-            <?php echo itemThumb($item['item_image'], $item['item_name'], 'item-photo-large'); ?>
+            <?php echo itemImage($item, 'item-photo-large'); ?>
         </a>
-    </p>
+<?php else: ?>
+        <?php echo itemImage($item, 'item-photo-large'); ?>
 <?php endif; ?>
+    </p>
 <div class="item-property-container">
     <?php
 
