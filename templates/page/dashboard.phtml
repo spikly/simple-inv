@@ -158,7 +158,7 @@ renderTable(
     $recent,
     static function ($item) {
         return [
-            itemImage($item),
+            itemThumbLink($item),
             '<a href="index.php?page=view-item&item_id=' . $item['item_id'] . '">'
                 . escapeHtml($item['item_name']) . '</a>',
             ITEM_TYPES[itemTypeOf($item)],

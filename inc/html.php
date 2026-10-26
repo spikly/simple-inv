@@ -284,6 +284,16 @@ function itemImage(array $item, string $class = 'item-thumb'): string
         . ' class="' . $class . ' item-placeholder">';
 }
 
+/**
+ * Item photo linking to the item, for listings. Kept out of the tab order and
+ * hidden from screen readers, since the name beside it is the same link.
+ */
+function itemThumbLink(array $item): string
+{
+    return '<a href="index.php?page=view-item&item_id=' . (int)$item['item_id'] . '"'
+        . ' class="item-thumb-link" tabindex="-1" aria-hidden="true">' . itemImage($item) . '</a>';
+}
+
 /** Free stock shown with a colour that reflects how tight it is. */
 function stockCell(array $item): string
 {

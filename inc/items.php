@@ -463,7 +463,7 @@ function itemListingColumns(?string $type): array
 {
     $columns = [
         '' => function (array $item) {
-            return itemImage($item);
+            return itemThumbLink($item);
         },
         'Name' => function (array $item) {
             return '<a href="index.php?page=view-item&item_id=' . $item['item_id'] . '">'

@@ -1321,6 +1321,10 @@ table td.col-thumb .item-thumb {
     max-width: none;
 }
 
+.item-thumb-link {
+    display: block;
+}
+
 table th.col-location,
 table td.col-location {
     max-width: 300px;
