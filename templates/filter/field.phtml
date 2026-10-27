@@ -1,12 +1,11 @@
 <?php
 /**
- * One control in a filter bar. The label is kept for screen readers; sighted
- * users get the same wording from the control's own placeholder.
+ * The label is for screen readers; sighted users get the placeholder instead.
  *
- * @var string $id      Control id the label points at.
- * @var string $label   Label text.
- * @var string $control Control HTML.
- * @var string $class   Extra class on the wrapper.
+ * @var string $id
+ * @var string $label
+ * @var string $control Raw HTML.
+ * @var string $class   Extra wrapper class.
  */
 ?>
     <p class="filter-field<?php echo $class ? ' ' . $class : ''; ?>">

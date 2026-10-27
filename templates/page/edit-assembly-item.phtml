@@ -1,12 +1,9 @@
 <?php
 /**
- * One part on an assembly: how much it needs, and how much of that is in.
- *
- * @var mixed  $assemblyItem The row, or false when there is no such id.
- * @var array  $values       Current field values.
- * @var float  $available    What this part could still take: its own
- *                           reservation plus anything free.
- * @var mixed  $formMessage  The last result, or false.
+ * @var mixed  $assemblyItem Row, or false if not found.
+ * @var array  $values
+ * @var float  $available    Its own reservation plus any free stock.
+ * @var mixed  $formMessage  Last result, or false.
  */
 
 if (!$assemblyItem): ?>

@@ -1,12 +1,10 @@
 <?php
 /**
- * One assembly and the parts that make it up.
- *
- * @var mixed  $assembly    The assembly row, or false when there is no such id.
- * @var array  $items       The parts on this page.
- * @var array  $slice       Their slice.
- * @var int    $assemblyId  The id being viewed.
- * @var mixed  $formMessage The last result, or false.
+ * @var mixed  $assembly    Assembly row, or false if not found.
+ * @var array  $items       Parts on this page.
+ * @var array  $slice
+ * @var int    $assemblyId
+ * @var mixed  $formMessage Last result, or false.
  */
 
 if (!$assembly): ?>
@@ -34,7 +32,7 @@ if ($items):
         ['Item', 'Required', 'Allocated', 'Installed', 'Remaining', ''],
         $items,
         static function ($item) {
-            // Anything the item could not spare, said where it is looked at.
+            // $short is what stock could not cover, flagged on this row.
             $outstanding = max(0, (float)$item['quantity_required'] - (float)$item['quantity_installed']);
             $short = $outstanding - (float)$item['quantity_allocated'];
 

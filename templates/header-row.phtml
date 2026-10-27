@@ -1,10 +1,9 @@
 <?php
 /**
- * $title and $extraHtml are raw HTML; anything typed by a person has to be
- * escaped before it gets here.
+ * $title and $extraHtml are raw HTML; escape user input first.
  *
- * @var string $class     Wrapper class, which is what sets the spacing.
- * @var string $title     Heading HTML.
+ * @var string $class     Wrapper class.
+ * @var string $title
  * @var array  $links     label => href.
  * @var string $extraHtml Appended inside the nav.
  */

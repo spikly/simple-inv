@@ -1,10 +1,5 @@
 <?php
 
-/**
- * Which labels to make: every location, one item, or whatever the items
- * listing was filtered down to.
- */
-
 $type = (queryParam('type') === 'item') ? 'item' : 'location';
 $labels = [];
 

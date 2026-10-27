@@ -1,11 +1,9 @@
 <?php
 /**
- * Two steps: upload a file to see what it would do, then confirm.
- *
- * @var array $rows        The reviewed rows, empty before a file is uploaded.
- * @var array $valid       The ones with nothing wrong with them.
+ * @var array $rows        Reviewed rows; empty before a file is uploaded.
+ * @var array $valid       Rows with nothing wrong.
  * @var array $creates     Names the import would create, as a set.
- * @var mixed $formMessage The last result, or false.
+ * @var mixed $formMessage Last result, or false.
  */
 
 pageHeader('Import Items', ['Back to Items' => 'index.php?page=items']);

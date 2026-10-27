@@ -1,9 +1,8 @@
 <?php
 
 /**
- * How a part's quantity got to be what it is. Every path that changes
- * item_quantity writes a row here, so a figure that looks wrong can be traced
- * back. Nothing reads a quantity out of it; the item still holds the number.
+ * Every change to item_quantity writes a row here, for tracing. Nothing reads a
+ * quantity back from it; the item still holds the number.
  */
 
 /** The key is stored, so leave keys alone once rows exist; the label is display. */
@@ -18,10 +17,7 @@ const STOCK_MOVEMENT_REASONS = [
     'uninstalled' => 'Returned from an assembly',
 ];
 
-/**
- * Records a change already made; a change of nothing is not recorded. The
- * quantity is read back rather than worked out, so it matches the column.
- */
+/** Records a change already made. The quantity after is read back to match the column. */
 function recordStockMovement($item_id, float $change, string $reason, ?string $note = null): void
 {
     if ($change == 0.0) {
@@ -46,11 +42,7 @@ function recordStockMovement($item_id, float $change, string $reason, ?string $n
     );
 }
 
-/**
- * Change what is held rather than set it: buying five more is a change of
- * five, which the edit page cannot say. Assembly claims are worked out again
- * around the new figure.
- */
+/** Changes what is held by $delta, where the edit page sets it outright. */
 function adjustItemStock($item_id, int $delta, ?string $note = null): void
 {
     dbTransaction(function () use ($item_id, $delta, $note) {
@@ -73,7 +65,6 @@ function countStockMovements($item_id): int
     );
 }
 
-/** An item's movements, newest first. */
 function fetchStockMovements($item_id, ?array $slice = null): array
 {
     return dbAll(
@@ -84,7 +75,6 @@ function fetchStockMovements($item_id, ?array $slice = null): array
     );
 }
 
-/** Signed and coloured, so stock in reads differently from stock out. */
 function stockChangeCell($change, string $unit): string
 {
     $change = (float)$change;

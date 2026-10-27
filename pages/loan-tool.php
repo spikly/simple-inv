@@ -1,6 +1,6 @@
 <?php
 
-/** One page for both, since which it offers is settled by where the tool is. */
+/** Signs out or in, depending on whether the tool is out. */
 
 $itemId = queryParam('item_id');
 $item = $itemId ? fetchSingleItem($itemId) : false;
@@ -16,7 +16,7 @@ if ($item && isset($_POST['sign_out_submit'])) {
     $errors = $result['errors'] ?? [];
 
     if (!$errors) {
-        // Already being out is about the tool, not about a field on the form.
+        // Not tied to a field, so no key.
         $alreadyOut = signToolOut($itemId, $result['values']);
         $errors = ($alreadyOut !== null) ? [$alreadyOut] : [];
     }

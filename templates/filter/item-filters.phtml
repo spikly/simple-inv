@@ -2,14 +2,11 @@
 /**
  * One dropdown per taxonomy plus a search, combined with AND.
  *
- * @var string $page       Page the form submits back to.
- * @var string $search     What is being searched for now.
- * @var ?string $kind      The kind of item the page is pinned to, or null for
- *                         the mixed listing, which is the only one with both
- *                         kinds in it to choose between.
- * @var bool   $inCategory Whether a category is chosen, which fixes the kind
- *                         without the bar having to ask.
- * @var bool   $hasFilters Whether anything is in force to clear.
+ * @var string  $page
+ * @var string  $search
+ * @var ?string $kind       Kind the page is pinned to, or null for the mixed listing.
+ * @var bool    $inCategory A chosen category already fixes the kind.
+ * @var bool    $hasFilters Whether to offer Clear.
  */
 ?>
 <form method="get" class="filter-bar">
@@ -42,7 +39,7 @@ foreach (taxonomies() as $key => $tax) {
         ? categoryOptions($kind)
         : taxonomyOptions($key);
 
-    // "Any ..." doubles as the resting label, so the bar needs no headings.
+    // "Any ..." doubles as the label; the bar has no headings.
     filterField(
         $id,
         $tax['label'],

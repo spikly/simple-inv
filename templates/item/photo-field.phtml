@@ -1,12 +1,8 @@
 <?php
 /**
- * The photo picker, showing what is already stored with the option to remove it.
- *
- * @var ?string $image  The stored filename, or null.
- * @var bool    $remove Whether "remove this photo" is ticked. It is kept ticked
- *                      when a rejected save is drawn again, so asking for the
- *                      photo to go is not quietly undone by a mistake in
- *                      another field.
+ * @var ?string $image  Stored filename, or null.
+ * @var bool    $remove "Remove this photo" ticked; stays ticked when a rejected
+ *                      save is redrawn, so the removal is not quietly lost.
  */
 
 $input = '<input type="file" name="item_photo" id="item_photo"'

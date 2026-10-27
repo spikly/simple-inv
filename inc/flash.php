@@ -1,10 +1,5 @@
 <?php
 
-/**
- * Form results survive the redirect that follows a successful write, so a
- * refresh never resubmits the form.
- */
-
 function startSession(): void
 {
     if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -12,7 +7,6 @@ function startSession(): void
     }
 }
 
-/** Hold a message for the next request, then send the browser to $url. */
 function redirectWith(string $url, array $message): void
 {
     startSession();
@@ -23,14 +17,12 @@ function redirectWith(string $url, array $message): void
 
 function redirect(string $url): void
 {
-    // Buffered in bootstrap.php, so this is the normal path. A page that has
-    // already flushed is sent on with markup rather than failing outright.
+    // Output is buffered in bootstrap.php, so this is only a fallback.
     if (headers_sent()) {
         template('redirect', compact('url'));
         exit;
     }
 
-    // Drop the half rendered page; the redirected request draws its own.
     while (ob_get_level() > 0) {
         ob_end_clean();
     }
@@ -39,7 +31,7 @@ function redirect(string $url): void
     exit;
 }
 
-/** The message stored by the previous request, removed as it is read. */
+/** Removed as it is read. Returns false when there is none. */
 function takeFlash()
 {
     startSession();

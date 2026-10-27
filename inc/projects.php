@@ -1,7 +1,5 @@
 <?php
 
-/** Form handling shared by the project, assembly and assembly part pages. */
-
 function projectColumns(array $post): array
 {
     return [
@@ -48,7 +46,6 @@ function assemblyItemColumns(array $post): array
     ];
 }
 
-/** Problems with submitted assembly part data, keyed by field. */
 function validateAssemblyItem(array $columns): array
 {
     $errors = [];
@@ -60,17 +57,14 @@ function validateAssemblyItem(array $columns): array
     if ($columns['quantity_installed'] < 0) {
         $errors['quantity_installed'] = 'Installed quantity cannot be negative.';
     } elseif (!$errors && $columns['quantity_installed'] > $columns['quantity_required']) {
-        // Only worth saying once the required quantity is a usable figure.
+        // Only once the required quantity is valid.
         $errors['quantity_installed'] = 'Installed quantity cannot exceed the quantity required.';
     }
 
     return $errors;
 }
 
-/**
- * Installing takes units out of stock for good, so the increase since the last
- * save has to be covered by what the item has left.
- */
+/** Installing consumes stock, so any increase since the last save must be free. */
 function validateAssemblyInstall($item_id, $assembly_item_id, float $installed, float $installedBefore): array
 {
     $delta = $installed - $installedBefore;
@@ -89,7 +83,7 @@ function validateAssemblyInstall($item_id, $assembly_item_id, float $installed, 
     return [];
 }
 
-/** How a save went for the stock behind a part, added to its success message. */
+/** Appended to a part's success message. */
 function assemblyStockMessage(array $stock): string
 {
     $message = ' Reserved ' . formatQuantity($stock['allocated']) . ' from stock';
@@ -99,7 +93,7 @@ function assemblyStockMessage(array $stock): string
         : $message . '.';
 }
 
-/** $stockNote sits against the required field, in front of whoever sets it. */
+/** $stockNote is shown against the required field. */
 function renderAssemblyItemFields(array $values, string $stockNote = ''): void
 {
     template('project/assembly-item-fields', compact('values', 'stockNote'));

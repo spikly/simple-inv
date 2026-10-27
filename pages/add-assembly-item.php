@@ -19,7 +19,7 @@ if (isset($_POST['add_assembly_item_submit'])) {
     if (empty($itemId)) {
         $errors = ['item_id' => 'Please select an item.'] + $errors;
     } elseif (!isset($errors['quantity_installed'])) {
-        // Only worth working out once the figure asking for it makes sense.
+        // Only once the installed figure itself is valid.
         $errors += validateAssemblyInstall($itemId, 0, $columns['quantity_installed'], 0);
     }
 

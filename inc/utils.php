@@ -32,11 +32,7 @@ function text2link($string)
     );
 }
 
-/**
- * Whether an address can safely go in an href; null passes. The scheme is
- * checked as well as the shape, since a browser runs a javascript: address
- * when the link is clicked and escaping does nothing about that.
- */
+/** Null passes. The scheme is checked because escaping can't stop javascript: URLs. */
 function isWebUrl(?string $url): bool
 {
     if ($url === null) {
@@ -69,7 +65,7 @@ function utilisationBg($utilisation = 0)
     return 'green';
 }
 
-/** A GET value, or false when it was not supplied. */
+/** False when not supplied. */
 function queryParam(string $name)
 {
     return $_GET[$name] ?? false;
@@ -80,7 +76,7 @@ function queryId(string $name): int
     return (int)($_GET[$name] ?? 0);
 }
 
-/** A trimmed value from a submitted form, or null when it is blank. */
+/** Trimmed, or null when blank. */
 function textOrNull(array $source, string $name)
 {
     $value = trim($source[$name] ?? '');
@@ -88,7 +84,7 @@ function textOrNull(array $source, string $name)
     return ($value === '') ? null : $value;
 }
 
-/** Anything unparseable is handed back untouched rather than turned into 1970. */
+/** Unparseable values are returned untouched rather than turned into 1970. */
 function formatDate($value, string $format = 'j M Y'): string
 {
     $value = trim((string)$value);
@@ -102,17 +98,13 @@ function successMessage(string $message): array
     return ['status' => 'success', 'messages' => [$message]];
 }
 
-/**
- * Every problem with a submission, not only the first. $messages is a list, or
- * a map keyed by field: a key is what lets formRow() highlight the control at
- * fault, so key by it whenever there is one to blame.
- */
+/** $messages may be keyed by field, which lets formRow() highlight that control. */
 function errorMessage($messages): array
 {
     return ['status' => 'error', 'messages' => is_array($messages) ? $messages : [$messages]];
 }
 
-/** Safe inside a JavaScript string in an HTML attribute, quotes and all. */
+/** Safe as a JavaScript string inside an HTML attribute. */
 function jsString(string $text): string
 {
     return escapeHtml(json_encode($text, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
@@ -133,7 +125,7 @@ function baseUrl(): string
     return ($secure ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . $folder . '/';
 }
 
-/** Cache buster, so a changed file is fetched again. $path is relative to assets/. */
+/** Cache buster. $path is relative to assets/. */
 function assetVersion(string $path): string
 {
     $file = __DIR__ . '/../assets/' . $path;

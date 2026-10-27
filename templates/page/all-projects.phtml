@@ -1,9 +1,7 @@
 <?php
 /**
- * The projects listing.
- *
- * @var array $projects The rows on this page.
- * @var array $slice    The slice paginate() worked out.
+ * @var array $projects Rows on this page.
+ * @var array $slice    From paginate().
  */
 
 pageHeader('Projects' . countBadge($slice['total']), ['Add Project' => 'index.php?page=add-project']);

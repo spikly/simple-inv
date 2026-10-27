@@ -1,16 +1,15 @@
 <?php
 /**
- * One dropdown plus the "+" button opening the add-new modal. The kind of item
- * is put on both controls, because a category added from here has to file that
- * kind; assets/js/app.js reads it back off them and inc/ajax.php acts on it.
+ * The item kind sits on both controls because a category added here must file
+ * that kind; assets/js/app.js reads it and inc/ajax.php acts on it.
  *
  * @var string $key      Taxonomy key, eg 'brand'.
- * @var array  $tax      Its definition, for the label.
+ * @var array  $tax      Its definition.
  * @var string $name     Field name, also the select's id.
  * @var string $type     'part' or 'tool'.
- * @var bool   $multiple Whether more than one may be chosen.
+ * @var bool   $multiple
  * @var array  $options  value => label.
- * @var mixed  $selected What is chosen now.
+ * @var mixed  $selected
  */
 ?>
 <div class="searchable-select-row"><div class="searchable-select"><select name="<?php

@@ -17,7 +17,7 @@ if (isset($_POST['edit_assembly_item_submit'])) {
     $values = assemblyItemColumns($_POST);
     $errors = validateAssemblyItem($values);
 
-    // Only worth working out once the figure asking for it makes sense.
+    // Only once the installed figure itself is valid.
     if (!isset($errors['quantity_installed'])) {
         $errors += validateAssemblyInstall(
             $assemblyItem['item_id'],
@@ -70,7 +70,7 @@ if (isset($_POST['edit_assembly_item_submit'])) {
 template('page/edit-assembly-item', [
     'assemblyItem' => $assemblyItem,
     'values'       => $values,
-    // What this part could still take: its own reservation plus anything free.
+    // Includes this part's own reservation.
     'available'    => itemStockAvailable($assemblyItem['item_id'], $assemblyItemId),
     'formMessage'  => $formMessage,
 ]);

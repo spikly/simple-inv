@@ -1,11 +1,8 @@
 <?php
 /**
- * The picture beside a document's name: the document itself scaled down when
- * it is an image, a plain sheet of paper when it is anything else.
- *
- * @var array  $file   One row from fetchItemFiles().
- * @var string $href   Where the document is served from.
- * @var bool   $inline Whether it opens in a tab rather than downloading.
+ * @var array  $file   Row from fetchItemFiles().
+ * @var string $href
+ * @var bool   $inline Opens in a tab rather than downloading.
  */
 
 $thumb = itemFileThumbUrl((string)$file['file_stored_name']);

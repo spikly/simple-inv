@@ -1,10 +1,8 @@
 <?php
 
 /*
- * Buffer the page. A page is included part way down the layout, so the markup
- * above it is already written by the time it handles a POST; holding it all
- * until the request ends keeps header() usable for the redirect after a save,
- * and lets the error handler throw away a half rendered page.
+ * Pages handle POSTs part way through the layout, so buffer everything to keep
+ * header() usable for redirects and let the error handler discard the page.
  */
 ob_start();
 
@@ -35,5 +33,5 @@ require __DIR__ . '/allocation.php';
 require __DIR__ . '/taxonomies.php';
 require __DIR__ . '/import.php';
 
-// Started here, before any output, so pages can read flash messages freely.
+// Before any output, so pages can read flash messages.
 startSession();

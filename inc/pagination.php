@@ -1,11 +1,6 @@
 <?php
 
-/**
- * Splitting long listings across pages. Nothing here knows what is being
- * listed.
- */
-
-/** Rows per page. Set site.per_page in user.config.php. */
+/** From site.per_page in user.config.php, capped at 500. */
 function perPage(): int
 {
     $configured = (int)config('site.per_page', 50);
@@ -72,7 +67,7 @@ function paginationNumbers(int $current, int $pages, int $window = 2): array
     return $numbers;
 }
 
-/** $noun names the rows, so it reads "of 312 parts" rather than "of 312". */
+/** $noun names the rows, eg "of 312 parts". */
 function renderPagination(array $slice, string $noun = 'rows'): void
 {
     if ($slice['total'] === 0) {

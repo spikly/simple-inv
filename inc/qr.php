@@ -1,14 +1,10 @@
 <?php
 
 /**
- * A small QR code encoder, used to print scannable labels for locations and
- * items. Byte mode only, versions 1-10, which is ample for a URL on a local
- * network (up to 213 characters at error correction level M).
- *
- * Everything here follows ISO/IEC 18004. The tables below are from that spec.
+ * QR encoder per ISO/IEC 18004. Byte mode, versions 1-10 only: ample for a local
+ * URL (up to 213 characters at level M).
  */
 
-/** Total data codewords per version and error correction level. */
 const QR_BLOCKS = [
     //        [ec codewords per block, [[block count, data codewords], ...]]
     1  => ['L' => [7,  [[1, 19]]],  'M' => [10, [[1, 16]]],  'Q' => [13, [[1, 13]]],           'H' => [17, [[1, 9]]]],
@@ -108,7 +104,6 @@ function qrErrorCorrection(array $data, int $degree): array
     return array_slice($remainder, count($data), $degree);
 }
 
-/** Data codeword capacity of a version at an error correction level. */
 function qrDataCapacity(int $version, string $ecLevel): int
 {
     $total = 0;
@@ -140,7 +135,6 @@ function qrChooseVersion(int $length, string $ecLevel): int
     return 0;
 }
 
-/** The full interleaved codeword stream for $text. */
 function qrCodewords(string $text, int $version, string $ecLevel): array
 {
     [$ecPerBlock, $blockSpec] = QR_BLOCKS[$version][$ecLevel];
@@ -341,13 +335,12 @@ function qrPatternPenalty(string $line, int $size): int
     return $penalty;
 }
 
-/** The four penalty rules used to pick the least noisy mask. */
 function qrPenalty(array $matrix, int $size): int
 {
     return array_sum(qrPenaltyParts($matrix, $size));
 }
 
-/** The individual rule 1 to 4 scores, in order. */
+/** Rule 1 to 4 scores, in order. */
 function qrPenaltyParts(array $matrix, int $size): array
 {
     $adjacent = 0;
@@ -425,11 +418,7 @@ function qrFormatBits(string $ecLevel, int $mask): int
     return ((($data << 10) | $remainder) ^ 0x5412) & 0x7FFF;
 }
 
-/**
- * The QR code for $text as a grid of 0/1 rows.
- *
- * Returns an empty array when the text is too long for version 10.
- */
+/** A grid of 0/1 rows, or [] when $text is too long for version 10. */
 function qrMatrix(string $text, string $ecLevel = 'M', ?int $forceMask = null): array
 {
     $version = qrChooseVersion(strlen($text), $ecLevel);
@@ -489,9 +478,8 @@ function qrMatrix(string $text, string $ecLevel = 'M', ?int $forceMask = null): 
         }
     }
 
-    // Try every mask and keep the one the spec scores lowest. The format
-    // information is deliberately written afterwards: ISO/IEC 18004 section 7.8
-    // scores the masked encoding region on its own.
+    // Format information goes in after choosing the mask: ISO/IEC 18004 section
+    // 7.8 scores the masked encoding region on its own.
     $best = null;
     $bestMask = 0;
     $bestPenalty = null;
@@ -555,7 +543,6 @@ function qrWriteFormat(array &$matrix, int $size, string $ecLevel, int $mask): v
     }
 }
 
-/** The QR code for $text as a self contained SVG, sized in pixels. */
 function qrSvg(string $text, int $pixels = 120, string $ecLevel = 'M'): string
 {
     $matrix = qrMatrix($text, $ecLevel);

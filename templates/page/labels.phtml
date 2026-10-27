@@ -1,10 +1,9 @@
 <?php
 /**
- * Printable QR labels. Stick a location label on the drawer it names and
- * scanning it opens that location's items; an item label opens the item.
+ * A location label opens that location's items; an item label opens the item.
  *
  * @var string $type   'location' or 'item'.
- * @var array  $labels Each with a title and the address its code encodes.
+ * @var array  $labels Each with a title and the URL its code encodes.
  */
 
 pageHeader('Labels' . countBadge(count($labels)), [

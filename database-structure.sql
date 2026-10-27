@@ -69,9 +69,7 @@ CREATE TABLE IF NOT EXISTS `inv_categories` (
 --
 -- Table structure for table `inv_tool_loans`
 --
--- One row per time a tool leaves the workshop. Signing it back in stamps
--- loan_in_at rather than deleting the row, so the history is kept; a tool is
--- out while it has a row with loan_in_at still NULL.
+-- One row per loan; a tool is out while it has a row with loan_in_at NULL.
 --
 
 CREATE TABLE IF NOT EXISTS `inv_tool_loans` (
@@ -91,14 +89,9 @@ CREATE TABLE IF NOT EXISTS `inv_tool_loans` (
 --
 -- Table structure for table `inv_item_files`
 --
--- Documents and extra pictures kept against an item: spec sheets, manuals,
--- drawings. The item's own photo is not one of these; it stays in
--- inv_items.item_image, see inc/uploads.php.
---
--- file_stored_name is the generated name on disk under assets/uploads/files/;
--- file_name is what it was called when it was uploaded, which is all the
--- original name is ever used for. file_description is what it was given to
--- say afterwards, since a filename is often no help at all.
+-- Documents attached to an item. The item's own photo is inv_items.item_image.
+-- file_stored_name is the name on disk under assets/uploads/files/;
+-- file_name is the original upload name.
 --
 
 CREATE TABLE IF NOT EXISTS `inv_item_files` (
@@ -146,9 +139,7 @@ CREATE TABLE IF NOT EXISTS `inv_items` (
 --
 -- Table structure for table `inv_locations`
 --
--- A location may sit inside another one, so a set of drawers is one location
--- with a location per drawer under it and the items filed in the drawer. Only
--- one level deep: loc_parent_id always names a location that has none itself.
+-- Locations nest one level deep: loc_parent_id never names a child location.
 --
 
 CREATE TABLE IF NOT EXISTS `inv_locations` (
@@ -206,9 +197,7 @@ CREATE TABLE IF NOT EXISTS `inv_statuses` (
 --
 -- Table structure for table `inv_stock_movements`
 --
--- One row every time an item's quantity changes, and why. Nothing reads a
--- quantity from here; it is a record of how the figure on the item got to be
--- what it is, so one that looks wrong can be traced back.
+-- An audit log of quantity changes; nothing reads the quantity from here.
 --
 
 CREATE TABLE IF NOT EXISTS `inv_stock_movements` (

@@ -1,18 +1,12 @@
 <?php
 
 /**
- * Stock moving between the store and project assemblies. Parts only.
- *
- * A part on an assembly reserves what it still needs out of its item's free
- * stock; installing takes those units out of stock for good. Reservations are
- * worked out here rather than typed in, which is what keeps the item pages,
- * the shopping list and the assemblies telling one story.
+ * Parts only. A part on an assembly reserves what it still needs from its item's
+ * free stock; installing consumes it. Reservations are only ever computed here,
+ * never entered, so item pages, shopping list and assemblies agree.
  */
 
-/**
- * What is held, less what every other part has reserved.
- * $exceptAssemblyItemId keeps a part from competing against itself.
- */
+/** Held less other parts' reservations; $exceptAssemblyItemId excludes the part's own. */
 function itemStockAvailable($item_id, $exceptAssemblyItemId = 0): float
 {
     return (float)dbValue(
@@ -51,10 +45,7 @@ function allocateAssemblyItem($assembly_item_id): float
     return $allocated;
 }
 
-/**
- * Share free stock over every part that wants it, oldest first. Run whenever
- * stock or demand changes, so a delivery reaches the assemblies left short.
- */
+/** Shares free stock over the item's parts, oldest first. Run on any stock or demand change. */
 function reallocateItem($item_id): void
 {
     $parts = dbAll(
@@ -77,7 +68,6 @@ function reallocateItem($item_id): void
     }
 }
 
-/** reallocateItem() over a list of items, for a delete that frees several. */
 function reallocateItems(array $item_ids): void
 {
     foreach ($item_ids as $item_id) {
@@ -99,13 +89,11 @@ function consumeItemStock($item_id, float $quantity): void
 }
 
 /**
- * Install what has been installed since the last save, then reserve what is
- * outstanding across every part using that item. Returns the quantity
- * reserved and how far short of the outstanding amount that leaves it.
+ * Consumes the newly installed quantity, then reallocates the item.
+ * Returns ['allocated' => reserved, 'short' => outstanding left uncovered].
  */
 function settleAssemblyItemStock($assembly_item_id, float $installedDelta): array
 {
-    // The assembly's name so the history can say where the units went.
     $part = dbRow(
         'SELECT ai.item_id, ai.quantity_required, ai.quantity_installed, a.assembly_name
          FROM inv_assembly_items ai
@@ -120,7 +108,7 @@ function settleAssemblyItemStock($assembly_item_id, float $installedDelta): arra
 
     consumeItemStock($part['item_id'], $installedDelta);
 
-    // consumeItemStock takes stock away, so a positive delta is stock leaving.
+    // Negated: a positive delta is stock leaving.
     recordStockMovement(
         $part['item_id'],
         -$installedDelta,

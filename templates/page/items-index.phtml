@@ -1,17 +1,13 @@
 <?php
 /**
- * The listing behind the Parts, Tools and Items pages.
- *
- * @var ?string $type    The kind the page is pinned to, or null for the mixed
- *                       listing reached by drilling into a location or a
- *                       manufacturer, which holds both.
- * @var array   $items   The rows on this page.
- * @var array   $slice   The slice paginate() worked out.
- * @var array   $applied Which taxonomy filters are in force.
- * @var string  $noun    What the rows are called.
- * @var string  $badges  Filter badges shown beside the heading, raw HTML.
+ * @var ?string $type    Kind the page is pinned to, or null for the mixed listing.
+ * @var array   $items   Rows on this page.
+ * @var array   $slice   From paginate().
+ * @var array   $applied Taxonomy filters in force.
+ * @var string  $noun
+ * @var string  $badges  Raw HTML filter badges for the heading.
  * @var array   $links   Heading links, label => href.
- * @var array   $columns Heading => a function giving that heading's cell.
+ * @var array   $columns Heading => function giving that heading's cell.
  * @var mixed   $formMessage
  * @var array   $bulk    See item/bulk-bar.
  */

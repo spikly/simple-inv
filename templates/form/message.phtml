@@ -1,10 +1,9 @@
 <?php
 /**
- * One message on its own, or a list. A message belonging to a field is named,
- * so assets/js/app.js can take it away once that field is dealt with.
+ * Field messages carry data-field so assets/js/app.js can remove them once fixed.
  *
- * @var array  $messages Field name (or a bare index) => message HTML.
- * @var string $status   'success' or 'error', which is what colours it.
+ * @var array  $messages Field name (or index) => message HTML.
+ * @var string $status   'success' or 'error'.
  */
 
 $field = static function ($key) {

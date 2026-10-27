@@ -1,19 +1,16 @@
 <?php
 /**
- * The dashboard: totals across the top, then whatever wants attention.
- *
- * @var array $totals        Counts from fetchDashboardTotals().
- * @var array $lowStock      Parts at or below their reorder level.
- * @var array $overCommitted Parts with more reserved than held.
- * @var array $toolsOut      Tools that are signed out.
- * @var int   $overdue       How many of those are late back.
- * @var array $openProjects  Projects still being worked on.
- * @var array $recent        The last few items added.
- * @var int   $rowLimit      How many rows a section shows.
- * @var ?array $results      What the search found, or null when none was made.
+ * @var array  $totals        From fetchDashboardTotals().
+ * @var array  $lowStock      Parts at or below their reorder level.
+ * @var array  $overCommitted Parts with more reserved than held.
+ * @var array  $toolsOut      Signed-out tools.
+ * @var int    $overdue       How many of those are late.
+ * @var array  $openProjects
+ * @var array  $recent        Latest items added.
+ * @var int    $rowLimit      Rows per section.
+ * @var ?array $results       Search results, or null if no search.
  */
 
-/** The first $rowLimit of a list, noting anything left off the end. */
 $topOf = static function (array $rows) use ($rowLimit) {
     $hidden = count($rows) - $rowLimit;
 
@@ -24,7 +21,6 @@ $topOf = static function (array $rows) use ($rowLimit) {
     return array_slice($rows, 0, $rowLimit);
 };
 
-/** Shared renderer for the two stock warning tables. */
 $stockTable = static function (array $items) {
     renderTable(
         ['Item', 'Location', 'Held', 'Free', 'Reorder At', 'Supplier', ''],
@@ -38,7 +34,7 @@ $stockTable = static function (array $items) {
                 stockCell($item),
                 (int)$item['item_min_quantity'] > 0 ? escapeHtml($item['item_min_quantity']) : '-',
                 escapeHtml($item['sup_name'] ?? ''),
-                            '<a href="index.php?page=adjust-stock&item_id=' . $item['item_id'] . '">Add Stock</a>',
+                '<a href="index.php?page=adjust-stock&item_id=' . $item['item_id'] . '">Add Stock</a>',
             ];
         }
     );

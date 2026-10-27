@@ -1,10 +1,8 @@
 <?php
 
 /**
- * Tools going in and out of the workshop. Signing one out opens a row in
- * inv_tool_loans; signing it in stamps loan_in_at rather than deleting the
- * row, so the history is kept. A tool is out while one row has loan_in_at
- * null, and it can only have one at a time.
+ * Signing in stamps loan_in_at rather than deleting the row, so history is kept.
+ * A tool is out while it has a row with loan_in_at null, and has at most one.
  */
 
 /** Tools have no quantity, but the column is not nullable, so: whole pieces. */
@@ -20,7 +18,6 @@ function pieceUnitId(): int
     return $unitId;
 }
 
-/** The loan a tool is currently out on, or null when it is here. */
 function fetchOpenToolLoan($item_id): ?array
 {
     return dbRow(
@@ -40,7 +37,6 @@ function countToolLoans($item_id): int
     );
 }
 
-/** Everywhere a tool has been, newest first. */
 function fetchToolLoans($item_id, ?array $slice = null): array
 {
     return dbAll(
@@ -52,9 +48,8 @@ function fetchToolLoans($item_id, ?array $slice = null): array
 }
 
 /**
- * Out right now, overdue first. Only loans against something that is actually
- * a tool: upgrading deployments can leave rows against items since filed as
- * parts, and a part is not out with anybody.
+ * Overdue first. Limited to tools, since upgraded installs can hold loans against
+ * items later refiled as parts.
  */
 function fetchOpenToolLoans(): array
 {
@@ -79,13 +74,12 @@ function countOverdueLoans(array $loans): int
     return count($overdue);
 }
 
-/** True when a loan is still open and its due date has gone by. */
 function loanIsOverdue(?string $dueAt, ?string $inAt = null): bool
 {
     return $inAt === null && $dueAt !== null && $dueAt !== '' && $dueAt < date('Y-m-d');
 }
 
-/** The columns to write, or ['errors' => [...]] keyed by field. Checks both fields. */
+/** ['values' => [...]] or ['errors' => [...]] keyed by field. */
 function toolLoanValues(array $post): array
 {
     $errors = [];
@@ -112,7 +106,7 @@ function toolLoanValues(array $post): array
     ]];
 }
 
-/** Returns an error when it is already with somebody; one tool, one place. */
+/** Returns an error when it is already out: one open loan per tool. */
 function signToolOut($item_id, array $values): ?string
 {
     if (fetchOpenToolLoan($item_id)) {
@@ -128,7 +122,6 @@ function signToolOut($item_id, array $values): ?string
     return null;
 }
 
-/** Sign a tool back in, keeping the row as history. */
 function signToolIn($loan_id): void
 {
     dbRun(
@@ -139,8 +132,8 @@ function signToolIn($loan_id): void
 }
 
 /**
- * The returned-at value the database will take, or ['errors' => [...]].
- * Clearing it reopens the loan, which only works while nothing else has it.
+ * ['value' => ...] or ['errors' => [...]]. Clearing the date reopens the loan,
+ * so it is refused while the tool is out on another.
  */
 function toolReturnValue(array $loan, array $post): array
 {
@@ -167,10 +160,6 @@ function toolReturnValue(array $loan, array $post): array
 
     return ['value' => $returned];
 }
-
-/*
- * Presentation
- */
 
 function toolBorrowerCell(array $item): string
 {

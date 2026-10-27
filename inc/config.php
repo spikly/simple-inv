@@ -1,9 +1,6 @@
 <?php
 
-/**
- * A setting from config/user.config.php, addressed with dot notation:
- * config('db.host'), config('site.title', 'Inventory Tracker').
- */
+/** Dot notation, eg config('db.host'). */
 function config(string $key, $default = null)
 {
     static $settings = null;

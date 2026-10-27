@@ -1,11 +1,8 @@
 <?php
 /**
- * Correcting one sign-out record: the wrong name, a date that moved, or an
- * entry made by mistake.
- *
- * @var mixed $loan        The record, or false when there is no such id.
- * @var mixed $itemId      The tool it belongs to, for the link back.
- * @var mixed $formMessage The last result, or false.
+ * @var mixed $loan        The record, or false if not found.
+ * @var mixed $itemId      The tool, for the link back.
+ * @var mixed $formMessage Last result, or false.
  */
 
 pageHeader('Edit Sign-Out Record', $itemId ? [
@@ -26,7 +23,6 @@ formMessage($formMessage);
 textField('loan_to', 'Signed Out To', $loan['loan_to'], 'text', ' required');
 textField('loan_due_at', 'Due Back (optional)', $loan['loan_due_at'], 'date');
 
-// Clearing this puts the tool back out with whoever had it.
 textField(
     'loan_in_at',
     'Returned (clear this to put it back out)',

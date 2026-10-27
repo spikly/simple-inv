@@ -354,9 +354,7 @@ form input[type="number"] {
     max-width: 120px;
 }
 
-/* Sized to what they hold, the way the number field is, rather than left to
-   stretch a long way past a date. Everything else about them is the same as
-   the text fields above, including the font the browser gives them. */
+/* Sized to their content, like the number field. */
 
 form input[type="date"] {
     max-width: 190px;
@@ -761,16 +759,13 @@ form input[type="submit"].delete:hover {
     border: 1px solid var(--color-success-border);
 }
 
-/* A submission with more than one thing wrong lists them all, so the form can
-   be put right in one pass. */
-
 .form-message p {
     margin: 0;
     font-weight: 600;
 }
 
 .form-message ul {
-    /* The reset strips list markers, and this is a list worth counting. */
+    /* The reset strips list markers. */
     list-style: disc;
     margin: 8px 0 0;
     padding: 0 0 0 20px;
@@ -788,9 +783,6 @@ form input[type="submit"].delete:hover {
    Field Errors
    ========================================================= */
 
-/* The message from the summary above, repeated against the control it belongs
-   to so it is answered where it is fixed. */
-
 .field-error {
     display: block;
     margin: 6px 0 0;
@@ -805,7 +797,7 @@ form input[type="submit"].delete:hover {
     color: #991b1b;
 }
 
-/* The taxonomy dropdowns are a button standing in for a hidden select. */
+/* Searchable selects show a button in place of the hidden select. */
 
 .field-invalid .searchable-select.is-open .searchable-select__button {
     border-color: var(--color-danger);
@@ -1251,8 +1243,6 @@ table th.is-sorted-desc::after {
     opacity: 1;
 }
 
-/* A location that sits inside another one, shown under it on the listing. */
-
 table td .sub-location {
     display: inline-block;
     position: relative;
@@ -1307,10 +1297,8 @@ table td small.row-note {
    Photos
    ========================================================= */
 
-/* Sizes the column to the image rather than letting the table share out
-   the leftover width between every column. The thumbnail opts out of the
-   reset's max-width:100%, which would otherwise shrink it to fit the very
-   column it is meant to be setting the width of. */
+/* Column sized to the image; the reset's max-width:100% would shrink the
+   thumbnail to fit the column it is meant to size. */
 table th.col-thumb,
 table td.col-thumb {
     width: 1%;
@@ -1460,7 +1448,7 @@ table td.col-location {
     margin: 0 0 8px;
 }
 
-/* Stands in for a missing photo: a spanner for a tool, nuts for a part. */
+/* Missing photo: a spanner for a tool, nuts for a part. */
 .item-placeholder {
     background: var(--color-surface-subtle);
 }
@@ -1515,8 +1503,7 @@ table td.col-location {
     margin-right: 6px;
 }
 
-/* A field the page has already settled, shown in place of the control it
-   replaces: the kind a category files when it is added from the item form. */
+/* A fixed value shown in place of a control. */
 
 .locked-field {
     display: inline-block;
@@ -1534,8 +1521,6 @@ table td.col-location {
     padding-top: 10px;
 }
 
-/* The accepted types, said in the label rather than in a paragraph of their
-   own, so the hint sits with the control it is about. */
 form label small.field-hint {
     display: block;
     margin-top: 3px;
@@ -1544,16 +1529,13 @@ form label small.field-hint {
     font-weight: 400;
 }
 
-/* The thumbnail column, kept to the width of one thumbnail rather than given a
-   share of the leftover space. */
 table th.col-file-thumb,
 table td.col-file-thumb {
     width: 1%;
     padding-right: 0;
 }
 
-/* A fixed square whatever it holds, so a tall picture, a wide one and an icon
-   all leave the names beside them lining up. */
+/* A fixed square, so names line up whatever the thumbnail's shape. */
 .file-thumb {
     display: flex;
     align-items: center;
@@ -1564,8 +1546,7 @@ table td.col-file-thumb {
 }
 
 .file-thumb img {
-    /* The stored copy is made at 50px, so this is its own size, not a scaling
-       down of something larger. */
+    /* Matches the 50px stored copy. */
     max-width: 50px;
     max-height: 50px;
     border: 1px solid var(--color-border);
@@ -1581,24 +1562,19 @@ table td.col-file-thumb {
     border-color: var(--color-border-strong);
 }
 
-/* A column holding nothing but a button, kept to the width of one. */
 table td.table-action,
 table th.table-action {
     width: 1%;
     white-space: nowrap;
 }
 
-/* The description column takes what the rest of the row does not need, since
-   it is the one cell holding a sentence. */
 table td.table-description,
 table th.table-description {
     width: 40%;
     min-width: 180px;
 }
 
-/* These inputs belong to the form below the table rather than sitting inside
-   it, so the form rules above do not reach them and they are dressed here.
-   Kept plainer than a form field: a grid of boxed inputs reads as a wall. */
+/* Owned by the form below the table, so the form rules above miss them. */
 table td input[type="text"] {
     width: 100%;
     padding: 7px 9px;
@@ -1611,8 +1587,7 @@ table td input[type="text"]:focus {
     box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.12);
 }
 
-/* A form inside a table cell is only ever a single button, so it loses the
-   spacing a form on its own would want and the button shrinks to suit a row. */
+/* A form in a table cell is only ever a single button. */
 table td form {
     margin: 0;
 }
@@ -1678,8 +1653,7 @@ table td form input[type="submit"] {
     font-weight: 600;
 }
 
-/* Kept in place rather than removed at the ends, so the row does not shift
-   under the pointer as you move through the pages. */
+/* Kept rather than removed, so the row does not shift under the pointer. */
 
 .pagination-step.is-disabled {
     border-color: var(--color-border);
@@ -1709,10 +1683,8 @@ table td form input[type="submit"] {
 /* =========================================================
    Printable QR labels
 
-   Sized for 40mm x 30mm stickers off a roll.
-   To fit a different label, change these three and the @page size in the
-   print block below; @page cannot read a custom property, so the measurement
-   is written out there as well.
+   Sized for 40mm x 30mm roll stickers. To change, update these and the
+   @page size below, which cannot read custom properties.
    ========================================================= */
 
 :root {
@@ -1777,8 +1749,7 @@ table td form input[type="submit"] {
 }
 
 @media print {
-    /* One label to a page, so a roll printer feeds a single sticker per code.
-       Keep this in step with --label-width and --label-height above. */
+    /* One label per page. Keep in step with --label-width/--label-height. */
     @page {
         size: 40mm 30mm;
         margin: 0;
@@ -1803,8 +1774,7 @@ table td form input[type="submit"] {
         padding: 0;
     }
 
-    /* The sticker is its own edge, so the outline the screen needs goes, and
-       the code is forced to print solid rather than as a saved-ink grey. */
+    /* No outline on the sticker; force the code to print solid, not grey. */
     .label {
         outline: 0;
         break-after: page;

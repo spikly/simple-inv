@@ -1,4 +1,4 @@
 <?php
 
-// Parts and tools together, reached by drilling into something holding both.
+// Parts and tools together.
 itemsIndexPage(null);

@@ -3,16 +3,15 @@
 --
 --   mariadb -u USER -p YOUR_DATABASE < database-updates.sql
 --
--- Safe to run more than once: every statement checks first, so anything
--- already applied is skipped. The IF [NOT] EXISTS clauses are MariaDB
--- syntax -- on MySQL, remove them and run only the parts you still need.
+-- Safe to re-run: anything already applied is skipped. IF [NOT] EXISTS is
+-- MariaDB syntax; on MySQL, remove it and run only the parts you need.
 --
 
--- Manufacturers part number, shown on the item pages.
+-- Manufacturer's part number.
 ALTER TABLE `inv_items`
   ADD COLUMN IF NOT EXISTS `item_part_no` text DEFAULT NULL AFTER `item_name`;
 
--- Reorder level. Items at or below this free quantity appear as low stock.
+-- Reorder level: items at or below this free quantity show as low stock.
 ALTER TABLE `inv_items`
   ADD COLUMN IF NOT EXISTS `item_min_quantity` int(11) NOT NULL DEFAULT 0 AFTER `item_quantity`;
 
@@ -20,16 +19,15 @@ ALTER TABLE `inv_items`
 ALTER TABLE `inv_items`
   ADD COLUMN IF NOT EXISTS `item_image` varchar(255) DEFAULT NULL AFTER `item_notes`;
 
--- Record when items are added and changed, for the dashboard.
+-- Created and updated times, for the dashboard.
 ALTER TABLE `inv_items`
   ADD COLUMN IF NOT EXISTS `item_created_at` timestamp NOT NULL
       DEFAULT current_timestamp() AFTER `item_image`,
   ADD COLUMN IF NOT EXISTS `item_updated_at` timestamp NOT NULL
       DEFAULT current_timestamp() ON UPDATE current_timestamp() AFTER `item_created_at`;
 
--- Items may now belong to more than one category, so the same pairing must
--- not be stored twice. The table has no primary key, so duplicates are
--- cleared by rebuilding its contents from a DISTINCT copy.
+-- Remove duplicate category pairings (no primary key, so rebuild from a
+-- DISTINCT copy), then make them unique.
 CREATE TEMPORARY TABLE `categories_items_distinct` AS
   SELECT DISTINCT `cat_id`, `item_id` FROM `categories_items`;
 
@@ -43,54 +41,37 @@ DROP TEMPORARY TABLE `categories_items_distinct`;
 ALTER TABLE `categories_items`
   ADD UNIQUE KEY IF NOT EXISTS `uniq_cat_item` (`cat_id`,`item_id`);
 
--- Superseded by the inv_deployments table. Check for anything worth keeping
--- with "SELECT item_id, item_name, item_deployed_loc FROM inv_items
--- WHERE item_deployed_loc <> ''" before running this.
+-- Superseded by inv_deployments. Check for anything worth keeping first:
+--   SELECT item_id, item_name, item_deployed_loc FROM inv_items WHERE item_deployed_loc <> '';
 ALTER TABLE `inv_items` DROP COLUMN IF EXISTS `item_deployed_loc`;
 
--- Reservations against project assemblies are now worked out from stock rather
--- than typed in: a part holds what it still needs (required less installed) as
--- far as the item's free stock goes, oldest part first. This restates every
--- existing quantity_allocated on that basis, so nothing is reserved twice or
--- reserved out of stock that is not there.
---
--- Deployments no longer take a share of stock, so they are not subtracted here
--- either; see the tool sign-out section further down.
---
--- Quantities already recorded as installed are left alone. They are treated as
--- having come out of stock at the time, so this does not go back and take them
--- off item_quantity; only installs made from now on move stock.
+-- Recalculate assembly reservations from stock: each part holds what it still
+-- needs (required less installed), up to free stock, oldest first.
+-- Installed quantities and item_quantity are left alone.
 UPDATE `inv_assembly_items` ai
   INNER JOIN `inv_items` i ON i.item_id = ai.item_id
   SET ai.quantity_allocated = GREATEST(0, LEAST(
       GREATEST(0, ai.quantity_required - ai.quantity_installed),
       i.item_quantity
-        -- What the parts booked before this one have already taken. Reading the
-        -- table being updated needs the derived table to copy it first.
+        -- Less what earlier parts took. The derived table lets MySQL read the
+        -- table being updated.
         - COALESCE((SELECT SUM(GREATEST(0, e.quantity_required - e.quantity_installed))
                     FROM (SELECT * FROM `inv_assembly_items`) e
                     WHERE e.item_id = ai.item_id
                       AND e.assembly_item_id < ai.assembly_item_id), 0)
   ));
 
--- Categories now say whether they file parts or tools, which is what decides
--- how the items in them behave. Everything already filed stays a part.
+-- Whether a category files parts or tools. Existing categories stay parts.
 ALTER TABLE `inv_categories`
   ADD COLUMN IF NOT EXISTS `cat_type` enum('part','tool') NOT NULL DEFAULT 'part' AFTER `cat_slug`;
 
--- Deployments become tool sign-out records.
---
--- Projects and assemblies cover everything deployments were doing for parts,
--- so the table is repurposed for tools instead: who has it, when it is due
--- back and when it came back. Nothing is thrown away, but a deployment against
--- something you go on to file as a part will not be shown anywhere, so it is
--- worth reading them first:
+-- Deployments become tool loans. Deployments against parts will no longer be
+-- shown, so review them first:
 --
 --   SELECT d.*, i.item_name FROM inv_deployments d
 --     INNER JOIN inv_items i ON i.item_id = d.dep_item_id;
 --
--- RENAME TABLE has no IF EXISTS, so it is prepared only when there is still an
--- inv_deployments table to rename.
+-- RENAME TABLE has no IF EXISTS, so it runs only if inv_deployments exists.
 SET @sql = IF(
   (SELECT COUNT(*) FROM information_schema.TABLES
     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inv_deployments') > 0,
@@ -112,9 +93,8 @@ CREATE TABLE IF NOT EXISTS `inv_tool_loans` (
   PRIMARY KEY (`loan_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- A deployment was a quantity against a description; a loan is one tool
--- against whoever has it, so the quantity goes and the description becomes the
--- borrower. Existing rows are left open, ready to be signed back in.
+-- The quantity goes and the description becomes the borrower. Existing rows
+-- stay open, ready to be signed back in.
 ALTER TABLE `inv_tool_loans`
   CHANGE COLUMN IF EXISTS `dep_id` `loan_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   CHANGE COLUMN IF EXISTS `dep_item_id` `loan_item_id` int(11) NOT NULL,
@@ -127,8 +107,7 @@ ALTER TABLE `inv_tool_loans`
   ADD KEY IF NOT EXISTS `idx_loan_item` (`loan_item_id`),
   ADD KEY IF NOT EXISTS `idx_loan_open` (`loan_item_id`,`loan_in_at`);
 
--- Deployments were never tied to their item, so deleting an item left its rows
--- behind. Clear any that are already orphaned, then say so in the schema.
+-- Clear orphaned loans, then add the missing foreign key.
 DELETE l FROM `inv_tool_loans` l
   LEFT JOIN `inv_items` i ON i.item_id = l.loan_item_id
   WHERE i.item_id IS NULL;
@@ -146,12 +125,8 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- Stock movements, so a quantity that looks wrong can be traced back.
---
--- Nothing that has already happened can be recovered, so every part that holds
--- stock is given one opening row saying what it held when the log began. That
--- keeps the history adding up to the figure on the item rather than starting
--- from an unexplained number.
+-- Stock movement log. Each part gets an opening row with its current
+-- quantity, so the history adds up to the figure on the item.
 CREATE TABLE IF NOT EXISTS `inv_stock_movements` (
   `move_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `move_item_id` int(11) NOT NULL,
@@ -177,7 +152,7 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- Only items with no history at all, so running this again adds nothing.
+-- Only items with no history, so re-running adds nothing.
 INSERT INTO `inv_stock_movements`
     (`move_item_id`, `move_change`, `move_quantity_after`, `move_reason`, `move_note`)
   SELECT i.item_id, i.item_quantity, i.item_quantity, 'opening', 'Held when the stock log began'
@@ -188,18 +163,13 @@ INSERT INTO `inv_stock_movements`
         INNER JOIN `inv_categories` c ON c.cat_id = ci.cat_id
       WHERE ci.item_id = i.item_id AND c.cat_type = 'tool');
 
--- Locations may now sit inside other locations, so a set of drawers is one
--- location with a location per drawer under it and the items filed in the
--- drawer. Everything already stored stays a top level location.
---
--- Only one level deep: loc_parent_id always names a location that has no
--- parent of its own, which is what the app offers and enforces.
+-- Nested locations, one level deep (enforced by the app). Existing locations
+-- stay top level.
 ALTER TABLE `inv_locations`
   ADD COLUMN IF NOT EXISTS `loc_parent_id` int(11) DEFAULT NULL AFTER `loc_name`,
   ADD KEY IF NOT EXISTS `idx_loc_parent` (`loc_parent_id`);
 
--- A parent cannot be deleted while anything is inside it, which the app says
--- rather than letting this refuse the delete; the constraint is the backstop.
+-- A backstop: the app refuses to delete a parent that has anything inside.
 SET @sql = IF(
   (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inv_locations'
@@ -213,25 +183,14 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- Colour and the product page it was bought from, shown on the item pages and
--- carried through the CSV import and export. Both optional, for parts and
--- tools alike.
+-- Optional colour and product page URL.
 ALTER TABLE `inv_items`
   ADD COLUMN IF NOT EXISTS `item_colour` varchar(50) DEFAULT NULL AFTER `item_part_no`,
   ADD COLUMN IF NOT EXISTS `item_product_url` varchar(255) DEFAULT NULL AFTER `item_colour`;
 
--- Supplier websites are now checked when they are saved: the address has to
--- start http:// or https://, because it is put straight into a link and a
--- browser will run a javascript: address when the link is clicked.
---
--- A bare domain typed in before that check existed, "example.com", still shows
--- fine but would be refused the next time that supplier is edited, so it is
--- given the https:// it was missing.
---
--- Only what is unambiguously a domain is touched: something already carrying a
--- scheme, or holding a colon, a space or no dot at all, is left exactly as it
--- is rather than guessed at. Running this again changes nothing, since
--- everything it fixes then starts with https://.
+-- Supplier websites must now start http:// or https:// (a javascript: link
+-- would run when clicked). Add https:// to bare domains only; anything
+-- ambiguous is left alone. Safe to re-run.
 UPDATE `inv_suppliers`
   SET `sup_website` = CONCAT('https://', `sup_website`)
   WHERE `sup_website` <> ''
@@ -242,20 +201,15 @@ UPDATE `inv_suppliers`
     AND `sup_website` NOT LIKE '/%'
     AND `sup_website` LIKE '%.%';
 
--- Anything still not a usable address is left for you to put right by hand,
--- because there is no safe way to guess what was meant. It is shown as plain
--- text rather than as a link until then. List them with:
+-- Anything left must be fixed by hand; until then it shows as plain text.
+-- List them with:
 --
 --   SELECT sup_id, sup_name, sup_website FROM inv_suppliers
 --   WHERE sup_website <> '' AND sup_website NOT LIKE 'http://%'
 --     AND sup_website NOT LIKE 'https://%';
 
--- Documents and extra pictures kept against an item: spec sheets, manuals,
--- drawings. The item's own photo is unchanged and stays where it was, in
--- inv_items.item_image; these sit alongside it rather than replacing it.
---
--- The files themselves live under assets/uploads/files/, which has to be
--- writable by the webserver the same way assets/uploads/items/ already is.
+-- Item documents. Files live in assets/uploads/files/, which must be
+-- writable by the webserver, like assets/uploads/items/.
 CREATE TABLE IF NOT EXISTS `inv_item_files` (
   `file_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
   `file_item_id` int(11) NOT NULL,
@@ -267,8 +221,7 @@ CREATE TABLE IF NOT EXISTS `inv_item_files` (
   KEY `idx_file_item` (`file_item_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Deleting an item takes its attachments with it. The app unlinks the files
--- from disk first, so this only has to clear the rows.
+-- Deleting an item clears its rows; the app removes the files from disk.
 SET @sql = IF(
   (SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'inv_item_files'
@@ -282,26 +235,20 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- A line saying what each attached document is, because a filename often does
--- not: "DS_74HC595_R3.pdf" means less than "Shift register datasheet". Filled
--- in on the item's page, after the file has been uploaded.
+-- A description for each document, as a filename often says little.
 ALTER TABLE `inv_item_files`
   ADD COLUMN IF NOT EXISTS `file_description` varchar(255) DEFAULT NULL AFTER `file_name`;
 
--- Names are unique from here on, so a second "Acme" cannot be typed in.
---
--- The columns become VARCHAR because a UNIQUE key over TEXT needs a prefix
--- length; 191 is the longest utf8mb4 column older InnoDB will index whole.
--- inv_project_statuses already models a name this way.
+-- Unique names. VARCHAR because a UNIQUE key over TEXT needs a prefix length;
+-- 191 is the longest utf8mb4 column older InnoDB will index whole.
 ALTER TABLE `inv_brands`     MODIFY `brand_name`  varchar(191) NOT NULL;
 ALTER TABLE `inv_suppliers`  MODIFY `sup_name`    varchar(191) NOT NULL;
 ALTER TABLE `inv_statuses`   MODIFY `status_name` varchar(191) NOT NULL;
 ALTER TABLE `inv_categories` MODIFY `cat_name`    varchar(191) NOT NULL;
 ALTER TABLE `inv_locations`  MODIFY `loc_name`    varchar(191) NOT NULL;
 
--- Two categories of the same name filing different kinds are not duplicates:
--- merging them would turn tools into parts. They are told apart instead, which
--- also lets the app go on treating a category name as naming one kind.
+-- Same-named categories of different kinds are renamed apart, not merged,
+-- as merging would turn tools into parts.
 UPDATE `inv_categories` c
   INNER JOIN (SELECT `cat_name` FROM `inv_categories`
               GROUP BY `cat_name` HAVING COUNT(DISTINCT `cat_type`) > 1) m
@@ -309,10 +256,8 @@ UPDATE `inv_categories` c
   SET c.`cat_name` = CONCAT(c.`cat_name`, ' (', IF(c.`cat_type` = 'tool', 'Tools', 'Parts'), ')'),
       c.`cat_slug` = CONCAT(c.`cat_slug`, '-', c.`cat_type`);
 
--- Everything left sharing a name is the same thing typed twice: the lowest id
--- is kept and whatever pointed at the others is moved onto it. The comparison
--- is the collation's, so "Acme" and "acme" merge the way the index will treat
--- them.
+-- Merge remaining duplicates into the lowest id. Names compare by collation,
+-- so "Acme" and "acme" merge, as the index will treat them.
 UPDATE `inv_items` i
   INNER JOIN `inv_brands` b ON b.`brand_id` = i.`item_brand_id`
   INNER JOIN (SELECT MIN(`brand_id`) AS keep_id, `brand_name` FROM `inv_brands` GROUP BY `brand_name`) k
@@ -346,9 +291,8 @@ DELETE st FROM `inv_statuses` st
     ON k.`status_name` = st.`status_name`
   WHERE st.`status_id` <> k.keep_id;
 
--- An item may already be in the category being kept, and a pairing is only
--- stored once, so IGNORE drops the row that would repeat it; deleting the
--- duplicate category then cascades the leftover away.
+-- IGNORE skips pairings that already exist; deleting the duplicate category
+-- then cascades the leftovers away.
 UPDATE IGNORE `categories_items` ci
   INNER JOIN `inv_categories` c ON c.`cat_id` = ci.`cat_id`
   INNER JOIN (SELECT MIN(`cat_id`) AS keep_id, `cat_name` FROM `inv_categories` GROUP BY `cat_name`) k
@@ -360,10 +304,8 @@ DELETE c FROM `inv_categories` c
     ON k.`cat_name` = c.`cat_name`
   WHERE c.`cat_id` <> k.keep_id;
 
--- A location's name only has to be unique inside the one it sits in, so
--- "Drawer 1" in two different chests is two locations. Nesting is one level
--- deep, so the parents are settled first and the sub-locations then compared
--- inside whichever parent they ended up under.
+-- Location names are unique within their parent. Merge parents first, then
+-- sub-locations within their merged parent.
 UPDATE `inv_locations` child
   INNER JOIN `inv_locations` p ON p.`loc_id` = child.`loc_parent_id`
   INNER JOIN (SELECT MIN(`loc_id`) AS keep_id, `loc_name` FROM `inv_locations`

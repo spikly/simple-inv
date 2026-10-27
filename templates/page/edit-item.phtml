@@ -1,13 +1,10 @@
 <?php
 /**
- * Editing a part or a tool, including switching it between the two.
- *
- * @var mixed  $item        The stored item, or false when there is no such id.
- * @var array  $values      Current field values.
- * @var string $type        The kind the form is being drawn as, which is not
- *                          the stored kind while a switch is being considered.
- * @var string $other       The kind it is not, for the link that switches.
- * @var mixed  $formMessage The last result, or false.
+ * @var mixed  $item        Stored item, or false if not found.
+ * @var array  $values
+ * @var string $type        Kind being drawn; differs from the stored kind mid-switch.
+ * @var string $other       The other kind, for the switch link.
+ * @var mixed  $formMessage Last result, or false.
  */
 
 pageHeader('Edit ' . ITEM_TYPES[$type], $item ? [

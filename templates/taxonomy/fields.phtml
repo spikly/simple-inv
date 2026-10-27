@@ -1,12 +1,9 @@
 <?php
 /**
- * The labelled controls for a taxonomy's own columns.
- *
- * @var array $tax    Its definition; fields is ordered, name column first.
- * @var array $values Current field values.
- * @var array $locked Column => value fixed by the page that asked for the form.
- * @var mixed $id     The row being edited, or null on an add form, for a field
- *                    whose choices depend on which row they are for.
+ * @var array $tax    Its definition; fields ordered, name column first.
+ * @var array $values
+ * @var array $locked Column => value fixed by the calling page.
+ * @var mixed $id     Row being edited, or null; some fields' choices depend on it.
  */
 
 foreach ($tax['fields'] as $column => $field) {
@@ -17,13 +14,11 @@ foreach ($tax['fields'] as $column => $field) {
     $isSelect = is_array($field) && ($field['type'] ?? '') === 'select';
     $options = $isSelect ? taxonomyFieldOptions($field, $id) : [];
 
-    // A select with nothing to offer is settled by what it belongs to, eg a
-    // location already holding sub-locations, so it is shown as a statement.
+    // An empty select is already settled (eg a location holding sub-locations).
     if ($isSelect && !$options && !array_key_exists($column, $locked)) {
         $locked[$column] = '';
     }
 
-    // Fixed by the page that asked for the form, so shown as a statement.
     if (array_key_exists($column, $locked)) {
         $chosen = $locked[$column];
 

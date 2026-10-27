@@ -13,11 +13,10 @@ return [
 		// Shown in the browser tab and the header.
 		'title' => 'Inventory Tracker',
 
-		// How many rows a listing shows before it starts a new page.
+		// Rows per listing page.
 		'per_page' => 50,
 	],
 
-	// Show full error details on screen instead of just logging them.
-	// Leave this off unless you are tracking a problem down.
+	// Show error details on screen, not just in the log. Leave off in normal use.
 	'debug' => false,
 ];

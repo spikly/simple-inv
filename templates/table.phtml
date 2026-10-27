@@ -1,13 +1,11 @@
 <?php
 /**
- * Headings are clickable to sort, see assets/js/app.js. Headings and cells are
- * raw HTML, a cell usually being a link or a span built by the caller.
+ * Headings and cells are raw HTML. Sorting is done in assets/js/app.js.
  *
- * @var array    $headings      Column headings.
- * @var array    $items         Rows to draw.
+ * @var array    $headings
+ * @var array    $items
  * @var callable $rows          Takes one item, returns its cells.
- * @var array    $columnClasses Column position => class, put on th and td
- *                              alike, which is how a column gets its own size.
+ * @var array    $columnClasses Column index => class, on th and td alike.
  */
 
 $cells = static function (array $values, string $tag) use ($columnClasses) {

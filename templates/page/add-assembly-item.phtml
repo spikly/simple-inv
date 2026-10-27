@@ -1,12 +1,9 @@
 <?php
 /**
- * Putting a part on an assembly. Stock reserves itself against the part as
- * soon as it is saved, as far as it will go.
- *
- * @var mixed $assembly    The assembly, or false when there is no such id.
- * @var array $options     item_id => name and free stock, for the dropdown.
- * @var array $values      Current field values.
- * @var mixed $formMessage The last result, or false.
+ * @var mixed $assembly    Assembly row, or false if not found.
+ * @var array $options     item_id => name and free stock.
+ * @var array $values
+ * @var mixed $formMessage Last result, or false.
  */
 
 if (!$assembly): ?>

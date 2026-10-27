@@ -1,7 +1,5 @@
 <?php
 
-/** Correcting one sign-out record. */
-
 $loanId = queryParam('loan_id');
 $itemId = queryParam('item_id');
 $formMessage = takeFlash();

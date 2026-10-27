@@ -1,13 +1,12 @@
 <?php
 /**
- * What a project still needs to buy, one table per supplier so the list can be
- * worked through an order at a time.
+ * One table per supplier, so it can be worked through an order at a time.
  *
- * @var mixed $project    The project row, or false when there is no such id.
- * @var array $bySupplier Supplier name => its rows.
+ * @var mixed $project    Project row, or false if not found.
+ * @var array $bySupplier Supplier name => rows.
  * @var bool  $hasRows    Whether the project has any parts at all.
- * @var float $toBuyTotal How much has to be bought across all of them.
- * @var int   $projectId  The id being listed.
+ * @var float $toBuyTotal
+ * @var int   $projectId
  */
 
 if (!$project): ?>
@@ -41,7 +40,7 @@ endif; ?>
 <?php foreach ($bySupplier as $supplier => $supplierRows):
     $website = $supplierRows[0]['sup_website'] ?? '';
 
-    // A row stored before this was checked on save can hold anything.
+    // Older rows may hold an unvalidated website.
     sectionHeader(
         escapeHtml($supplier),
         ($website !== '' && isWebUrl($website)) ? ['Visit Website' => escapeHtml($website)] : []

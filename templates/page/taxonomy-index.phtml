@@ -1,17 +1,14 @@
 <?php
 /**
- * A taxonomy's listing page: every row, searchable, linking through to the
- * items filed under it.
- *
  * @var array  $tax          Its definition.
- * @var array  $rows         The rows on this page.
- * @var array  $slice        The slice paginate() worked out.
- * @var string $search       What is being searched for now, or ''.
- * @var string $filter       The taxonomy's own filter value, or '' for none.
- * @var array  $usage        Row id => how many items use it.
+ * @var array  $rows         Rows on this page.
+ * @var array  $slice        From paginate().
+ * @var string $search
+ * @var string $filter       The taxonomy's own filter value, or ''.
+ * @var array  $usage        Row id => item count.
  * @var array  $links        Heading links, label => href.
- * @var string $nameField    The required name column.
- * @var array  $extraColumns Heading => a function giving that heading's cell.
+ * @var string $nameField    The name column.
+ * @var array  $extraColumns Heading => function giving that heading's cell.
  */
 
 pageHeader($tax['plural'] . countBadge($slice['total']), $links);

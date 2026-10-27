@@ -1,10 +1,8 @@
 <?php
 /**
- * A plain "this cannot be undone" delete form under its own heading.
- *
- * @var string $submitName  Submit button name, which is what the page tests for.
- * @var string $buttonLabel Button text.
- * @var string $confirmText Question the browser asks first.
+ * @var string $submitName  Button name the page tests for.
+ * @var string $buttonLabel
+ * @var string $confirmText Browser confirmation question.
  */
 ?>
 <form method="post" onsubmit="return confirm(<?php echo jsString($confirmText); ?>);">

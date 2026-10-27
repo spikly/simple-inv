@@ -20,7 +20,7 @@ function taxonomyFor(?string $control, string $prefix): ?string
     return isset(taxonomies()[$key]) ? $key : null;
 }
 
-/** A category added from the item form has to file the kind that item is. */
+// A category added from the item form takes that item's kind.
 $requestedType = itemType($request['itemType'] ?? 'part');
 
 switch ($request['requestType'] ?? '') {

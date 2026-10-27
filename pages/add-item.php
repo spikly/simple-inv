@@ -14,8 +14,8 @@ if (isset($_POST['add_item_submit'])) {
     $errors = validateItem($_POST, $type);
     $source = $duplicateOf ? fetchSingleItem($duplicateOf) : false;
 
-    // A file input submits nothing when nothing was chosen, so the original's
-    // photo is put back for the form to draw again if this save is rejected.
+    // A file input submits nothing when unchanged, so keep the source's photo
+    // for redrawing the form if the save is rejected.
     $values['item_image'] = $source ? $source['item_image'] : null;
     $photo = ['name' => null];
 

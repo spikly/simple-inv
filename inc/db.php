@@ -1,6 +1,5 @@
 <?php
 
-/** Lazily created shared PDO connection. */
 function db(): PDO
 {
     static $pdo = null;
@@ -31,19 +30,18 @@ function dbRun(string $sql, array $params = []): PDOStatement
     return $stmt;
 }
 
-/** Every matching row, or an empty array. */
 function dbAll(string $sql, array $params = []): array
 {
     return dbRun($sql, $params)->fetchAll();
 }
 
-/** The first matching row, or false. */
+/** False when there is no row. */
 function dbRow(string $sql, array $params = [])
 {
     return dbRun($sql, $params)->fetch();
 }
 
-/** The first column of the first row, or $default when there is no row. */
+/** First column of the first row, or $default when there is no row. */
 function dbValue(string $sql, array $params = [], $default = null)
 {
     $value = dbRun($sql, $params)->fetchColumn();
@@ -58,7 +56,6 @@ function dbInsert(string $sql, array $params = []): string
     return db()->lastInsertId();
 }
 
-/** Run $work inside a transaction, rolling back if it throws. */
 function dbTransaction(callable $work)
 {
     db()->beginTransaction();

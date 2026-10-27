@@ -1,22 +1,20 @@
 <?php
 /**
- * A tool's history is who has had it; a part's is what its stock has done.
- *
- * @var mixed   $item        The item row, or false when there is no such id.
+ * @var mixed   $item        Item row, or false if not found.
  * @var string  $type        'part' or 'tool'.
- * @var bool    $isOut       Whether a tool is signed out right now.
- * @var string  $signLink    'Sign In' or 'Sign Out', whichever is on offer.
+ * @var bool    $isOut       Whether a tool is signed out.
+ * @var string  $signLink    'Sign In' or 'Sign Out'.
  * @var array   $links       Heading links, label => href.
- * @var mixed   $formMessage The last result, or false.
+ * @var mixed   $formMessage Last result, or false.
  *
  * Set only when the item was found:
- * @var array   $categories    Its category ids.
- * @var array   $files         Documents kept against it.
+ * @var array   $categories    Category ids.
+ * @var array   $files
  * @var array   $loans         Sign-out history (tools).
- * @var array   $loanSlice     Its slice (tools).
- * @var array   $assemblyUsage Assemblies holding this part (parts).
+ * @var array   $loanSlice     (tools)
+ * @var array   $assemblyUsage Assemblies using this part (parts).
  * @var array   $movements     Stock history (parts).
- * @var array   $moveSlice     Its slice (parts).
+ * @var array   $moveSlice     (parts)
  */
 
 pageHeader(ITEM_TYPES[$type] . ' Info', $links);
@@ -61,14 +59,14 @@ $properties = [
         itemProperty('Colour', '<p>' . escapeHtml($item['item_colour']) . '</p>');
     }
 
-    // Anything stored before the field was validated could be any old text.
+    // Older rows may hold an unvalidated URL.
     if (isset($item['item_product_url']) && isWebUrl($item['item_product_url'])) {
         itemProperty('Product Page', '<p><a href="' . escapeHtml($item['item_product_url'])
             . '" target="_blank" rel="noopener">Visit Product Page</a></p>');
     }
 
     if ($type === 'tool') {
-        // One object, so the only quantity is whether it is here.
+        // A tool is one object: show whether it is here, not a quantity.
         $overdue = $isOut && loanIsOverdue($item['loan_due_at']);
 
         itemProperty(
@@ -118,7 +116,7 @@ $properties = [
                 . escapeHtml(LOCATION_PATH_SEPARATOR) . $link;
         }
 
-        // As with the product page above: an old row can hold anything.
+        // Older rows may hold an unvalidated URL.
         if ($key === 'supplier' && $item['sup_website'] && isWebUrl($item['sup_website'])) {
             $link .= ' | <a href="' . escapeHtml($item['sup_website']) . '" target="_blank">Website</a>';
         }

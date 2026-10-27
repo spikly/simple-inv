@@ -1,17 +1,13 @@
 <?php
 /**
- * A <div> rather than a <p>: some controls are built from block elements, and
- * a browser closes a paragraph as soon as it meets one, which would end the
- * row where its control began and take the invalid mark with it.
+ * A <div>, not a <p>: a block-level control would close the <p> early and lose
+ * the invalid mark.
  *
- * @var string $name       Field name, also the control's id.
- * @var string $label      Label HTML.
- * @var string $control    Control HTML.
- * @var bool   $hasControl Whether there is something focusable to point the
- *                         label at. A row that only states a settled value has
- *                         not, and a label naming an id that does not exist is
- *                         worse than one naming nothing.
- * @var string $error      Why the last submission was rejected, or ''.
+ * @var string $name       Also the control's id.
+ * @var string $label      Raw HTML.
+ * @var string $control    Raw HTML.
+ * @var bool   $hasControl False for a read-only row, so the label gets no for="".
+ * @var string $error      Rejection reason, or ''.
  */
 ?>
 <?php if ($error === ''): ?>

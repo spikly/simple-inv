@@ -32,7 +32,7 @@ if (isset($_POST['duplicate_assembly_submit'])) {
             WHERE assembly_id = :old_assembly_id
         ', ['new_assembly_id' => $newAssemblyId, 'old_assembly_id' => $assemblyId]);
 
-        // The copy starts holding nothing, so free stock is shared out again.
+        // The copy starts with nothing reserved.
         reallocateItems(fetchAssemblyItemIds($newAssemblyId));
 
         db()->commit();

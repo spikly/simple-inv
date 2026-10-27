@@ -1,10 +1,5 @@
 <?php
 
-/**
- * The shared markup kit. Nothing here writes HTML itself: each function works
- * out what a template needs and hands it over.
- */
-
 /** $title and $extraHtml are raw HTML; escape any user data first. */
 function headerRow(string $class, string $title, array $links = [], string $extraHtml = ''): void
 {
@@ -26,11 +21,7 @@ function countBadge(int $count, string $suffix = ''): string
     return ' <span><span>' . $count . '</span>' . $suffix . '</span>';
 }
 
-/**
- * The messages waiting against each named field. formMessage() fills this in
- * from the errors it renders, which is why it is called at the top of a form.
- * An array replaces what is held; nothing reads it back.
- */
+/** Per-field errors, filled by formMessage(). An array replaces what is held. */
 function formFieldErrors(?array $errors = null): array
 {
     static $fields = [];
@@ -42,13 +33,12 @@ function formFieldErrors(?array $errors = null): array
     return $fields;
 }
 
-/** The message against one field, or '' when nothing is wrong with it. */
 function fieldError(string $name): string
 {
     return formFieldErrors()[$name] ?? '';
 }
 
-/** Marks a control as at fault, so the highlight is announced, not only seen. */
+/** So a field's error is announced, not only seen. */
 function invalidAttributes(string $name): string
 {
     return fieldError($name)
@@ -56,10 +46,7 @@ function invalidAttributes(string $name): string
         : '';
 }
 
-/**
- * Every error is listed, not just the first, and the ones naming a field are
- * handed to formFieldErrors() so the field itself is marked too.
- */
+/** Lists every error; those keyed by field name also mark that field. */
 function formMessage($formMessage): void
 {
     $messages = is_array($formMessage) ? ($formMessage['messages'] ?? []) : [];
@@ -87,10 +74,7 @@ function filterActions(string $page, bool $hasFilters, string $label = 'Filter')
     template('filter/actions', compact('page', 'hasFilters', 'label'));
 }
 
-/**
- * A taxonomy listing's bar: a name search, plus the one dropdown a taxonomy
- * defines for itself. $value is what that dropdown is set to now, or ''.
- */
+/** $value is what the taxonomy's own dropdown is set to, or ''. */
 function renderTaxonomyFilters(array $tax, string $value = ''): void
 {
     template('filter/taxonomy-filters', [
@@ -111,7 +95,6 @@ function renderTable(array $headings, array $items, callable $rows, array $colum
     template('table', compact('headings', 'items', 'rows', 'columnClasses'));
 }
 
-/** Heading plus a plain "this cannot be undone" delete form. */
 function deleteSection(
     string $heading,
     string $submitName,
@@ -133,7 +116,6 @@ function confirmDeleteForm(string $submitName, string $buttonLabel, string $conf
     template('form/confirm-delete', compact('submitName', 'buttonLabel', 'confirmText'));
 }
 
-/** <option> markup for a map of value => label. */
 function selectOptions(array $options, $selected): string
 {
     $chosen = array_map('strval', is_array($selected) ? $selected : [$selected]);
@@ -170,13 +152,12 @@ function locationCell(array $row): string
             : '');
 }
 
-/** Notes/description block with links made clickable. */
 function notesBox($text): void
 {
     template('notes-box', ['text' => nl2p(text2link(escapeHtml($text)))]);
 }
 
-/** One tile inside an .item-property-container. $body is raw HTML. */
+/** $body is raw HTML. */
 function itemProperty(string $heading, string $body, string $class = ''): void
 {
     template('item-property', compact('heading', 'body', 'class'));
@@ -197,7 +178,7 @@ function formRow(string $name, string $label, string $control, bool $hasControl 
     ]);
 }
 
-/** <input> row. $attributes is raw HTML appended to the tag, eg ' required'. */
+/** $attributes is raw HTML appended to the tag, eg ' required'. */
 function textField(string $name, string $label, $value = '', string $type = 'text', string $attributes = ''): void
 {
     formRow($name, $label, templateHtml('form/input', compact('name', 'type', 'value', 'attributes')));
@@ -208,7 +189,7 @@ function textareaField(string $name, string $label, $value = ''): void
     formRow($name, $label, templateHtml('form/textarea', compact('name', 'value')));
 }
 
-/** <select> row. $firstOption is raw HTML for an optional leading placeholder. */
+/** $firstOption is raw HTML for an optional leading placeholder. */
 function selectField(
     string $name,
     string $label,
@@ -257,13 +238,12 @@ function formatFileSize($bytes): string
     return round($size, $size < 10 ? 1 : 0) . $units[$unit];
 }
 
-/** The documents kept against an item, with the form for adding more. */
 function renderItemFiles(array $files, $itemId): void
 {
     template('item/files', ['files' => $files, 'itemId' => $itemId]);
 }
 
-/** Item photo thumbnail, or nothing when the item has no photo. */
+/** '' when there is no photo. */
 function itemThumb(?string $image, string $alt = '', string $class = 'item-thumb'): string
 {
     $url = itemImageUrl($image);
@@ -273,7 +253,7 @@ function itemThumb(?string $image, string $alt = '', string $class = 'item-thumb
         : '';
 }
 
-/** Item photo, or a spanner for a tool and nuts for a part when it has none. */
+/** Falls back to a placeholder for the item's type. */
 function itemImage(array $item, string $class = 'item-thumb'): string
 {
     if ($item['item_image']) {
@@ -284,17 +264,13 @@ function itemImage(array $item, string $class = 'item-thumb'): string
         . ' class="' . $class . ' item-placeholder">';
 }
 
-/**
- * Item photo linking to the item, for listings. Kept out of the tab order and
- * hidden from screen readers, since the name beside it is the same link.
- */
+/** Hidden from tab order and screen readers: the name beside it is the same link. */
 function itemThumbLink(array $item): string
 {
     return '<a href="index.php?page=view-item&item_id=' . (int)$item['item_id'] . '"'
         . ' class="item-thumb-link" tabindex="-1" aria-hidden="true">' . itemImage($item) . '</a>';
 }
 
-/** Free stock shown with a colour that reflects how tight it is. */
 function stockCell(array $item): string
 {
     $free = (float)$item['item_free_count'];
@@ -312,10 +288,6 @@ function stockCell(array $item): string
         . escapeHtml($item['unit_symbol'] ?? '') . '</span>';
 }
 
-/**
- * The dashboard's search bar: a name search across parts and tools, narrowed
- * to one kind or left to both.
- */
 function renderDashboardSearch(): void
 {
     $search = (string)queryParam('q');
@@ -334,8 +306,7 @@ function renderItemFilters(array $applied, ?string $kind = null, string $page = 
         'page'       => $page,
         'search'     => $search,
         'kind'       => $kind,
-        // A chosen category settles the kind on its own, so the bar has
-        // nothing left to ask.
+        // A chosen category already settles the kind.
         'inCategory' => in_array('category', $applied, true),
         'hasFilters' => (bool)$applied || $search !== '' || (string)queryParam('kind') !== '',
     ]);

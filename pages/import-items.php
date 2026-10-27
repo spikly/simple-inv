@@ -1,9 +1,6 @@
 <?php
 
-/**
- * Two steps: upload a file to see what it would do, then confirm.
- * The reviewed rows are held in the session between the two.
- */
+/** Upload to preview, then confirm; the preview is held in the session between. */
 
 $formMessage = takeFlash();
 $preview = storedImportPreview();

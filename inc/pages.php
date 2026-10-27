@@ -4,8 +4,7 @@ return [
     'dashboard' => 'dashboard',
     'parts' => 'all-parts',
     'tools' => 'all-tools',
-    // Both kinds at once. Not in the main nav; it is where drilling into a
-    // location or a manufacturer lands, since either may hold both.
+    // Both kinds. Not in the nav; where drilling into a location or manufacturer lands.
     'items' => 'all-items',
     'import-items' => 'import-items',
     'labels' => 'labels',
@@ -18,8 +17,7 @@ return [
     'manufacturers' => 'all-manufacturers',
     'add-manufacturer' => 'add-manufacturer',
     'edit-manufacturer' => 'edit-manufacturer',
-    // Manufacturers were called brands until they were renamed; the old
-    // addresses still work so saved links do not break.
+    // Old 'brands' URLs still work.
     'brands' => 'all-manufacturers',
     'add-brand' => 'add-manufacturer',
     'edit-brand' => 'edit-manufacturer',

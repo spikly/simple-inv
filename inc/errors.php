@@ -1,9 +1,6 @@
 <?php
 
-/**
- * A readable page instead of a stack trace leaking paths and SQL. Details
- * always go to the error log, and on screen only when debug is true.
- */
+/** Details always go to the error log, and on screen only when debug is true. */
 function registerErrorHandlers(): void
 {
     error_reporting(E_ALL);
@@ -43,7 +40,7 @@ function renderErrorPage(\Throwable $e): void
         header('Content-Type: text/html; charset=utf-8');
     }
 
-    // Drop any half-rendered page so the message is not buried in it.
+    // Drop any half-rendered page.
     while (ob_get_level() > 0) {
         ob_end_clean();
     }

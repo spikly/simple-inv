@@ -2,16 +2,11 @@
 
 /** What an item is, its validation, its columns, its form and its listing. */
 
-/**
- * A part or a tool, decided by the categories it is filed under rather than by
- * a column of its own. Parts are stock; tools are single objects, see
- * inc/tools.php.
- */
+/** Decided by an item's categories, not a column of its own. */
 const ITEM_TYPES = ['part' => 'Part', 'tool' => 'Tool'];
 
 const ITEM_TYPE_PLURALS = ['part' => 'Parts', 'tool' => 'Tools'];
 
-/** One of the kinds above, falling back to parts for anything unrecognised. */
 function itemType($value, string $default = 'part'): string
 {
     $value = strtolower(trim((string)$value));
@@ -19,7 +14,6 @@ function itemType($value, string $default = 'part'): string
     return isset(ITEM_TYPES[$value]) ? $value : $default;
 }
 
-/** The kind an already stored item is, read from the item_is_tool column. */
 function itemTypeOf(array $item): string
 {
     return empty($item['item_is_tool']) ? 'part' : 'tool';
@@ -30,13 +24,12 @@ function isTool(array $item): bool
     return itemTypeOf($item) === 'tool';
 }
 
-/** The listing page showing one kind of thing, or the mixed one for null. */
 function itemTypePage(?string $type): string
 {
     return $type === null ? 'items' : strtolower(ITEM_TYPE_PLURALS[$type]);
 }
 
-/** Field => message when missing. The dropdowns count anything below 1 as unset. */
+/** Field => message. A dropdown below 1 counts as unset. */
 const ITEM_REQUIRED_FIELDS = [
     'item_name'     => 'Item name cannot be empty',
     'item_brand'    => 'You must select a manufacturer',
@@ -44,19 +37,14 @@ const ITEM_REQUIRED_FIELDS = [
     'item_status'   => 'You must select a status',
 ];
 
-/** What inv_items.item_quantity can hold, so an addition cannot overflow it. */
+/** The most inv_items.item_quantity can hold. */
 const MAX_ITEM_QUANTITY = 2147483647;
 
-/** Asked for on top of those, but only of a part: a tool has no stock. */
+/** Parts only: a tool has no stock. */
 const PART_REQUIRED_FIELDS = [
     'item_measurement_unit' => 'You must select a measurement unit',
 ];
 
-/**
- * Everything wrong with submitted item data, keyed by field. Every field is
- * checked rather than stopping at the first, so a half filled form says all of
- * what it needs at once.
- */
 function validateItem(array $post, string $type): array
 {
     $required = ($type === 'part')
@@ -80,8 +68,7 @@ function validateItem(array $post, string $type): array
         $errors['item_category'] = 'You must select at least one '
             . strtolower(ITEM_TYPES[$type]) . ' category';
     } elseif (categoryTypesFor($categoryIds) !== [$type]) {
-        // The form only offers one kind, so this catches a stale form or a
-        // category that changed under it.
+        // Catches a stale form or a category that changed kind under it.
         $errors['item_category'] = 'Every category must be a '
             . strtolower(ITEM_TYPES[$type]) . ' category.';
     }
@@ -97,7 +84,6 @@ function validateItem(array $post, string $type): array
     return $errors;
 }
 
-/** Submitted categories, always as a list of ids. */
 function itemCategoryIds(array $post): array
 {
     $categories = $post['item_category'] ?? [];
@@ -105,10 +91,7 @@ function itemCategoryIds(array $post): array
     return array_map('intval', is_array($categories) ? $categories : [$categories]);
 }
 
-/**
- * The columns to write; categories live in their own table. A tool has no
- * stock, but the columns are not nullable, so it is stored as a single piece.
- */
+/** A tool has no stock, but the columns are not nullable, so it is stored as one piece. */
 function itemColumns(array $post, ?string $image, string $type): array
 {
     $stock = ($type === 'tool')
@@ -133,7 +116,6 @@ function itemColumns(array $post, ?string $image, string $type): array
     ];
 }
 
-/** A stored item as form values, for the edit form and for duplicating. */
 function itemFormValues(array $item): array
 {
     return [
@@ -155,10 +137,6 @@ function itemFormValues(array $item): array
     ];
 }
 
-/**
- * $type decides which fields appear and which categories are offered, so an
- * item's categories always match the kind it was filled in as.
- */
 function renderItemForm(array $values, string $submitName, string $type, $formMessage = false): void
 {
     template('item/form', [
@@ -170,7 +148,6 @@ function renderItemForm(array $values, string $submitName, string $type, $formMe
     ]);
 }
 
-/** Only categories differ between a part and a tool, so only they are labelled. */
 function itemTaxonomyField(string $key, array $tax, string $type, array $options, $selected): void
 {
     $name = 'item_' . $key;
@@ -184,11 +161,7 @@ function itemTaxonomyField(string $key, array $tax, string $type, array $options
     );
 }
 
-/**
- * Why an amount typed into the stock form cannot be used, keyed by field.
- * $delta is negative when Remove was pressed. Stops at the first problem,
- * since each check needs the one before it to have passed.
- */
+/** $delta is negative for Remove. Stops at the first problem, as each check needs the last. */
 function validateStockChange(array $item, string $amount, int $delta): array
 {
     $held = (int)$item['item_quantity'];
@@ -209,7 +182,7 @@ function validateStockChange(array $item, string $amount, int $delta): array
     return ['stock_amount' => $message];
 }
 
-/** $item is the item as it stands once the stock has moved. */
+/** $item is as it stands after the stock has moved. */
 function stockChangeMessage(array $item, int $delta): string
 {
     $unit = escapeHtml($item['unit_symbol']);
@@ -225,17 +198,13 @@ function stockChangeMessage(array $item, int $delta): string
     return $message . '.';
 }
 
-/** The notes section at the foot of an item page, or a dash when there are none. */
 function renderItemNotes(array $item): void
 {
     sectionHeader('Notes');
     notesBox(trim((string)$item['item_notes']) !== '' ? $item['item_notes'] : '-');
 }
 
-/**
- * $remove keeps the box ticked when a rejected save is drawn again, so asking
- * for the photo to go is not undone by a mistake in another field.
- */
+/** $remove keeps the box ticked when a rejected save is redrawn. */
 function renderItemPhotoField(?string $image, bool $remove = false): void
 {
     formRow('item_photo', 'Photo (optional)', templateHtml('item/photo-field', compact('image', 'remove')));
@@ -271,9 +240,8 @@ function resolveItemPhoto(?string $current, bool $remove, bool $copy = false): a
 }
 
 /**
- * One form doing two jobs: taking new files and saving what the existing ones
- * are described as, so a description typed while a file is being chosen is not
- * lost on the way. Returns the message to show afterwards.
+ * Uploads and descriptions share one form, so a description typed while choosing
+ * a file is not lost. Returns the message to show.
  */
 function saveItemFiles($itemId, array $descriptions, array $upload): array
 {
@@ -296,15 +264,11 @@ function saveItemFiles($itemId, array $descriptions, array $upload): array
         return successMessage($summary);
     }
 
-    // What did get through is said too, so the list is explained rather than
-    // looking like part of what went wrong.
+    // Say what succeeded too, so it is not mistaken for part of the failure.
     return errorMessage($done ? array_merge([$summary], $errors) : $errors);
 }
 
-/**
- * Returns [kept, problems]. Each file is judged on its own, so a batch of ten
- * does not come to nothing over the one that was wrong.
- */
+/** Returns [stored count, errors]. One bad file does not stop the rest. */
 function storeItemFiles($itemId, array $upload): array
 {
     $stored = 0;
@@ -314,7 +278,7 @@ function storeItemFiles($itemId, array $upload): array
         $result = storeItemFile($file);
 
         if (isset($result['error'])) {
-            // The name came from the browser and a message is drawn as HTML.
+            // Browser-supplied name, shown as HTML.
             $errors[] = escapeHtml(basename(str_replace('\\', '/', (string)$file['name'])))
                 . ': ' . $result['error'];
             continue;
@@ -328,8 +292,8 @@ function storeItemFiles($itemId, array $upload): array
 }
 
 /**
- * Returns how many changed. Walks the item's own files, so an id belonging to
- * something else cannot be reached by putting it in the form.
+ * Returns how many changed. Walks the item's own files, so a forged id cannot
+ * reach another item's.
  */
 function describeItemFiles($itemId, array $descriptions): int
 {
@@ -342,7 +306,7 @@ function describeItemFiles($itemId, array $descriptions): int
             continue;
         }
 
-        // mb_substr, so a long line is not cut through a character.
+        // mb_substr, so a character is not cut in half.
         $wanted = mb_substr(trim((string)$descriptions[$id]), 0, 255);
         $wanted = ($wanted === '') ? null : $wanted;
 
@@ -364,10 +328,7 @@ function deleteItemFiles($itemId): void
     }
 }
 
-/**
- * A duplicate gets its own copies, as it does of the photo. One that cannot be
- * copied is left out rather than recorded as a row pointing at nothing.
- */
+/** A file that fails to copy is left out, not recorded pointing at nothing. */
 function copyItemFiles($fromItemId, $toItemId): void
 {
     foreach (fetchItemFiles($fromItemId) as $file) {
@@ -385,10 +346,9 @@ function copyItemFiles($fromItemId, $toItemId): void
     }
 }
 
-/** $type pins the page to one kind; null is the mixed listing, which holds both. */
 function itemsIndexPage(?string $type): void
 {
-    // $kind is what the listing ended up narrowed to, filters included.
+    // Unlike $type, $kind includes a kind chosen by filter.
     [$where, $params, $applied, $kind, $rank] = itemFilters($type);
 
     $noun = ($type === null) ? 'Items' : ITEM_TYPE_PLURALS[$type];
@@ -430,7 +390,6 @@ function itemsIndexPage(?string $type): void
 
     $links = [];
 
-    // Export and labels cover every match, not just this page.
     if ($slice['total'] > 0) {
         $links['Export'] = 'index.php?page=export-items' . $query;
         $links['Labels'] = 'index.php?page=labels&amp;type=item' . $query;
@@ -455,9 +414,8 @@ function itemsIndexPage(?string $type): void
 }
 
 /**
- * The badges beside the heading and the query string carrying them to export
- * and labels. On a page pinned to one kind that badge would only repeat the
- * heading, so it is left to the mixed listing.
+ * Returns [badges, query string for export and labels]. A pinned page has no
+ * Type badge, as it would repeat the heading.
  */
 function itemFilterSummary(array $applied, array $params, ?string $pinnedKind, ?string $kind): array
 {
@@ -468,7 +426,6 @@ function itemFilterSummary(array $applied, array $params, ?string $pinnedKind, ?
         $tax = taxonomy($key);
         $id = (string)$params[$tax['param']];
 
-        // The badge names the row, but the link has to carry its id.
         $badges[] = '<span>' . $tax['label'] . ': '
             . escapeHtml(taxonomyName($key, $id) ?? 'unknown') . '</span>';
         $query .= '&amp;' . $tax['param'] . '=' . escapeHtml(urlencode($id));
@@ -496,10 +453,7 @@ function itemFilterSummary(array $applied, array $params, ?string $pinnedKind, ?
 /** Unnamed, so never submitted. */
 const ITEM_SELECT_HEADING = '<input type="checkbox" class="select-all" aria-label="Select every row on this page">';
 
-/**
- * Heading => the function giving that heading's cell, so the two cannot drift.
- * $selected is the item ids to show ticked.
- */
+/** Heading => cell function. $selected is the item ids to show ticked. */
 function itemListingColumns(?string $type, array $selected = []): array
 {
     $columns = [
@@ -556,11 +510,7 @@ function itemListingColumns(?string $type, array $selected = []): array
     return $columns;
 }
 
-/**
- * The table a listing of items is drawn as. The classes are found by heading
- * rather than by position, since the mixed listing has a Type column that the
- * pinned ones do not.
- */
+/** Classes go by heading, not position, as only the mixed listing has a Type column. */
 function renderItemTable(array $items, array $columns): void
 {
     $classes = [];
@@ -592,15 +542,9 @@ function renderItemTable(array $items, array $columns): void
 }
 
 /**
- * What stands in the way of each of these items becoming $newType, as item id
- * => reason, leaving out the ones with nothing against them:
- *
- *   'assembly'  stock a project has reserved, which a tool cannot hold
- *   'loans'     a sign-out history, which a part cannot have
- *
- * The whole set is asked at once, since switching a category converts
- * everything filed under it. A reason rather than a sentence, because the item
- * pages and the category pages say it differently.
+ * Item id => why it cannot become $newType, blocked items only: 'assembly'
+ * (reserved stock, which a tool cannot hold) or 'loans' (a sign-out history,
+ * which a part cannot have). A reason, not a sentence: callers word it differently.
  */
 function itemsBlockingKindChange(array $itemIds, string $newType): array
 {
@@ -610,8 +554,7 @@ function itemsBlockingKindChange(array $itemIds, string $newType): array
         return [];
     }
 
-    // The ids are cast to integers above, so they are safe to inline; a bound
-    // parameter cannot stand in for a list.
+    // Cast to integers above, so safe to inline.
     $list = implode(',', $itemIds);
 
     if ($newType === 'tool') {
@@ -626,7 +569,6 @@ function itemsBlockingKindChange(array $itemIds, string $newType): array
     return array_fill_keys(array_column(dbAll($sql), 'item_id'), $reason);
 }
 
-/** Why an item cannot change kind, or null when it can. */
 function itemKindChangeError(array $item, string $newType): ?string
 {
     if (itemTypeOf($item) === $newType) {

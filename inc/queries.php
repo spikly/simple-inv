@@ -4,10 +4,7 @@
  * Items
  */
 
-/**
- * The derived tables give a per item total, so they stay correct when the
- * category join multiplies rows for an item in several categories.
- */
+/** Derived tables give per item totals, so the category join cannot multiply them. */
 const ITEM_JOINS = '
     FROM inv_items i
     LEFT JOIN inv_brands b ON b.brand_id = i.item_brand_id
@@ -28,13 +25,12 @@ const ITEM_JOINS = '
 ';
 
 /**
- * is_tool    whether the categories it is filed under file tools
- * allocated  quantity set aside for project assemblies
- * free       what is left of item_quantity once that is taken off
- * loan_*     the open sign-out a tool is on, null while it is here
+ * is_tool    whether its categories file tools
+ * allocated  quantity reserved for project assemblies
+ * free       item_quantity less what is allocated
+ * loan_*     the tool's open sign-out, null while it is here
  *
- * A tool has only ever one open loan, so MAX picks that row out without the
- * category join multiplying it.
+ * A tool has at most one open loan, so MAX picks it out despite the category join.
  */
 const ITEM_STOCK_COLUMNS = '
     COALESCE(MAX(c.cat_type = \'tool\'), 0) AS item_is_tool,
@@ -47,10 +43,7 @@ const ITEM_STOCK_COLUMNS = '
     GROUP_CONCAT(DISTINCT c.cat_name ORDER BY c.cat_name SEPARATOR \', \') AS cat_names
 ';
 
-/**
- * Asked of the categories, since that is the only place the answer is kept.
- * ITEM_KIND_FILTER is the same question with the kind bound.
- */
+/** An item's kind is kept only on its categories. */
 const ITEM_IS_TOOL = "EXISTS (SELECT 1 FROM categories_items tci
     INNER JOIN inv_categories tc ON tc.cat_id = tci.cat_id
     WHERE tci.item_id = i.item_id AND tc.cat_type = 'tool')";
@@ -62,12 +55,10 @@ const ITEM_KIND_FILTER = 'EXISTS (SELECT 1 FROM categories_items kci
     WHERE kci.item_id = i.item_id AND kc.cat_type = :item_kind)';
 
 /**
- * How well a search matches, worked out from the item name and part number.
- * Each word of the search is scored on its own and the scores add up, so
- * "Drill press" (whole word, at the start) outscores "Assorted drill bits"
- * (whole word), which outscores "Drilling motor" (only the start of a word).
- * exact_* and phrase compare the search as typed. An item matched only by its
- * colour or notes scores 0.
+ * Each search word is scored on its own and the scores summed, so "Drill press"
+ * (whole word, at the start) outscores "Assorted drill bits" (whole word), which
+ * outscores "Drilling motor" (start of a word only). exact_* and phrase compare
+ * the whole search. A match only on colour or notes scores 0.
  */
 const ITEM_SEARCH_WEIGHTS = [
     'exact_name' => 100,
@@ -79,13 +70,9 @@ const ITEM_SEARCH_WEIGHTS = [
     'in_name'    => 5,
 ];
 
-/** More words than this are dropped, which keeps the query a sensible size. */
+/** Keeps the query a sensible size; further words are dropped. */
 const ITEM_SEARCH_MAX_WORDS = 10;
 
-/**
- * The words of a search, in any order, each to be matched on its own:
- * "drill bit" finds "Bit set, drill". Repeats are dropped.
- */
 function searchWords(string $search): array
 {
     $words = [];
@@ -97,17 +84,14 @@ function searchWords(string $search): array
     return array_slice(array_values($words), 0, ITEM_SEARCH_MAX_WORDS);
 }
 
-/** $text for a LIKE pattern, with its % and _ meaning themselves. */
 function likeEscape(string $text): string
 {
     return addcslashes($text, '%_\\');
 }
 
 /**
- * Returns [ORDER BY fragment, bound params] putting the best matches for
- * $search first, shortest name first among equals, or ['', []] when there
- * is no search. The params are kept apart from the filter's because
- * countItems() has no use for them.
+ * Returns [ORDER BY fragment, params], or ['', []] with no search. Kept apart from
+ * the filter's params because countItems() does not use them.
  */
 function itemSearchRank(string $search): array
 {
@@ -128,7 +112,6 @@ function itemSearchRank(string $search): array
         'rank_exact_part' => $search,
     ];
 
-    // Words kept together and in order: "Drill press" over "Press, drill".
     if (count($words) > 1) {
         $terms[] = '(i.item_name LIKE :rank_phrase) * ' . $w['phrase'];
         $params['rank_phrase'] = '%' . likeEscape($search) . '%';
@@ -151,16 +134,12 @@ function itemSearchRank(string $search): array
         $params['rank_in_name_' . $n] = '%' . $like . '%';
     }
 
-    // Among equal scores the shorter name is the closer match: "Hammer drill"
-    // before "Hammer drill with SDS chuck".
     return ['(' . implode(' + ', $terms) . ') DESC, CHAR_LENGTH(i.item_name) asc, ', $params];
 }
 
 /**
- * Returns [sql fragment, bound params, taxonomy keys applied, kind or null,
- * search rank for fetchItems()].
- * $pinnedKind fixes the listing to one kind whatever the query string says,
- * which is how Parts and Tools differ from the mixed Items listing.
+ * Returns [where, params, applied taxonomy keys, kind or null, search rank].
+ * $pinnedKind overrides any kind in the query string.
  */
 function itemFilters(?string $pinnedKind = null): array
 {
@@ -182,8 +161,7 @@ function itemFilters(?string $pinnedKind = null): array
 
     $requested = (string)queryParam('kind');
 
-    // A category files one kind, so choosing one has already answered the
-    // question; the bar drops its Type control to match.
+    // A category implies the kind; the bar drops its Type control to match.
     if (in_array('category', $applied, true)) {
         $requested = '';
     }
@@ -195,7 +173,7 @@ function itemFilters(?string $pinnedKind = null): array
         $params['item_kind'] = $kind;
     }
 
-    // From the actions bar, for labels and export. Cast, so safe to inline.
+    // Cast to integers, so safe to inline.
     $ids = array_unique(array_filter(array_map('intval', explode(',', (string)queryParam('ids')))));
 
     if ($ids) {
@@ -204,9 +182,8 @@ function itemFilters(?string $pinnedKind = null): array
 
     $search = trim((string)queryParam('q'));
 
-    // Every word has to turn up somewhere, though not necessarily in the same
-    // field. One placeholder each, since named parameters cannot be reused
-    // while prepare emulation is off.
+    // One placeholder per word: named parameters cannot be reused with emulated
+    // prepares off.
     foreach (searchWords($search) as $n => $word) {
         $clauses[] = "CONCAT_WS(' ', i.item_name, i.item_part_no, i.item_colour, i.item_notes)"
             . ' LIKE :search_' . $n;
@@ -222,10 +199,7 @@ function itemFilters(?string $pinnedKind = null): array
     ];
 }
 
-/**
- * $slice limits it to one page; export and labels pass nothing.
- * $rank comes from itemSearchRank(), and orders a search by how well it matched.
- */
+/** $rank comes from itemSearchRank(). */
 function fetchItems(string $where, array $params, ?array $slice = null, array $rank = ['', []]): array
 {
     [$rankOrder, $rankParams] = $rank;
@@ -242,16 +216,12 @@ function fetchItems(string $where, array $params, ?array $slice = null, array $r
     );
 }
 
-/**
- * The joins fetchItems() uses, so any filter working there works here.
- * COUNT(DISTINCT) undoes the category join multiplying a multi-category item.
- */
+/** DISTINCT, as the category join repeats an item in several categories. */
 function countItems(string $where, array $params): int
 {
     return (int)dbValue('SELECT COUNT(DISTINCT i.item_id)' . ITEM_JOINS . $where, $params, 0);
 }
 
-/** Every matching id, across all pages. */
 function fetchItemIds(string $where, array $params): array
 {
     return array_map('intval', array_column(
@@ -260,7 +230,7 @@ function fetchItemIds(string $where, array $params): array
     ));
 }
 
-/** Items for the CSV export. The column order matches the export headings. */
+/** Column order is the export's heading order. */
 function fetchItemsForExport(string $where, array $params): array
 {
     return dbAll(
@@ -299,7 +269,6 @@ function fetchSingleItem($item_id)
     );
 }
 
-/** Category ids for an item, in the order they are shown. */
 function fetchItemCategoryIds($item_id): array
 {
     return array_map('intval', array_column(dbAll(
@@ -312,7 +281,6 @@ function fetchItemCategoryIds($item_id): array
     ), 'cat_id'));
 }
 
-/** Replace the categories an item belongs to. */
 function saveItemCategories($item_id, array $categoryIds): void
 {
     dbRun('DELETE FROM categories_items WHERE item_id = :item_id', ['item_id' => $item_id]);
@@ -327,7 +295,7 @@ function saveItemCategories($item_id, array $categoryIds): void
     }
 }
 
-/** Keyed by form field name; measurement units grouped by their unit type. */
+/** Keyed by form field name; units grouped by unit type. */
 function fetchItemFormOptions(string $type = 'part'): array
 {
     $units = [];
@@ -340,7 +308,7 @@ function fetchItemFormOptions(string $type = 'part'): array
     $options = ['item_measurement_unit' => $units];
 
     foreach (array_keys(taxonomies()) as $key) {
-        // Categories decide the kind, so only the agreeing ones are offered.
+        // Only categories of this kind are offered.
         $options['item_' . $key] = ($key === 'category')
             ? categoryOptions($type)
             : taxonomyOptions($key);
@@ -353,7 +321,6 @@ function fetchItemFormOptions(string $type = 'part'): array
  * Item attachments
  */
 
-/** Every document kept against an item, oldest first. */
 function fetchItemFiles($item_id): array
 {
     return dbAll(
@@ -363,7 +330,7 @@ function fetchItemFiles($item_id): array
     );
 }
 
-/** One attachment, or false. The item id is what the page checks it against. */
+/** The caller checks file_item_id against the item it expects. */
 function fetchItemFile($file_id)
 {
     return dbRow(
@@ -388,7 +355,6 @@ function insertItemFile($item_id, string $stored, string $original, int $size, ?
     );
 }
 
-/** Change what one attachment says it is. Null clears it. */
 function updateItemFileDescription($file_id, ?string $description): void
 {
     dbRun(
@@ -420,7 +386,7 @@ function fetchDashboardTotals(): array
     ');
 }
 
-/** $mode "low" is at or under the reorder level, "over" is committed beyond stock. */
+/** $mode "low": at or under the reorder level; "over": committed beyond stock. */
 function fetchStockWarnings(string $mode): array
 {
     $having = ($mode === 'over')
@@ -511,10 +477,7 @@ function getProjectSummary($project_id)
     ', ['project_id' => $project_id]);
 }
 
-/**
- * One row per item across every assembly. free_elsewhere is stock not already
- * committed, so the shortfall from it is what has to be bought.
- */
+/** One row per item across every assembly. free_elsewhere is stock not yet committed. */
 function fetchProjectRequirements($project_id): array
 {
     return dbAll('
@@ -618,7 +581,7 @@ function fetchAssemblyItem($assembly_item_id)
     ', ['id' => $assembly_item_id]);
 }
 
-/** Read before deleting one, so the reservations it frees can be shared out. */
+/** Read before deleting, so the reservations it frees can be shared out. */
 function fetchAssemblyItemIds($assembly_id): array
 {
     return array_column(dbAll(
@@ -627,7 +590,6 @@ function fetchAssemblyItemIds($assembly_id): array
     ), 'item_id');
 }
 
-/** The same, for every assembly on a project. */
 function fetchProjectItemIds($project_id): array
 {
     return array_column(dbAll(
@@ -658,7 +620,6 @@ function fetchAvailableItemsForAssembly($assembly_id): array
     ', ['assembly_id' => $assembly_id]);
 }
 
-/** Where an item's reserved and installed quantities have gone. */
 function fetchItemAssemblyUsage($item_id): array
 {
     return dbAll('

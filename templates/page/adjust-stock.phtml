@@ -1,14 +1,12 @@
 <?php
 /**
- * The edit page sets what is held; this changes it by an amount.
- *
- * @var mixed  $item        The part, or false when there is no such id.
- * @var string $itemUrl     Back to the part.
- * @var string $amount      What was typed in last, if a save was rejected.
+ * @var mixed  $item        The part, or false if not found.
+ * @var string $itemUrl
+ * @var string $amount      Last input, if a save was rejected.
  * @var string $note        Likewise.
- * @var mixed  $formMessage The last result, or false.
- * @var array  $movements   Its stock history for this page.
- * @var array  $moveSlice   Their slice.
+ * @var mixed  $formMessage Last result, or false.
+ * @var array  $movements   Stock history for this page.
+ * @var array  $moveSlice
  */
 
 pageHeader('Add and Remove Stock', $item ? [

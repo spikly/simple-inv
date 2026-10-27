@@ -1,8 +1,8 @@
 <?php
 
-/** The columns the export produces, so an export can be edited and read back. */
+/** Reads the columns the export writes, so an export can be edited and read back. */
 
-/** Column heading => whether a value is required. */
+/** Lowercased heading => whether a value is required. */
 const IMPORT_COLUMNS = [
     'name'         => true,
     'part no'      => false,
@@ -26,7 +26,6 @@ const IMPORT_COLUMN_ALIASES = [
     'category' => 'categories',
 ];
 
-/** Taxonomy key => the CSV column it is read from. */
 const IMPORT_TAXONOMY_COLUMNS = [
     'brand'    => 'manufacturer',
     'supplier' => 'supplier',
@@ -35,9 +34,8 @@ const IMPORT_TAXONOMY_COLUMNS = [
 ];
 
 /*
- * Reviewed rows live in the session between preview and confirm, so a preview
- * can outlive the code that made it. Bump IMPORT_ROW_VERSION whenever
- * importRow() changes what a row holds; anything unstamped is out of date.
+ * Reviewed rows sit in the session between preview and confirm, so can outlive
+ * the code that made them. Bump IMPORT_ROW_VERSION when importRow() changes.
  */
 
 const IMPORT_SESSION_KEY = 'import_rows';
@@ -54,10 +52,7 @@ function clearImportPreview(): void
     unset($_SESSION[IMPORT_SESSION_KEY]);
 }
 
-/**
- * ['rows' => [...], 'stale' => bool]. One from an older version is cleared and
- * reported stale, so the page can say why it is asking for the file again.
- */
+/** Returns ['rows' => [...], 'stale' => bool]. An older version is cleared as stale. */
 function storedImportPreview(): array
 {
     $stored = $_SESSION[IMPORT_SESSION_KEY] ?? null;
@@ -75,10 +70,7 @@ function storedImportPreview(): array
     return ['rows' => $stored['rows'], 'stale' => false];
 }
 
-/**
- * Returns ['error' => message] or ['rows' => [...]], each row carrying its
- * values, anything it would create, and its own error if it has one.
- */
+/** Returns ['error' => message] or ['rows' => [...]]; each row may carry its own error. */
 function parseItemCsv(array $upload): array
 {
     if (($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file($upload['tmp_name'])) {
@@ -97,7 +89,7 @@ function parseItemCsv(array $upload): array
         return ['error' => 'That file is empty.'];
     }
 
-    // Match headings loosely so column order and letter case do not matter.
+    // Column order and heading case do not matter.
     $columns = [];
 
     foreach ($heading as $index => $label) {
@@ -135,10 +127,8 @@ function parseItemCsv(array $upload): array
 }
 
 /**
- * What already exists, lowercased, so a row can be judged before anything is
- * written. Categories are name => the kind it files, which answers both
- * whether one exists and whether it agrees with the row. Locations are named
- * in full, so a sub-location is recognised rather than created again.
+ * Existing names, lowercased. Categories map to the kind they file. Locations are
+ * full paths, so a sub-location is recognised rather than created again.
  */
 function importKnownNames(): array
 {
@@ -227,7 +217,7 @@ function importRow(array $record, array $columns, array $known, int $line): arra
         return $row;
     }
 
-    // Note anything that does not exist yet so the preview can say so.
+    // For the preview to list as created.
     foreach (IMPORT_TAXONOMY_COLUMNS as $key => $column) {
         $name = $row[$column];
 
@@ -236,7 +226,6 @@ function importRow(array $record, array $columns, array $known, int $line): arra
         }
     }
 
-    // An existing category filing the other kind is a contradiction.
     foreach ($categories as $category) {
         $files = $known['category'][strtolower($category)] ?? null;
 
@@ -257,7 +246,7 @@ function importRow(array $record, array $columns, array $known, int $line): arra
     return $row;
 }
 
-/** The measurement unit matching a symbol or label, or null. */
+/** Matches a symbol or label. Blank gives the first unit; no match gives null. */
 function resolveUnitId(?string $value): ?int
 {
     $value = trim((string)$value);
@@ -305,9 +294,8 @@ function resolveTaxonomyId(string $key, string $name, bool $create, array $extra
 }
 
 /**
- * "Tool Chest > Drawer 1" is the drawer inside the chest. Nesting goes one
- * level, so anything past the second name belongs to the sub-location's own
- * name. A single name is always top level, since it does not say which is meant.
+ * "Tool Chest > Drawer 1" is the drawer in the chest. Nesting is one level, so
+ * anything further is part of the sub-location's name. One name is top level.
  */
 function resolveLocationId(string $value, bool $create): ?int
 {
@@ -329,7 +317,6 @@ function resolveLocationId(string $value, bool $create): ?int
     return locationIdByName(implode(LOCATION_PATH_SEPARATOR, $names), $parentId, $create);
 }
 
-/** Inside $parentId, or at the top level when that is null. */
 function locationIdByName(string $name, ?int $parentId, bool $create): ?int
 {
     $id = dbValue(

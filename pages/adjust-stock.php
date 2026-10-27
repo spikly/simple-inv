@@ -1,10 +1,5 @@
 <?php
 
-/**
- * Taking a delivery in, or writing stock off. The edit page sets what is held;
- * this changes it by an amount, so buying five more is a change of five.
- */
-
 $itemId = queryParam('item_id');
 $item = $itemId ? fetchSingleItem($itemId) : false;
 $formMessage = takeFlash();

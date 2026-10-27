@@ -1,13 +1,12 @@
 <?php
 /**
- * A taxonomy listing's bar: a name search, plus the one dropdown the taxonomy
- * defines for itself, which only categories do.
+ * A name search, plus the taxonomy's own dropdown if it has one (only categories do).
  *
- * @var string $page        Page the form submits back to.
- * @var string $placeholder Wording inside the search box.
- * @var string $search      What is being searched for now.
- * @var ?array $filter      The taxonomy's own filter, or null for none.
- * @var string $value       What that filter is set to now, or ''.
+ * @var string $page
+ * @var string $placeholder
+ * @var string $search
+ * @var ?array $filter      The taxonomy's own filter, or null.
+ * @var string $value       Its current value, or ''.
  */
 ?>
 <form method="get" class="filter-bar">
@@ -24,7 +23,7 @@ filterField(
 if ($filter) {
     $id = 'filter_' . $filter['param'];
 
-    // "Any ..." doubles as the resting label, so the bar needs no headings.
+    // "Any ..." doubles as the label; the bar has no headings.
     filterField(
         $id,
         $filter['label'],

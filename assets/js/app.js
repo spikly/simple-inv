@@ -4,8 +4,7 @@ document.addEventListener("DOMContentLoaded", function()
         button.addEventListener('click', function(e) {
             e.preventDefault();
 
-            // The item form is for a part or for a tool, and a category added
-            // from it has to file that kind, so the kind goes with the request.
+            // A category added from here must file under this form's kind.
             const requestData = {
                 requestType: 'load-form',
                 buttonId: this.id,
@@ -14,7 +13,7 @@ document.addEventListener("DOMContentLoaded", function()
 
             sendAjaxRequest("inc/ajax.php", requestData, 
                 (data) => {
-                    showModalWithForm(data.formHtml, data.selectId); // Load form into modal and display
+                    showModalWithForm(data.formHtml, data.selectId);
                 },
                 (error) => {
                     console.error("Error loading form:", error);
@@ -48,24 +47,16 @@ document.addEventListener("DOMContentLoaded", function()
         });
     });
 
-    // Both events, because typing settles a text field and choosing settles a
-    // dropdown, and the rows carry either kind. Delegated from the document so
-    // a control the searchable select builds later is covered too.
+    // input for text fields, change for dropdowns. Delegated so controls built
+    // later by the searchable select are covered.
     document.addEventListener("input", clearFieldError);
     document.addEventListener("change", clearFieldError);
 });
 
-/**
- * Take the mark off a field as soon as its control is used.
- *
- * Nothing is re-checked here; the server is what decides whether a value will
- * do. The red goes because the person is dealing with that field, and leaving
- * it there while they type reads as though the value they just entered has
- * already been rejected. Saving says whether they got it right.
- */
+/** Clear a field's error once its control is used; the server re-checks on save. */
 function clearFieldError(event)
 {
-    // Searching within a dropdown is not yet a choice, so it settles nothing.
+    // Typing in a dropdown's search box is not a choice.
     if (event.target.classList.contains("searchable-select__search")) {
         return;
     }
@@ -84,7 +75,6 @@ function clearFieldError(event)
         message.remove();
     }
 
-    // The message it pointed at has gone, so the controls stop pointing at it.
     row.querySelectorAll("[aria-invalid]").forEach(control => {
         control.removeAttribute("aria-invalid");
         control.removeAttribute("aria-describedby");
@@ -93,10 +83,7 @@ function clearFieldError(event)
     clearSummaryEntry(row.dataset.field);
 }
 
-/**
- * Drop a field's line from the summary at the top of the form, and the summary
- * itself once it has nothing left to list.
- */
+/** Drop a field's line from the form summary, and the summary once empty. */
 function clearSummaryEntry(field)
 {
     if (!field) {
@@ -104,7 +91,7 @@ function clearSummaryEntry(field)
     }
 
     document.querySelectorAll(".form-message").forEach(summary => {
-        // A summary of one message is the message, so it goes as a whole.
+        // A single-message summary goes as a whole.
         if (summary.dataset.field === field) {
             summary.remove();
             return;
@@ -263,10 +250,7 @@ function makeBulkBar(form) {
     update();
 }
 
-/**
- * Click a heading to sort the rows under it. The first row holds the headings
- * and stays put; columns of numbers sort numerically, everything else by text.
- */
+/** Click a heading to sort by that column; the first row holds the headings. */
 function makeTableSortable(table) {
     const headerRow = table.rows[0];
 
@@ -300,8 +284,7 @@ function sortTableByColumn(table, index, headerCell) {
     const rows = Array.from(table.rows).slice(1);
     const ascending = headerCell.dataset.sortDirection !== "asc";
 
-    // A cell holding a control is worth what the control says, not what the
-    // cell reads as, which for an <input> is nothing at all.
+    // Use a control's value, as an <input> has no text content.
     const cellValue = row => {
         const cell = row.cells[index];
 
@@ -314,7 +297,6 @@ function sortTableByColumn(table, index, headerCell) {
         return (field ? field.value : cell.textContent).trim();
     };
 
-    // Treat a column as numeric only when every value in it looks like a number.
     const asNumber = value => {
         const cleaned = value.replace(/[^0-9.\-]/g, "");
         return cleaned === "" || cleaned === "-" ? NaN : parseFloat(cleaned);
@@ -374,7 +356,6 @@ function sendAjaxRequest(url, data, onSuccess = () => {}, onError = (err) => con
     });
 }
 
-// Show modal with form
 function showModalWithForm(formHtml, dropdownId)
 {
     let modal = document.getElementById("custom-modal");
@@ -391,18 +372,16 @@ function showModalWithForm(formHtml, dropdownId)
         `;
         document.body.appendChild(modal);
 
-        // Close modal when clicking overlay or close button
         modal.querySelector(".close-modal").addEventListener("click", closeModal);
         modal.querySelector(".modal-overlay").addEventListener("click", closeModal);
     }
 
     document.getElementById("modal-body").innerHTML = formHtml;
-    modal.style.display = "flex"; // Show the modal
+    modal.style.display = "flex";
 
     attachFormSubmitHandler(dropdownId);
 }
 
-// Attach AJAX submit to the form inside the modal
 function attachFormSubmitHandler(dropdownId)
 {
     const form = document.querySelector("#modal-body form");
@@ -717,16 +696,12 @@ function createSearchableSelect(select) {
             if (!query) {
                 score = 0;
             } else if (text === query) {
-                // Exact match
                 score = 0;
             } else if (text.startsWith(query)) {
-                // Starts with search string
                 score = 1;
             } else if (text.includes(query)) {
-                // Contains search string
                 score = 2;
             } else {
-                // Doesn't match
                 score = 999;
             }
 
@@ -739,8 +714,6 @@ function createSearchableSelect(select) {
             }
         });
 
-        // Sort by relevance while preserving original order
-        // for results with the same score.
         results.sort((a, b) => {
             if (a.score !== b.score) {
                 return a.score - b.score;
@@ -749,7 +722,6 @@ function createSearchableSelect(select) {
             return a.index - b.index;
         });
 
-        // Rebuild the options in ranked order.
         results.forEach(result => {
             result.item.hidden = false;
             optionsContainer.appendChild(result.item);

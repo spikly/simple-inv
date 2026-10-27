@@ -1,9 +1,8 @@
 <?php
 /**
- * A redirect made out of markup, for the case where the headers have already
- * gone out and there is nothing else left to send the browser on with.
+ * For when headers have already been sent.
  *
- * @var string $url Where to go.
+ * @var string $url
  */
 ?>
 <meta http-equiv="refresh" content="0;url=<?php echo escapeHtml($url); ?>">

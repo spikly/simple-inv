@@ -1,9 +1,6 @@
 <?php
 
-/**
- * CSV of the current item filters. The columns match what the import page
- * expects, so an export can be edited and read straight back in.
- */
+/** Columns match the import format, so an export can be edited and imported back. */
 
 [$where, $params] = itemFilters();
 

@@ -24,12 +24,12 @@ if ($item && isset($_POST['edit_item_submit'])) {
     $values = $_POST;
     $values['item_type'] = $type;
 
-    // A file input submits nothing when nothing was chosen.
+    // A file input submits nothing when unchanged.
     $values['item_image'] = $item['item_image'];
 
     $blocked = itemKindChangeError($item, $type);
 
-    // About the item rather than any one field, so it goes in without one.
+    // Not tied to a field, so no key.
     $errors = ($blocked !== null ? [$blocked] : []) + validateItem($_POST, $type);
     $photo = ['name' => $item['item_image']];
 
@@ -69,9 +69,8 @@ if ($item && isset($_POST['edit_item_submit'])) {
 
             saveItemCategories($editId, itemCategoryIds($_POST));
 
-            // Shared out again, so stock added reaches the assemblies short of it.
             if ($type === 'part') {
-                // This form sets the quantity, so the history wants the difference.
+                // This form sets the quantity, so log the difference.
                 recordStockMovement($editId, (float)$_POST['item_quantity'] - $heldBefore, 'edited');
                 reallocateItem($editId);
             }

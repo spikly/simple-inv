@@ -1,9 +1,7 @@
 <?php
 /**
- * The documents kept against an item, and the control for adding more.
- *
  * @var array $files  Rows from fetchItemFiles().
- * @var mixed $itemId The item they belong to.
+ * @var mixed $itemId
  */
 
 $formId = 'item-files-form';
@@ -13,7 +11,6 @@ if ($files):
         ['', 'Name', 'Description', 'Type', 'Size', 'Added', ''],
         $files,
         static function ($file) use ($itemId, $formId) {
-            // A picture or a PDF opens in a tab; anything else downloads.
             $inline = itemFileIsInline($file['file_stored_name']);
             $id = (int)$file['file_id'];
             $href = 'index.php?page=download-file&file_id=' . $id;

@@ -1,12 +1,9 @@
 <?php
 
-/** Rows per section. The tiles count everything, so a longer section says so. */
+/** Rows per section. */
 const DASHBOARD_ROWS = 10;
 
-/**
- * The search bar only asks for a name and a kind, but the whole filter is read
- * so an address carried over from a listing still narrows what comes back.
- */
+// The full filter is read so an address carried over from a listing still applies.
 [$where, $params, $applied, $kind, $rank] = itemFilters();
 
 $results = null;
@@ -22,8 +19,6 @@ if (trim((string)queryParam('q')) !== '' || $kind !== null || $applied) {
         'columns' => itemListingColumns($kind),
         'badges'  => $badges,
         'noun'    => $noun,
-        // The same search on the listing page, which can export it, label it
-        // and filter it further.
         'links'   => ['Open in ' . $noun => 'index.php?page=' . itemTypePage($kind) . $query],
     ];
 }

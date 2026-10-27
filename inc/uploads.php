@@ -1,18 +1,15 @@
 <?php
 
 /**
- * Item photos and item attachments. Both are stored with a generated name, so
- * nothing a browser sends is ever used as a path: photos under
- * assets/uploads/items/, attachments under assets/uploads/files/. The folder
- * above them turns PHP off, see assets/uploads/.htaccess.
+ * Item photos and attachments. Stored under generated names, so nothing a browser
+ * sends becomes a path. assets/uploads/.htaccess turns PHP off.
  */
 
 const UPLOAD_MAX_BYTES = 8388608; // 8MB
 
-/** Longest side a photo is stored at, keeping its proportions. */
+/** Longest side a photo is stored at. */
 const UPLOAD_MAX_DIMENSION = 300;
 
-/** Image types accepted, mapped to the extension they are saved with. */
 const UPLOAD_TYPES = [
     IMAGETYPE_JPEG => 'jpg',
     IMAGETYPE_PNG  => 'png',
@@ -25,7 +22,6 @@ function uploadPath(string $file = ''): string
     return __DIR__ . '/../assets/uploads/items/' . $file;
 }
 
-/** Web path for an item photo, or null when there is not one. */
 function itemImageUrl(?string $file): ?string
 {
     return $file ? 'assets/uploads/items/' . rawurlencode($file) : null;
@@ -50,7 +46,7 @@ function storeItemImage(array $upload): array
         return ['error' => 'The photo could not be read.'];
     }
 
-    // Trust what the file actually contains, never its name or reported type.
+    // Judge by contents, never the name or reported type.
     $details = @getimagesize($upload['tmp_name']);
 
     if (!$details || !isset(UPLOAD_TYPES[$details[2]])) {
@@ -76,10 +72,7 @@ function storeItemImage(array $upload): array
     return ['name' => $name];
 }
 
-/**
- * Scale down to UPLOAD_MAX_DIMENSION and straighten a sideways photo. One
- * already small enough and upright is left alone rather than re-encoded.
- */
+/** One already small enough and upright is left alone rather than re-encoded. */
 function shrinkImage(string $path, int $type, int $width, int $height): void
 {
     $rotation = ($type === IMAGETYPE_JPEG) ? exifRotation($path) : 0;
@@ -114,7 +107,7 @@ function shrinkImage(string $path, int $type, int $width, int $height): void
     imagedestroy($image);
 }
 
-/** The image held in a file, or null when PHP cannot read that type. */
+/** Null when PHP cannot read that type. */
 function loadImage(string $path, int $type)
 {
     $loaders = [
@@ -131,7 +124,6 @@ function loadImage(string $path, int $type)
     return @$loaders[$type]($path) ?: null;
 }
 
-/** Degrees to rotate a JPEG by, from the orientation its camera recorded. */
 function exifRotation(string $path): int
 {
     if (!function_exists('exif_read_data')) {
@@ -148,7 +140,6 @@ function exifRotation(string $path): int
     }
 }
 
-/** Resample an image so its longest side is at most $max. */
 function scaleToFit($image, int $max, int $type)
 {
     $width = imagesx($image);
@@ -189,7 +180,6 @@ function saveImage($image, string $path, int $type): bool
     }
 }
 
-/** Whether PHP has room to hold this image, plus the copy made from it. */
 function imageFitsInMemory(int $width, int $height): bool
 {
     $limit = memoryLimitBytes();
@@ -218,16 +208,14 @@ function memoryLimitBytes(): int
     return (int)$limit * ($units[$suffix] ?? 1);
 }
 
-/** Remove a stored photo, ignoring one that has already gone. */
 function deleteItemImage(?string $file): void
 {
-    // Guard against anything that is not one of our generated names.
+    // Only ever one of our generated names.
     if ($file && preg_match('/^[0-9a-f]{16}\.(jpg|png|gif|webp)$/', $file) && is_file(uploadPath($file))) {
         @unlink(uploadPath($file));
     }
 }
 
-/** A duplicate owns its own file. Null when there was nothing to copy. */
 function copyItemImage(?string $file): ?string
 {
     if (!$file || !preg_match('/^[0-9a-f]{16}\.(jpg|png|gif|webp)$/', $file, $matches)) {
@@ -244,19 +232,15 @@ function copyItemImage(?string $file): ?string
 }
 
 /*
- * Item attachments: spec sheets, manuals, drawings and extra pictures.
- *
- * Unlike the photo above, an attachment is never re-encoded or resized, so a
- * drawing stays readable and a PDF stays the one the manufacturer published.
+ * Item attachments. Unlike photos, never re-encoded or resized.
  */
 
-/** Largest attachment accepted. PHP's own upload_max_filesize may be lower. */
+/** PHP's own upload_max_filesize may be lower. */
 const ITEM_FILE_MAX_BYTES = 16777216; // 16MB
 
 /**
- * Stored extension => the type it is served as. This list is the whole of what
- * decides the extension a file is saved with, so nothing the webserver would
- * execute can be written: anything else is turned away, never corrected.
+ * Stored extension => served type. The only source of a stored extension, so
+ * nothing executable can be written; anything else is refused, not corrected.
  */
 const ITEM_FILE_TYPES = [
     'pdf'  => 'application/pdf',
@@ -279,13 +263,10 @@ const ITEM_FILE_TYPES = [
 /** Extensions meaning one of the above under another name. */
 const ITEM_FILE_ALIASES = ['jpeg' => 'jpg'];
 
-/** Shown in the browser rather than downloaded. Everything else is a download. */
+/** Shown in the browser; everything else downloads. */
 const ITEM_FILE_INLINE = ['pdf', 'jpg', 'png', 'gif', 'webp'];
 
-/**
- * The attachments a thumbnail can be made from, mapped to the image type the
- * extension promises. Anything else is shown as a document icon instead.
- */
+/** Extension => the image type it promises. Others get a document icon. */
 const ITEM_FILE_IMAGE_TYPES = [
     'jpg'  => IMAGETYPE_JPEG,
     'png'  => IMAGETYPE_PNG,
@@ -293,10 +274,9 @@ const ITEM_FILE_IMAGE_TYPES = [
     'webp' => IMAGETYPE_WEBP,
 ];
 
-/** Longest side a thumbnail is kept at, matching .file-thumb in the stylesheet. */
+/** Matches .file-thumb in the stylesheet. */
 const ITEM_FILE_THUMB_DIMENSION = 50;
 
-/** The pattern every generated attachment name matches. */
 const ITEM_FILE_NAME_PATTERN = '/^[0-9a-f]{16}\.[a-z0-9]{1,5}$/';
 
 function itemFilePath(string $file = ''): string
@@ -304,7 +284,6 @@ function itemFilePath(string $file = ''): string
     return __DIR__ . '/../assets/uploads/files/' . $file;
 }
 
-/** Thumbnails sit under the attachments themselves, in their own folder. */
 function itemFileThumbPath(string $file = ''): string
 {
     return itemFilePath('thumbs/' . $file);
@@ -373,10 +352,7 @@ function storeItemFile(array $upload): array
     ];
 }
 
-/**
- * PHP turns <input name="x[]" multiple> inside out, giving one array per
- * property rather than one entry per file. This puts it back.
- */
+/** PHP gives a multiple upload as one array per property; this gives one per file. */
 function uploadedFileList(array $files): array
 {
     if (!isset($files['name']) || !is_array($files['name'])) {
@@ -403,38 +379,33 @@ function uploadedFileList(array $files): array
     return $list;
 }
 
-/** The extension a stored attachment was saved with, which decides its type. */
 function itemFileExtension(string $stored): string
 {
     return strtolower((string)pathinfo($stored, PATHINFO_EXTENSION));
 }
 
-/** The type a stored attachment is served as, from the extension it was saved with. */
 function itemFileMime(string $stored): string
 {
     return ITEM_FILE_TYPES[itemFileExtension($stored)] ?? 'application/octet-stream';
 }
 
-/** Whether a stored attachment is shown in the browser rather than downloaded. */
 function itemFileIsInline(string $stored): bool
 {
     return in_array(itemFileExtension($stored), ITEM_FILE_INLINE, true);
 }
 
-/** Whether a stored attachment is a picture, so it can be shown rather than named. */
 function itemFileIsImage(string $stored): bool
 {
     return isset(ITEM_FILE_IMAGE_TYPES[itemFileExtension($stored)]);
 }
 
 /**
- * Web path to a picture attachment's small copy, or null when there is not one
- * to show: not a picture, or an image PHP could not read. Made on first use
- * rather than at upload, so files attached before this existed get one too.
+ * Null when not a readable picture. Made on first use rather than at upload, so
+ * older attachments get one too.
  */
 function itemFileThumbUrl(string $stored): ?string
 {
-    // The generated name only, so nothing but a file this app wrote is read.
+    // Generated names only, so nothing but a file this app wrote is read.
     if (!preg_match(ITEM_FILE_NAME_PATTERN, $stored) || !itemFileIsImage($stored)) {
         return null;
     }
@@ -446,18 +417,12 @@ function itemFileThumbUrl(string $stored): ?string
     return 'assets/uploads/files/thumbs/' . rawurlencode($stored);
 }
 
-/**
- * Write the small copy of a picture attachment, which is what is put on the
- * page: the original is left alone, and a 4MB drawing is never sent to fill a
- * 50px square. False when it could not be made.
- */
 function makeItemFileThumb(string $stored): bool
 {
     $source = itemFilePath($stored);
     $details = is_file($source) ? @getimagesize($source) : false;
 
-    // The extension it was saved with is the type it is written back as, so a
-    // file whose contents disagree with its name is left without a thumbnail.
+    // Written back as its extension's type, so contents that disagree get none.
     if (!$details || $details[2] !== (ITEM_FILE_IMAGE_TYPES[itemFileExtension($stored)] ?? 0)) {
         return false;
     }
@@ -484,10 +449,9 @@ function makeItemFileThumb(string $stored): bool
     return $saved;
 }
 
-/** Remove a stored attachment and its thumbnail, ignoring one already gone. */
 function deleteItemFile(?string $stored): void
 {
-    // Guard against anything that is not one of our generated names.
+    // Only ever one of our generated names.
     if (!$stored || !preg_match(ITEM_FILE_NAME_PATTERN, $stored)) {
         return;
     }
@@ -499,7 +463,6 @@ function deleteItemFile(?string $stored): void
     }
 }
 
-/** A duplicate owns its own files. Null when there was nothing to copy. */
 function copyItemFile(?string $stored): ?string
 {
     if (!$stored || !preg_match(ITEM_FILE_NAME_PATTERN, $stored) || !is_file(itemFilePath($stored))) {
