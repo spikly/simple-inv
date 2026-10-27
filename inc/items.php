@@ -391,9 +391,42 @@ function itemsIndexPage(?string $type): void
     // $kind is what the listing ended up narrowed to, filters included.
     [$where, $params, $applied, $kind, $rank] = itemFilters($type);
 
-    $slice = paginate(countItems($where, $params));
     $noun = ($type === null) ? 'Items' : ITEM_TYPE_PLURALS[$type];
     [$badges, $query] = itemFilterSummary($applied, $params, $type, $kind);
+    $formMessage = takeFlash();
+    $selected = [];
+    $bulk = ['action' => '', 'values' => [], 'all' => false];
+
+    if (isset($_POST['bulk_submit'])) {
+        // The form posts to its own URL, so these are the filters on screen.
+        $bulk = [
+            'action' => (string)($_POST['bulk_action'] ?? ''),
+            'values' => array_map('strval', array_filter(
+                $_POST,
+                static fn ($value, $name) => str_starts_with((string)$name, 'bulk_') && is_string($value),
+                ARRAY_FILTER_USE_BOTH
+            )),
+            'all'    => !empty($_POST['bulk_all']),
+        ];
+        $selected = array_values(array_unique(array_filter(array_map('intval', (array)($_POST['item_ids'] ?? [])))));
+
+        $result = runBulkAction(
+            $bulk['action'],
+            $bulk['all'] ? fetchItemIds($where, $params) : $selected,
+            $_POST,
+            strtolower($noun),
+            $bulk['all'] ? $query : null
+        );
+
+        // An error is shown in place so the ticks survive.
+        if ($result['status'] === 'success') {
+            redirectWith('index.php?' . ($_SERVER['QUERY_STRING'] ?? ''), $result);
+        }
+
+        $formMessage = $result;
+    }
+
+    $slice = paginate(countItems($where, $params));
 
     $links = [];
 
@@ -408,14 +441,16 @@ function itemsIndexPage(?string $type): void
         'index.php?page=add-item' . ($kind === null ? '' : '&amp;kind=' . $kind);
 
     template('page/items-index', [
-        'type'    => $type,
-        'items'   => fetchItems($where, $params, $slice, $rank),
-        'slice'   => $slice,
-        'applied' => $applied,
-        'noun'    => $noun,
-        'badges'  => $badges,
-        'links'   => $links,
-        'columns' => itemListingColumns($type),
+        'type'        => $type,
+        'items'       => fetchItems($where, $params, $slice, $rank),
+        'slice'       => $slice,
+        'applied'     => $applied,
+        'noun'        => $noun,
+        'badges'      => $badges,
+        'links'       => $links,
+        'columns'     => itemListingColumns($type, $selected),
+        'formMessage' => $formMessage,
+        'bulk'        => $bulk + ['ticked' => count($selected), 'fields' => bulkActionFields($type)],
     ]);
 }
 
@@ -458,10 +493,22 @@ function itemFilterSummary(array $applied, array $params, ?string $pinnedKind, ?
     return [$badges ? ' ' . implode(' ', $badges) : '', $query];
 }
 
-/** Heading => the function giving that heading's cell, so the two cannot drift. */
-function itemListingColumns(?string $type): array
+/** Unnamed, so never submitted. */
+const ITEM_SELECT_HEADING = '<input type="checkbox" class="select-all" aria-label="Select every row on this page">';
+
+/**
+ * Heading => the function giving that heading's cell, so the two cannot drift.
+ * $selected is the item ids to show ticked.
+ */
+function itemListingColumns(?string $type, array $selected = []): array
 {
     $columns = [
+        // The bar's form sits outside the table.
+        ITEM_SELECT_HEADING => function (array $item) use ($selected) {
+            return '<input type="checkbox" name="item_ids[]" value="' . (int)$item['item_id'] . '"'
+                . ' form="bulk-items" aria-label="Select ' . escapeHtml($item['item_name']) . '"'
+                . (in_array((int)$item['item_id'], $selected, true) ? ' checked' : '') . '>';
+        },
         '' => function (array $item) {
             return itemThumbLink($item);
         },
@@ -519,7 +566,9 @@ function renderItemTable(array $items, array $columns): void
     $classes = [];
 
     foreach (array_keys($columns) as $index => $heading) {
-        if ($heading === '') {
+        if ($heading === ITEM_SELECT_HEADING) {
+            $classes[$index] = 'col-select';
+        } elseif ($heading === '') {
             $classes[$index] = 'col-thumb';
         } elseif ($heading === 'Location') {
             $classes[$index] = 'col-location';

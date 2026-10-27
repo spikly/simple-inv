@@ -195,6 +195,13 @@ function itemFilters(?string $pinnedKind = null): array
         $params['item_kind'] = $kind;
     }
 
+    // From the actions bar, for labels and export. Cast, so safe to inline.
+    $ids = array_unique(array_filter(array_map('intval', explode(',', (string)queryParam('ids')))));
+
+    if ($ids) {
+        $clauses[] = 'i.item_id IN (' . implode(',', $ids) . ')';
+    }
+
     $search = trim((string)queryParam('q'));
 
     // Every word has to turn up somewhere, though not necessarily in the same
@@ -242,6 +249,15 @@ function fetchItems(string $where, array $params, ?array $slice = null, array $r
 function countItems(string $where, array $params): int
 {
     return (int)dbValue('SELECT COUNT(DISTINCT i.item_id)' . ITEM_JOINS . $where, $params, 0);
+}
+
+/** Every matching id, across all pages. */
+function fetchItemIds(string $where, array $params): array
+{
+    return array_map('intval', array_column(
+        dbAll('SELECT DISTINCT i.item_id' . ITEM_JOINS . $where, $params),
+        'item_id'
+    ));
 }
 
 /** Items for the CSV export. The column order matches the export headings. */

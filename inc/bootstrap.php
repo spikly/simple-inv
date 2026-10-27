@@ -27,6 +27,7 @@ require __DIR__ . '/qr.php';
 require __DIR__ . '/queries.php';
 require __DIR__ . '/uploads.php';
 require __DIR__ . '/items.php';
+require __DIR__ . '/bulk.php';
 require __DIR__ . '/tools.php';
 require __DIR__ . '/projects.php';
 require __DIR__ . '/stock.php';

@@ -1,0 +1,43 @@
+<?php
+/**
+ * The row tick boxes sit in the table and join this form via form="bulk-items".
+ * Hidden until something is ticked; see makeBulkBar() in assets/js/app.js.
+ *
+ * @var string $action Chosen action, or ''.
+ * @var array  $values Submitted values by field name.
+ * @var bool   $all    Acting on everything matching, not just the ticks.
+ * @var int    $ticked Rows ticked.
+ * @var array  $fields See bulkActionFields().
+ * @var string $noun   eg "parts".
+ * @var int    $total  Matches across every page.
+ */
+
+$hidden = (!$all && $ticked === 0) ? ' hidden' : '';
+?>
+<form method="post" id="bulk-items" class="bulk-bar"<?php echo $hidden; ?> data-total="<?php echo $total; ?>" data-noun="<?php echo escapeHtml($noun); ?>">
+    <input type="hidden" name="bulk_all" value="<?php echo $all ? '1' : ''; ?>">
+    <p class="bulk-bar-count" aria-live="polite">
+        <span class="bulk-bar-summary"><?php
+            echo $all ? 'All ' . $total . ' matching ' . escapeHtml($noun) . ' selected' : $ticked . ' selected';
+        ?></span>
+        <button type="button" class="bulk-bar-scope" hidden></button>
+    </p>
+    <p class="bulk-bar-action">
+        <label for="bulk_action" class="visually-hidden">Action</label>
+        <select name="bulk_action" id="bulk_action"<?php echo invalidAttributes('bulk_action'); ?>>
+            <option value="">Choose an action</option>
+            <?php echo selectOptions(BULK_ACTIONS, $action); ?>
+        </select>
+<?php foreach ($fields as $key => [$placeholder, $options]):
+    $name = 'bulk_' . $key; ?>
+        <span class="bulk-bar-field" data-action="<?php echo $key; ?>"<?php echo $key === $action ? '' : ' hidden'; ?>>
+            <label for="<?php echo $name; ?>" class="visually-hidden"><?php echo $placeholder; ?></label>
+            <select name="<?php echo $name; ?>" id="<?php echo $name; ?>"<?php echo invalidAttributes($name); ?>>
+                <option value=""><?php echo $placeholder; ?></option>
+                <?php echo selectOptions($options, $values[$name] ?? ''); ?>
+            </select>
+        </span>
+<?php endforeach; ?>
+        <input type="submit" name="bulk_submit" value="Apply"<?php echo $action === 'delete' ? ' class="delete"' : ''; ?>>
+    </p>
+</form>

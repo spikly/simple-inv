@@ -12,11 +12,13 @@
  * @var string  $badges  Filter badges shown beside the heading, raw HTML.
  * @var array   $links   Heading links, label => href.
  * @var array   $columns Heading => a function giving that heading's cell.
+ * @var mixed   $formMessage
+ * @var array   $bulk    See item/bulk-bar.
  */
 
 pageHeader($noun . countBadge($slice['total'], $badges), $links);
 
-formMessage(takeFlash());
+formMessage($formMessage);
 renderItemFilters($applied, $type, itemTypePage($type));
 
 if (!$items): ?>
@@ -26,5 +28,10 @@ if (!$items): ?>
 endif;
 
 renderItemTable($items, $columns);
+
+template('item/bulk-bar', $bulk + [
+    'noun'  => strtolower($noun),
+    'total' => $slice['total'],
+]);
 
 renderPagination($slice, strtolower($noun));

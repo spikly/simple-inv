@@ -31,6 +31,16 @@ document.addEventListener("DOMContentLoaded", function()
         makeTableSortable(table);
     });
 
+    document.querySelectorAll("input.select-all").forEach(box => {
+        makeSelectAll(box);
+    });
+
+    const bulkBar = document.getElementById("bulk-items");
+
+    if (bulkBar) {
+        makeBulkBar(bulkBar);
+    }
+
     document.querySelectorAll('a[href="#print"]').forEach(link => {
         link.addEventListener("click", event => {
             event.preventDefault();
@@ -112,6 +122,145 @@ function clearSummaryEntry(field)
             summary.remove();
         }
     });
+}
+
+/** A heading tick box that ticks or clears every row's box. */
+function makeSelectAll(box) {
+    const table = box.closest("table");
+    const rows = () => Array.from(table.querySelectorAll('td input[type="checkbox"]'));
+
+    const reflect = () => {
+        const ticked = rows().filter(row => row.checked).length;
+
+        box.checked = ticked > 0 && ticked === rows().length;
+        box.indeterminate = ticked > 0 && ticked < rows().length;
+    };
+
+    box.addEventListener("change", () => {
+        rows().forEach(row => {
+            row.checked = box.checked;
+        });
+    });
+
+    table.addEventListener("change", event => {
+        if (event.target !== box) {
+            reflect();
+        }
+    });
+
+    // Rows come back ticked after a rejected submit.
+    reflect();
+}
+
+/**
+ * The bulk actions bar. Shown once a row is ticked; offers "select all matching"
+ * when the whole page is ticked and there are more pages.
+ */
+function makeBulkBar(form) {
+    const rows = Array.from(document.querySelectorAll('input[type="checkbox"][form="' + form.id + '"]'));
+    const everything = form.querySelector('input[name="bulk_all"]');
+    const summary = form.querySelector(".bulk-bar-summary");
+    const scope = form.querySelector(".bulk-bar-scope");
+    const action = form.querySelector('select[name="bulk_action"]');
+    const submit = form.querySelector('input[type="submit"]');
+    const total = parseInt(form.dataset.total, 10) || 0;
+    const noun = form.dataset.noun;
+
+    const update = () => {
+        const ticked = rows.filter(row => row.checked).length;
+
+        if (ticked < rows.length) {
+            everything.value = "";
+        }
+
+        const all = everything.value === "1";
+
+        summary.textContent = all
+            ? "All " + total + " matching " + noun + " selected"
+            : ticked + " selected";
+
+        scope.hidden = !all && !(ticked === rows.length && total > rows.length);
+        scope.textContent = all ? "Just this page" : "Select all " + total + " matching";
+
+        form.hidden = ticked === 0 && !all;
+    };
+
+    const field = () => form.querySelector('.bulk-bar-field[data-action="' + action.value + '"]');
+
+    const showField = () => {
+        form.querySelectorAll(".bulk-bar-field").forEach(span => {
+            span.hidden = span.dataset.action !== action.value;
+        });
+
+        submit.classList.toggle("delete", action.value === "delete");
+    };
+
+    // Fires change so the heading box updates too.
+    const tickRows = checked => {
+        rows.forEach(row => {
+            row.checked = checked;
+        });
+
+        if (rows.length) {
+            rows[0].dispatchEvent(new Event("change", { bubbles: true }));
+        }
+    };
+
+    scope.addEventListener("click", () => {
+        if (everything.value === "1") {
+            everything.value = "";
+            update();
+            return;
+        }
+
+        tickRows(true);
+        everything.value = "1";
+        update();
+    });
+
+    action.addEventListener("change", showField);
+
+    // Confirm deletes, and any change to everything matching.
+    form.addEventListener("submit", event => {
+        if (!action.value || action.value === "labels" || action.value === "export") {
+            return;
+        }
+
+        const all = everything.value === "1";
+        const which = all
+            ? "all " + total + " matching " + noun
+            : rows.filter(row => row.checked).length + " selected " + noun;
+
+        let question;
+
+        if (action.value === "delete") {
+            question = "Delete " + which + "? This cannot be undone.";
+        } else {
+            const choice = field() && field().querySelector("select");
+
+            if (!all || !choice || !choice.value) {
+                return;
+            }
+
+            const label = action.options[action.selectedIndex].text.toLowerCase();
+
+            question = label.charAt(0).toUpperCase() + label.slice(1) + " \u201c"
+                + choice.options[choice.selectedIndex].text + "\u201d for " + which + "?";
+        }
+
+        if (!window.confirm(question)) {
+            event.preventDefault();
+        }
+    });
+
+    document.addEventListener("change", event => {
+        if (rows.includes(event.target) || event.target.classList.contains("select-all")) {
+            update();
+        }
+    });
+
+    showField();
+    update();
 }
 
 /**
