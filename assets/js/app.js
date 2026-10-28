@@ -34,6 +34,10 @@ document.addEventListener("DOMContentLoaded", function()
         makeSelectAll(box);
     });
 
+    document.querySelectorAll(".filter-bar[data-collapsible]").forEach(bar => {
+        makeCollapsibleFilters(bar);
+    });
+
     const bulkBar = document.getElementById("bulk-items");
 
     if (bulkBar) {
@@ -143,6 +147,19 @@ function makeSelectAll(box) {
  * The bulk actions bar. Shown once a row is ticked; offers "select all matching"
  * when the whole page is ticked and there are more pages.
  */
+/** On mobile, tuck the dropdowns behind a toggle so only the search shows. */
+function makeCollapsibleFilters(bar) {
+    const toggle = bar.querySelector(".filter-toggle");
+
+    bar.classList.add("is-collapsible");
+    toggle.hidden = false;
+
+    toggle.addEventListener("click", () => {
+        const expanded = bar.classList.toggle("is-expanded");
+        toggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+    });
+}
+
 function makeBulkBar(form) {
     const rows = Array.from(document.querySelectorAll('input[type="checkbox"][form="' + form.id + '"]'));
     const everything = form.querySelector('input[name="bulk_all"]');

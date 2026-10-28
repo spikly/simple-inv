@@ -9,7 +9,7 @@
  * @var bool    $hasFilters Whether to offer Clear.
  */
 ?>
-<form method="get" class="filter-bar">
+<form method="get" class="filter-bar" data-collapsible>
     <input type="hidden" name="page" value="<?php echo $page; ?>">
 <?php
 filterField(
@@ -20,6 +20,17 @@ filterField(
     'filter-search'
 );
 
+// Dropdowns already in use, shown on the mobile toggle while they're hidden.
+$active = count(array_filter(
+    array_merge(['kind'], array_column(taxonomies(), 'param')),
+    fn($param) => (string)queryParam($param) !== ''
+));
+?>
+    <button type="button" class="filter-toggle" aria-expanded="false" hidden>
+        Filters<?php if ($active): ?> (<?php echo $active; ?>)<?php endif; ?>
+    </button>
+<?php
+
 if ($kind === null && !$inCategory) {
     filterField(
         'filter_kind',
@@ -27,7 +38,8 @@ if ($kind === null && !$inCategory) {
         '<select name="kind" id="filter_kind">'
             . '<option value="">Any Type</option>'
             . selectOptions(ITEM_TYPES, queryParam('kind'))
-            . '</select>'
+            . '</select>',
+        'filter-option'
     );
 }
 
@@ -46,7 +58,8 @@ foreach (taxonomies() as $key => $tax) {
         '<select name="' . $tax['param'] . '" id="' . $id . '">'
             . '<option value="">Any ' . $tax['label'] . '</option>'
             . selectOptions($options, queryParam($tax['param']))
-            . '</select>'
+            . '</select>',
+        'filter-option'
     );
 }
 

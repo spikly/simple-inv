@@ -1210,6 +1210,36 @@ textarea:focus-visible {
     .filter-bar .filter-actions input[type="submit"] {
         flex: 1 1 auto;
     }
+
+    /* app.js adds is-collapsible, so without it every dropdown stays visible. */
+    .filter-bar.is-collapsible:not(.is-expanded) .filter-option {
+        display: none;
+    }
+
+    .filter-bar.is-collapsible .filter-toggle {
+        display: block;
+    }
+
+    .filter-bar.is-collapsible .filter-actions {
+        flex-basis: 0;
+    }
+}
+
+/* Mobile only; see the media query above. */
+.filter-bar .filter-toggle {
+    display: none;
+    flex: 1 1 0;
+}
+
+button.filter-toggle:not(.searchable-select__button) {
+    min-height: 44px;
+    border: 1px solid var(--color-border-strong);
+    background: var(--color-surface);
+    color: #111827;
+}
+
+button.filter-toggle:not(.searchable-select__button):hover {
+    background: var(--color-surface-muted);
 }
 
 /* =========================================================
