@@ -45,23 +45,29 @@ function allocateAssemblyItem($assembly_item_id): float
     return $allocated;
 }
 
-/** Shares free stock over the item's parts, oldest first. Run on any stock or demand change. */
+/**
+ * Shares free stock over the item's parts on open projects, oldest first. Run
+ * on any stock or demand change, and when a project opens or closes.
+ */
 function reallocateItem($item_id): void
 {
-    $parts = dbAll(
-        'SELECT assembly_item_id FROM inv_assembly_items
-         WHERE item_id = :item_id ORDER BY assembly_item_id',
-        ['item_id' => (int)$item_id]
-    );
-
-    if (!$parts) {
-        return;
-    }
-
-    // Cleared first, so the order above decides who gets the stock.
+    // Cleared first, so the order below decides who gets the stock. Parts on
+    // closed projects stay cleared.
     dbRun('UPDATE inv_assembly_items SET quantity_allocated = 0 WHERE item_id = :item_id', [
         'item_id' => (int)$item_id,
     ]);
+
+    $parts = dbAll(
+        'SELECT ai.assembly_item_id
+         FROM inv_assembly_items ai
+         INNER JOIN inv_project_assemblies a ON a.assembly_id = ai.assembly_id
+         INNER JOIN inv_projects p ON p.project_id = a.assembly_project_id
+         INNER JOIN inv_project_statuses ps ON ps.project_status_id = p.project_status_id
+         WHERE ai.item_id = :item_id
+           AND ps.project_status_name IN (' . openProjectStatusSql() . ')
+         ORDER BY ai.assembly_item_id',
+        ['item_id' => (int)$item_id]
+    );
 
     foreach ($parts as $part) {
         allocateAssemblyItem($part['assembly_item_id']);

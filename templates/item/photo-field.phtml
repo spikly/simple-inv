@@ -6,7 +6,8 @@
  */
 
 $input = '<input type="file" name="item_photo" id="item_photo"'
-    . ' accept="image/jpeg,image/png,image/gif,image/webp"' . invalidAttributes('item_photo') . '>';
+    . ' accept="image/jpeg,image/png,image/gif,image/webp"' . uploadLimitAttributes(UPLOAD_MAX_BYTES)
+    . invalidAttributes('item_photo') . '>';
 
 if (!$image) {
     echo $input;

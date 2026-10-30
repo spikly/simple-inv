@@ -55,4 +55,6 @@ foreach ($valid as $row) {
     }
 }
 
-template('page/import-items', compact('rows', 'valid', 'creates', 'formMessage'));
+$duplicates = count(array_filter($valid, fn ($row) => !empty($row['duplicate'])));
+
+template('page/import-items', compact('rows', 'valid', 'creates', 'duplicates', 'formMessage'));

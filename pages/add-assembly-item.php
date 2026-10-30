@@ -18,6 +18,12 @@ if (isset($_POST['add_assembly_item_submit'])) {
 
     if (empty($itemId)) {
         $errors = ['item_id' => 'Please select an item.'] + $errors;
+    } elseif (dbValue(
+        'SELECT 1 FROM inv_assembly_items WHERE assembly_id = :assembly_id AND item_id = :item_id',
+        ['assembly_id' => $assemblyId, 'item_id' => $itemId]
+    )) {
+        // Most likely the same form sent twice. The list below leaves it out.
+        $errors = ['item_id' => 'That part is already on this assembly. Edit it there to change the quantity.'] + $errors;
     } elseif (!isset($errors['quantity_installed'])) {
         // Only once the installed figure itself is valid.
         $errors += validateAssemblyInstall($itemId, 0, $columns['quantity_installed'], 0);

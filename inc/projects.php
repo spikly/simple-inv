@@ -1,5 +1,14 @@
 <?php
 
+/** Statuses whose parts still need stock. Complete and Archived reserve nothing. */
+const OPEN_PROJECT_STATUSES = ['Planning', 'Active', 'On Hold'];
+
+/** OPEN_PROJECT_STATUSES quoted for an IN (...) list. */
+function openProjectStatusSql(): string
+{
+    return implode(', ', array_map(static fn ($status) => db()->quote($status), OPEN_PROJECT_STATUSES));
+}
+
 function projectColumns(array $post): array
 {
     return [

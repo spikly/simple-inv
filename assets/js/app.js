@@ -55,7 +55,69 @@ document.addEventListener("DOMContentLoaded", function()
     // later by the searchable select are covered.
     document.addEventListener("input", clearFieldError);
     document.addEventListener("change", clearFieldError);
+
+    document.querySelectorAll("input[type=file][data-max-bytes]").forEach(input => {
+        input.addEventListener("change", () => checkUploadSize(input));
+    });
+
+    document.addEventListener("submit", preventDoubleSubmit);
+
+    // Coming back with the browser's Back button can restore a page mid-submit.
+    window.addEventListener("pageshow", () => {
+        document.querySelectorAll("form[data-submitting]").forEach(form => {
+            delete form.dataset.submitting;
+        });
+    });
 });
+
+/**
+ * Refuses files over the server's limits before they are sent. One over
+ * post_max_size would otherwise arrive as an empty form and lose everything.
+ */
+function checkUploadSize(input)
+{
+    const files = Array.from(input.files);
+    const perFile = Number(input.dataset.maxBytes) || 0;
+    const total = Number(input.dataset.maxTotal) || 0;
+    const megabytes = bytes => (bytes / 1048576).toFixed(bytes < 10485760 ? 1 : 0) + "MB";
+
+    let message = "";
+    const tooBig = files.find(file => perFile && file.size > perFile);
+
+    if (tooBig) {
+        message = `"${tooBig.name}" is larger than the ${megabytes(perFile)} allowed.`;
+    } else if (total && files.reduce((sum, file) => sum + file.size, 0) > total) {
+        message = `Those files come to more than the ${megabytes(total)} that can be sent at once. Upload them in smaller batches.`;
+    }
+
+    input.setCustomValidity(message);
+
+    if (message) {
+        input.reportValidity();
+    }
+}
+
+/**
+ * Ignores a POST form's second submit while the first is on its way, so a
+ * double-click cannot save twice. The button is left enabled, as a disabled
+ * button's name is not sent and the pages look for it. Runs after the forms'
+ * own handlers, so a cancelled confirm does not count.
+ */
+function preventDoubleSubmit(event)
+{
+    const form = event.target;
+
+    if (event.defaultPrevented || (form.getAttribute("method") || "").toLowerCase() !== "post" || form.dataset.resubmit === "true") {
+        return;
+    }
+
+    if (form.dataset.submitting) {
+        event.preventDefault();
+        return;
+    }
+
+    form.dataset.submitting = "true";
+}
 
 /** Clear a field's error once its control is used; the server re-checks on save. */
 function clearFieldError(event)
@@ -226,6 +288,10 @@ function makeBulkBar(form) {
 
     // Confirm deletes, and any change to everything matching.
     form.addEventListener("submit", event => {
+        // These download or open a page while this one stays, so the bar must
+        // stay usable after them.
+        form.dataset.resubmit = (action.value === "labels" || action.value === "export") ? "true" : "";
+
         if (!action.value || action.value === "labels" || action.value === "export") {
             return;
         }
@@ -238,7 +304,10 @@ function makeBulkBar(form) {
         let question;
 
         if (action.value === "delete") {
-            question = "Delete " + which + "? This cannot be undone.";
+            // As on the single delete, say what goes with them.
+            question = "Delete " + which + "? Their places on project assemblies (including what was"
+                + " installed), sign-out history, stock history, photos and documents go too."
+                + " This cannot be undone.";
         } else {
             const choice = field() && field().querySelector("select");
 
@@ -439,6 +508,17 @@ function attachFormSubmitHandler(dropdownId)
     form.addEventListener("submit", function(e) {
         e.preventDefault();
 
+        // Sent by fetch, so preventDoubleSubmit() never sees it.
+        if (form.dataset.submitting) {
+            return;
+        }
+
+        form.dataset.submitting = "true";
+
+        const done = () => {
+            delete form.dataset.submitting;
+        };
+
         const formData = new FormData(form);
         let requestData = {
             requestType: "submit-form",
@@ -451,6 +531,8 @@ function attachFormSubmitHandler(dropdownId)
 
         sendAjaxRequest("inc/ajax.php", requestData, 
             (data) => {
+                done();
+
                 if (data.success) {
                     closeModal();
                     refreshDropdown(dropdownId, data.newId);
@@ -459,6 +541,7 @@ function attachFormSubmitHandler(dropdownId)
                 }
             },
             (error) => {
+                done();
                 console.error("Error submitting form:", error);
                 showModalError("A server error occurred. Please try again.");
             }
@@ -514,6 +597,9 @@ function refreshDropdown(dropdownId, newId)
         multiple: select.multiple
     };
 
+    // Put back on failure, or the form would submit "Loading..." or nothing.
+    const previous = Array.from(select.childNodes);
+
     select.innerHTML = "<option>Loading...</option>";
 
     sendAjaxRequest("inc/ajax.php", requestData,
@@ -523,6 +609,8 @@ function refreshDropdown(dropdownId, newId)
         },
         (error) => {
             console.error("Error refreshing dropdown:", error);
+            select.replaceChildren(...previous);
+            select.dispatchEvent(new Event("change", { bubbles: true }));
         }
     );
 }
@@ -579,6 +667,13 @@ function createSearchableSelect(select) {
 
     let highlightedIndex = -1;
 
+    // Each <optgroup>'s heading and the index of its first option.
+    let groupHeadings = [];
+
+    // Set while this widget changes the select itself, so its own change
+    // event does not rebuild the list under the search.
+    let selecting = false;
+
     function getOptions() {
         return Array.from(optionsContainer.querySelectorAll(
             ".searchable-select__option:not([hidden])"
@@ -624,14 +719,43 @@ function createSearchableSelect(select) {
 
     function createOptions() {
         optionsContainer.innerHTML = "";
+        groupHeadings = [];
+
+        let group = null;
 
         Array.from(select.options).forEach((option, index) => {
+            const parent = option.parentElement;
+            const groupLabel = parent.tagName === "OPTGROUP" ? parent.label : "";
+
+            if (groupLabel && parent !== group) {
+                const heading = document.createElement("div");
+
+                heading.className = "searchable-select__group";
+                heading.setAttribute("role", "presentation");
+                heading.textContent = groupLabel;
+
+                optionsContainer.appendChild(heading);
+                groupHeadings.push({ heading, firstIndex: index });
+            }
+
+            group = groupLabel ? parent : null;
+
             const item = document.createElement("div");
 
             item.className = "searchable-select__option";
             item.setAttribute("role", "option");
             item.dataset.index = index;
             item.textContent = option.textContent;
+
+            // Search results lose the headings, so each says which it is under.
+            if (groupLabel) {
+                const note = document.createElement("small");
+
+                note.className = "searchable-select__group-note";
+                note.textContent = groupLabel;
+
+                item.appendChild(note);
+            }
 
             if (option.disabled) {
                 item.setAttribute("aria-disabled", "true");
@@ -691,11 +815,33 @@ function createSearchableSelect(select) {
             select.selectedIndex = index;
         }
 
+        selecting = true;
+
         select.dispatchEvent(
             new Event("change", { bubbles: true })
         );
 
-        createOptions();
+        selecting = false;
+
+        syncSelection();
+    }
+
+    /** Marks what is selected without rebuilding, so the search and highlight stay. */
+    function syncSelection() {
+        optionsContainer.querySelectorAll(".searchable-select__option").forEach(item => {
+            const option = select.options[Number(item.dataset.index)];
+            const selected = Boolean(option && option.selected);
+            const checkbox = item.querySelector("input");
+
+            item.classList.toggle("is-selected", selected);
+            item.setAttribute("aria-selected", selected ? "true" : "false");
+
+            if (checkbox) {
+                checkbox.checked = selected;
+            }
+        });
+
+        updateValue();
     }
 
     function open() {
@@ -774,6 +920,22 @@ function createSearchableSelect(select) {
         results.forEach(result => {
             result.item.hidden = false;
             optionsContainer.appendChild(result.item);
+        });
+
+        // Ranked results are not in group order, so headings show only for
+        // the full list, each back above its first option.
+        optionsContainer.classList.toggle("is-filtered", Boolean(query));
+
+        groupHeadings.forEach(({ heading, firstIndex }) => {
+            heading.hidden = Boolean(query);
+
+            if (!query) {
+                const first = optionsContainer.querySelector(
+                    `.searchable-select__option[data-index="${firstIndex}"]`
+                );
+
+                optionsContainer.insertBefore(heading, first);
+            }
         });
 
         items.forEach(item => {
@@ -941,8 +1103,15 @@ function createSearchableSelect(select) {
         }
     });
 
+    // Something else changed the select, such as refreshDropdown() adding a
+    // new option, so rebuild and keep any search in place.
     select.addEventListener("change", () => {
+        if (selecting) {
+            return;
+        }
+
         createOptions();
+        filterOptions();
     });
 
     createOptions();

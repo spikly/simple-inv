@@ -40,7 +40,7 @@ const IMPORT_TAXONOMY_COLUMNS = [
 
 const IMPORT_SESSION_KEY = 'import_rows';
 
-const IMPORT_ROW_VERSION = 3;
+const IMPORT_ROW_VERSION = 4;
 
 function storeImportPreview(array $rows): void
 {
@@ -77,11 +77,23 @@ function parseItemCsv(array $upload): array
         return ['error' => 'Choose a CSV file to import.'];
     }
 
-    $handle = fopen($upload['tmp_name'], 'r');
+    $contents = file_get_contents($upload['tmp_name']);
 
-    if (!$handle) {
+    if ($contents === false) {
         return ['error' => 'That file could not be read.'];
     }
+
+    // Excel's "CSV UTF-8" starts with a byte order mark, and its plain "CSV"
+    // is Windows-1252, which would be stored as garbled or rejected text.
+    if (str_starts_with($contents, "\xEF\xBB\xBF")) {
+        $contents = substr($contents, 3);
+    } elseif (!mb_check_encoding($contents, 'UTF-8')) {
+        $contents = mb_convert_encoding($contents, 'UTF-8', 'Windows-1252');
+    }
+
+    $handle = fopen('php://temp', 'r+');
+    fwrite($handle, $contents);
+    rewind($handle);
 
     $heading = fgetcsv($handle, 0, ',', '"', '\\');
 
@@ -105,6 +117,7 @@ function parseItemCsv(array $upload): array
 
     $rows = [];
     $known = importKnownNames();
+    $existing = importExistingItems();
     $line = 1;
 
     while (($record = fgetcsv($handle, 0, ',', '"', '\\')) !== false) {
@@ -115,7 +128,27 @@ function parseItemCsv(array $upload): array
             continue;
         }
 
-        $rows[] = importRow($record, $columns, $known, $line);
+        $row = importRow($record, $columns, $known, $line);
+
+        if ($row['error'] === null) {
+            $key = importItemKey($row['name'], $row['manufacturer']);
+
+            if (isset($existing[$key])) {
+                $row['duplicate'] = ($existing[$key] === 0)
+                    ? 'An item with this name and manufacturer already exists.'
+                    : 'Same name and manufacturer as line ' . $existing[$key] . '.';
+            } else {
+                $existing[$key] = $line;
+            }
+
+            // A category this file creates files this row's kind, so later
+            // rows are checked against it as if it already existed.
+            foreach ($row['categories'] as $category) {
+                $known['category'][mb_strtolower($category)] ??= $row['type'];
+            }
+        }
+
+        $rows[] = $row;
     }
 
     fclose($handle);
@@ -136,14 +169,36 @@ function importKnownNames(): array
     $known = ['category' => []];
 
     foreach (array_keys(IMPORT_TAXONOMY_COLUMNS) as $key) {
-        $known[$key] = array_map('strtolower', array_map('strval', taxonomyOptions($key)));
+        $known[$key] = array_map('mb_strtolower', array_map('strval', taxonomyOptions($key)));
     }
 
     foreach (dbAll('SELECT cat_name, cat_type FROM inv_categories') as $row) {
-        $known['category'][strtolower($row['cat_name'])] = $row['cat_type'];
+        $known['category'][mb_strtolower($row['cat_name'])] = $row['cat_type'];
     }
 
     return $known;
+}
+
+/** Matches an imported row to an item, ignoring case and spacing at the ends. */
+function importItemKey(string $name, string $manufacturer): string
+{
+    return mb_strtolower(trim($name)) . "\0" . mb_strtolower(trim($manufacturer));
+}
+
+/** importItemKey() => 0, for every item already held. */
+function importExistingItems(): array
+{
+    $existing = [];
+
+    foreach (dbAll(
+        'SELECT i.item_name, b.brand_name
+         FROM inv_items i
+         LEFT JOIN inv_brands b ON b.brand_id = i.item_brand_id'
+    ) as $item) {
+        $existing[importItemKey((string)$item['item_name'], (string)$item['brand_name'])] = 0;
+    }
+
+    return $existing;
 }
 
 /** Changing which keys a row holds means bumping IMPORT_ROW_VERSION. */
@@ -174,6 +229,7 @@ function importRow(array $record, array $columns, array $known, int $line): arra
         'unit'         => $value('unit'),
         'notes'        => $value('notes'),
         'creates'      => [],
+        'duplicate'    => null,
         'error'        => null,
     ];
 
@@ -193,16 +249,31 @@ function importRow(array $record, array $columns, array $known, int $line): arra
         return $row;
     }
 
-    if ($row['quantity'] !== '' && !is_numeric($row['quantity'])) {
-        $row['error'] = 'Quantity "' . $row['quantity'] . '" is not a number.';
+    foreach (['quantity' => 'Quantity', 'min_quantity' => 'Min Quantity'] as $key => $label) {
+        if ($row[$key] !== '' && (!ctype_digit($row[$key]) || (int)$row[$key] > MAX_ITEM_QUANTITY)) {
+            $row['error'] = $label . ' "' . $row[$key] . '" is not a whole number, 0 or more.';
 
-        return $row;
+            return $row;
+        }
     }
 
-    if ($row['min_quantity'] !== '' && !is_numeric($row['min_quantity'])) {
-        $row['error'] = 'Min Quantity "' . $row['min_quantity'] . '" is not a number.';
+    // Column widths, so an overlong value is an error here rather than a failed import.
+    $limits = ['colour' => 50, 'product_url' => 255, 'manufacturer' => 191, 'supplier' => 191, 'status' => 191];
 
-        return $row;
+    foreach ($limits as $key => $limit) {
+        if (mb_strlen($row[$key]) > $limit) {
+            $row['error'] = ucwords(str_replace('_', ' ', $key)) . ' is longer than ' . $limit . ' characters.';
+
+            return $row;
+        }
+    }
+
+    foreach (array_merge(explode(LOCATION_PATH_SEPARATOR, $row['location']), $categories) as $name) {
+        if (mb_strlen(trim($name)) > 191) {
+            $row['error'] = '"' . mb_substr(trim($name), 0, 40) . '..." is longer than 191 characters.';
+
+            return $row;
+        }
     }
 
     if (!isWebUrl($row['product_url'] !== '' ? $row['product_url'] : null)) {
@@ -222,13 +293,13 @@ function importRow(array $record, array $columns, array $known, int $line): arra
     foreach (IMPORT_TAXONOMY_COLUMNS as $key => $column) {
         $name = $row[$column];
 
-        if ($name !== '' && !in_array(strtolower($name), $known[$key], true)) {
+        if ($name !== '' && !in_array(mb_strtolower($name), $known[$key], true)) {
             $row['creates'][] = taxonomy($key)['label'] . ': ' . $name;
         }
     }
 
     foreach ($categories as $category) {
-        $files = $known['category'][strtolower($category)] ?? null;
+        $files = $known['category'][mb_strtolower($category)] ?? null;
 
         if ($files === null) {
             $row['creates'][] = ITEM_TYPES[$row['type']] . ' Category: ' . $category;
@@ -247,13 +318,13 @@ function importRow(array $record, array $columns, array $known, int $line): arra
     return $row;
 }
 
-/** Matches a symbol or label. Blank gives the first unit; no match gives null. */
+/** Matches a symbol or label. Blank gives pieces; no match gives null. */
 function resolveUnitId(?string $value): ?int
 {
     $value = trim((string)$value);
 
     if ($value === '') {
-        return (int)dbValue('SELECT unit_id FROM inv_measurement_units ORDER BY unit_id LIMIT 1', [], 1);
+        return pieceUnitId();
     }
 
     $id = dbValue(
@@ -340,6 +411,23 @@ function locationIdByName(string $name, ?int $parentId, bool $create): ?int
     return $result['success'] ? (int)$result['newId'] : null;
 }
 
+/**
+ * Whether a category the row names files the other kind. The preview checks
+ * this too, but the database decides which names match.
+ */
+function importCategoryKindClash(array $row): bool
+{
+    foreach ($row['categories'] as $category) {
+        $files = dbValue('SELECT cat_type FROM inv_categories WHERE cat_name = :name LIMIT 1', ['name' => $category]);
+
+        if ($files !== null && $files !== $row['type']) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 /** Rows carrying an error are skipped. One transaction, so a failure leaves nothing. */
 function importItemRows(array $rows): array
 {
@@ -348,7 +436,7 @@ function importItemRows(array $rows): array
 
     dbTransaction(function () use ($rows, &$imported, &$skipped) {
         foreach ($rows as $row) {
-            if (!empty($row['error'])) {
+            if (!empty($row['error']) || importCategoryKindClash($row)) {
                 $skipped++;
                 continue;
             }

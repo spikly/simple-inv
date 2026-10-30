@@ -3,6 +3,7 @@
  * @var array $rows        Reviewed rows; empty before a file is uploaded.
  * @var array $valid       Rows with nothing wrong.
  * @var array $creates     Names the import would create, as a set.
+ * @var int   $duplicates  Valid rows matching an item or an earlier row.
  * @var mixed $formMessage Last result, or false.
  */
 
@@ -12,8 +13,10 @@ formMessage($formMessage);
 if (!$rows): ?>
 <p>
     Upload a CSV with a heading row. The columns are the same ones
-    <a href="index.php?page=export-items">Export</a> produces, so the easiest start is to export what you
-    have, edit it in a spreadsheet, and bring it back.
+    <a href="index.php?page=export-items">Export</a> produces, so an export makes a good template.
+    Every row is added as a new item: an import never updates the items you already have, so take out
+    any rows for those before you upload. The preview points out rows that look like an item you
+    already hold.
 </p>
 <p>
     <strong>Name</strong>, <strong>Manufacturer</strong>, <strong>Categories</strong>,
@@ -23,7 +26,7 @@ if (!$rows): ?>
     Manufacturers, suppliers, categories, locations and statuses that
     do not exist yet are created. A file exported before manufacturers were renamed still works: its
     <strong>Brand</strong> column is read as <strong>Manufacturer</strong>.
-    <strong>Unit</strong> must match a measurement unit's symbol or name.
+    <strong>Unit</strong> must match a measurement unit's symbol or name, and is pieces when blank.
     <strong>Colour</strong> is free text; <strong>Product URL</strong> is the page the thing was bought
     from and must start <code>http://</code> or <code>https://</code>.
     <strong>Type</strong> is <code>Part</code> or <code>Tool</code> and defaults to <code>Part</code>; it
@@ -47,6 +50,14 @@ endif; ?>
     Nothing has been written yet.
 </p>
 
+<?php if ($duplicates): ?>
+    <p>
+        <strong><?php echo $duplicates; ?></strong> of those
+        <?php echo $duplicates === 1 ? 'looks' : 'look'; ?> like an item already held or another row in the
+        file. Each will be added as a new item, so cancel and remove the rows you don't want first.
+    </p>
+<?php endif; ?>
+
 <?php if ($creates): ?>
     <p>These will be created as part of the import: <?php
         echo escapeHtml(implode(', ', array_keys($creates)));
@@ -69,7 +80,10 @@ renderTable(
             $row['type'] === 'tool' ? '-' : escapeHtml($row['quantity'] !== '' ? $row['quantity'] : '1'),
             $row['error']
                 ? '<span class="stock stock-over">' . escapeHtml($row['error']) . '</span>'
-                : '<span class="stock stock-ok">Will import</span>',
+                : ($row['duplicate']
+                    ? '<span class="stock stock-low">Will import</span>'
+                        . '<small class="row-note">' . escapeHtml($row['duplicate']) . '</small>'
+                    : '<span class="stock stock-ok">Will import</span>'),
         ];
     }
 );

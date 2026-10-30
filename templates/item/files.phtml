@@ -47,10 +47,11 @@ else: ?>
 formRow(
     'item_files',
     'Add Documents <small class="field-hint">' . escapeHtml(itemFileTypeList())
-        . '. Up to ' . formatFileSize(ITEM_FILE_MAX_BYTES)
+        . '. Up to ' . formatFileSize(uploadLimitBytes(ITEM_FILE_MAX_BYTES))
         . ' each, and you can choose more than one at a time.</small>',
     '<input type="file" name="item_files[]" id="item_files" multiple'
         . ' accept="' . escapeHtml('.' . implode(',.', array_keys(ITEM_FILE_TYPES))) . '"'
+        . uploadLimitAttributes(ITEM_FILE_MAX_BYTES)
         . invalidAttributes('item_files') . '>'
 );
 

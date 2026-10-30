@@ -6,6 +6,8 @@ require __DIR__ . '/inc/bootstrap.php';
 
 $pages = require __DIR__ . '/inc/pages.php';
 
+flagOversizedPost();
+
 $currentPage = 'dashboard';
 
 if (isset($_GET['page'])) {

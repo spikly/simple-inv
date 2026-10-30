@@ -34,12 +34,14 @@ function storeItemImage(array $upload): array
         return ['name' => null];
     }
 
-    if ($upload['error'] !== UPLOAD_ERR_OK) {
-        return ['error' => 'The photo could not be uploaded. It may be larger than the server allows.'];
+    $limit = uploadLimitBytes(UPLOAD_MAX_BYTES);
+
+    if (in_array($upload['error'], [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true) || $upload['size'] > $limit) {
+        return ['error' => 'The photo must be ' . formatFileSize($limit) . ' or smaller.'];
     }
 
-    if ($upload['size'] > UPLOAD_MAX_BYTES) {
-        return ['error' => 'The photo must be ' . formatFileSize(UPLOAD_MAX_BYTES) . ' or smaller.'];
+    if ($upload['error'] !== UPLOAD_ERR_OK) {
+        return ['error' => 'The photo could not be uploaded. Please try again.'];
     }
 
     if (!is_uploaded_file($upload['tmp_name'])) {
@@ -196,7 +198,13 @@ function imageFitsInMemory(int $width, int $height): bool
 
 function memoryLimitBytes(): int
 {
-    $limit = trim((string)ini_get('memory_limit'));
+    return iniBytes('memory_limit');
+}
+
+/** A php.ini size such as "8M" in bytes, or 0 for no limit. */
+function iniBytes(string $setting): int
+{
+    $limit = trim((string)ini_get($setting));
 
     if ($limit === '' || $limit === '-1') {
         return 0;
@@ -205,7 +213,43 @@ function memoryLimitBytes(): int
     $units = ['k' => 1024, 'm' => 1048576, 'g' => 1073741824];
     $suffix = strtolower(substr($limit, -1));
 
-    return (int)$limit * ($units[$suffix] ?? 1);
+    return max(0, (int)$limit * ($units[$suffix] ?? 1));
+}
+
+/** $appLimit, or PHP's own limit on one file or one request if lower. */
+function uploadLimitBytes(int $appLimit): int
+{
+    return min(array_filter([$appLimit, iniBytes('upload_max_filesize'), iniBytes('post_max_size')]));
+}
+
+/**
+ * Size limits for a file input to check before sending: per file, and for
+ * everything sent at once, which PHP drops whole when over post_max_size.
+ */
+function uploadLimitAttributes(int $appLimit): string
+{
+    $total = iniBytes('post_max_size');
+
+    return ' data-max-bytes="' . uploadLimitBytes($appLimit) . '"'
+        . ($total > 0 ? ' data-max-total="' . $total . '"' : '');
+}
+
+/**
+ * A POST over post_max_size arrives with $_POST and $_FILES empty, so the page
+ * would quietly redraw as if nothing was sent. Queues a message saying why.
+ */
+function flagOversizedPost(): void
+{
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || $_POST || $_FILES
+        || (int)($_SERVER['CONTENT_LENGTH'] ?? 0) === 0) {
+        return;
+    }
+
+    startSession();
+    $_SESSION['flash'] = errorMessage(
+        'That was too large to upload, so nothing was saved. Everything sent at once must come to '
+        . formatFileSize(iniBytes('post_max_size')) . ' or less.'
+    );
 }
 
 function deleteItemImage(?string $file): void
@@ -304,12 +348,14 @@ function storeItemFile(array $upload): array
         return ['name' => null];
     }
 
-    if ($upload['error'] !== UPLOAD_ERR_OK) {
-        return ['error' => 'The file could not be uploaded. It may be larger than the server allows.'];
+    $limit = uploadLimitBytes(ITEM_FILE_MAX_BYTES);
+
+    if (in_array($upload['error'], [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true) || $upload['size'] > $limit) {
+        return ['error' => 'Each file must be ' . formatFileSize($limit) . ' or smaller.'];
     }
 
-    if ($upload['size'] > ITEM_FILE_MAX_BYTES) {
-        return ['error' => 'Each file must be ' . formatFileSize(ITEM_FILE_MAX_BYTES) . ' or smaller.'];
+    if ($upload['error'] !== UPLOAD_ERR_OK) {
+        return ['error' => 'The file could not be uploaded. Please try again.'];
     }
 
     if ($upload['size'] === 0) {

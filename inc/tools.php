@@ -154,8 +154,17 @@ function toolReturnValue(array $loan, array $post): array
         return ['errors' => ['loan_in_at' => 'The returned date must be a date and time.']];
     }
 
-    if ($returned < $loan['loan_out_at']) {
+    // The form shows minutes only, so compare to the minute: a tool signed in
+    // within the minute it went out is not "before" it.
+    $minute = substr($returned, 0, 16);
+
+    if ($minute < substr((string)$loan['loan_out_at'], 0, 16)) {
         return ['errors' => ['loan_in_at' => 'A tool cannot come back before it went out.']];
+    }
+
+    // Unchanged, so keep the seconds the form could not show.
+    if ($loan['loan_in_at'] && substr((string)$loan['loan_in_at'], 0, 16) === $minute) {
+        return ['value' => $loan['loan_in_at']];
     }
 
     return ['value' => $returned];

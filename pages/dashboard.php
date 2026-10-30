@@ -26,7 +26,7 @@ if (trim((string)queryParam('q')) !== '' || $kind !== null || $applied) {
 $toolsOut = fetchOpenToolLoans();
 
 $openProjects = array_filter(fetchProjects(), function ($project) {
-    return in_array($project['project_status_name'], ['Planning', 'Active', 'On Hold'], true);
+    return in_array($project['project_status_name'], OPEN_PROJECT_STATUSES, true);
 });
 
 template('page/dashboard', [

@@ -1,6 +1,7 @@
 <?php
 /**
  * @var mixed $loan        The record, or false if not found.
+ * @var array $values      The fields, as stored or as last entered.
  * @var mixed $itemId      The tool, for the link back.
  * @var mixed $formMessage Last result, or false.
  */
@@ -20,17 +21,10 @@ endif;
 <?php
 formMessage($formMessage);
 
-textField('loan_to', 'Signed Out To', $loan['loan_to'], 'text', ' required');
-textField('loan_due_at', 'Due Back (optional)', $loan['loan_due_at'], 'date');
-
-textField(
-    'loan_in_at',
-    'Returned (clear this to put it back out)',
-    $loan['loan_in_at'] ? date('Y-m-d\TH:i', strtotime($loan['loan_in_at'])) : '',
-    'datetime-local'
-);
-
-textareaField('loan_notes', 'Notes (optional)', (string)$loan['loan_notes']);
+textField('loan_to', 'Signed Out To', $values['loan_to'], 'text', ' required');
+textField('loan_due_at', 'Due Back (optional)', $values['loan_due_at'], 'date');
+textField('loan_in_at', 'Returned (clear this to put it back out)', $values['loan_in_at'], 'datetime-local');
+textareaField('loan_notes', 'Notes (optional)', $values['loan_notes']);
 submitButton('edit_loan_submit');
 ?>
 </form>

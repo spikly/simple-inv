@@ -382,7 +382,7 @@ function fetchDashboardTotals(): array
                 WHERE ' . ITEM_IS_PART . ') AS total_quantity,
             (SELECT COUNT(*) FROM inv_projects p
                 INNER JOIN inv_project_statuses ps ON ps.project_status_id = p.project_status_id
-                WHERE ps.project_status_name IN (\'Planning\', \'Active\', \'On Hold\')) AS open_project_count
+                WHERE ps.project_status_name IN (' . openProjectStatusSql() . ')) AS open_project_count
     ');
 }
 

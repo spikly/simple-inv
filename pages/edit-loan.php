@@ -6,6 +6,14 @@ $formMessage = takeFlash();
 
 $loan = dbRow('SELECT * FROM inv_tool_loans WHERE loan_id = :loan_id', ['loan_id' => $loanId]);
 
+// As the form's fields hold them; a rejected save redraws what was entered.
+$values = $loan ? [
+    'loan_to'     => $loan['loan_to'],
+    'loan_due_at' => $loan['loan_due_at'],
+    'loan_in_at'  => $loan['loan_in_at'] ? date('Y-m-d\TH:i', strtotime($loan['loan_in_at'])) : '',
+    'loan_notes'  => (string)$loan['loan_notes'],
+] : [];
+
 if ($loan && isset($_POST['edit_loan_submit'])) {
     $result = toolLoanValues($_POST);
     $returned = toolReturnValue($loan, $_POST);
@@ -13,6 +21,7 @@ if ($loan && isset($_POST['edit_loan_submit'])) {
     $errors = ($result['errors'] ?? []) + ($returned['errors'] ?? []);
 
     if ($errors) {
+        $values = array_filter(array_intersect_key($_POST, $values), 'is_string') + $values;
         $formMessage = errorMessage($errors);
     } else {
         dbRun(
@@ -41,4 +50,4 @@ if ($loan && isset($_POST['edit_loan_submit'])) {
     );
 }
 
-template('page/edit-loan', compact('loan', 'itemId', 'formMessage'));
+template('page/edit-loan', compact('loan', 'values', 'itemId', 'formMessage'));

@@ -715,6 +715,27 @@ form input[type="submit"].delete:hover {
     accent-color: var(--color-primary);
 }
 
+.searchable-select__group {
+    padding: 10px 11px 4px;
+    color: #4b5563;
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.searchable-select__group-note {
+    display: none;
+    margin-left: auto;
+    color: #6b7280;
+    font-size: 1.2rem;
+    font-weight: 400;
+}
+
+.searchable-select__options.is-filtered .searchable-select__group-note {
+    display: inline;
+}
+
 .searchable-select__no-results {
     padding: 14px;
     color: #4b5563;
@@ -1439,6 +1460,13 @@ button.bulk-bar-scope:not(.searchable-select__button):hover {
     .bulk-bar {
         bottom: 8px;
         padding-left: 12px;
+    }
+
+    /* "All 1234 matching parts selected" and its button are wider than a small phone. */
+    form.bulk-bar .bulk-bar-count {
+        flex: 1 1 100%;
+        flex-wrap: wrap;
+        white-space: normal;
     }
 
     form.bulk-bar .bulk-bar-action {
