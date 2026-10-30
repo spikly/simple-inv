@@ -154,7 +154,7 @@ function locationCell(array $row): string
 
 function notesBox($text): void
 {
-    template('notes-box', ['text' => nl2p(text2link(escapeHtml($text)))]);
+    template('notes-box', ['text' => nl2p(text2link($text))]);
 }
 
 /** $body is raw HTML. */

@@ -11,7 +11,8 @@ $values = [];
 $itemUrl = 'index.php?page=view-item&item_id=' . urlencode((string)$itemId);
 $selfUrl = 'index.php?page=loan-tool&item_id=' . urlencode((string)$itemId);
 
-if ($item && isset($_POST['sign_out_submit'])) {
+// A tab left open may post for an item since refiled as a part.
+if ($item && isTool($item) && isset($_POST['sign_out_submit'])) {
     $result = toolLoanValues($_POST);
     $errors = $result['errors'] ?? [];
 

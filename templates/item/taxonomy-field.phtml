@@ -1,8 +1,5 @@
 <?php
 /**
- * The item kind sits on both controls because a category added here must file
- * that kind; assets/js/app.js reads it and inc/ajax.php acts on it.
- *
  * @var string $key      Taxonomy key, eg 'brand'.
  * @var array  $tax      Its definition.
  * @var string $name     Field name, also the select's id.
@@ -12,7 +9,7 @@
  * @var mixed  $selected
  */
 ?>
-<div class="searchable-select-row"><div class="searchable-select"><select name="<?php
+<div class="searchable-select-row"><div class="searchable-select-slot"><select name="<?php
     echo $name . ($multiple ? '[]' : '');
 ?>" id="<?php echo $name; ?>" data-item-type="<?php echo $type; ?>"<?php
     echo invalidAttributes($name);

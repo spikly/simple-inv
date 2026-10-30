@@ -46,7 +46,9 @@ function renderErrorPage(\Throwable $e): void
     }
 
     template('error-page', [
-        'detail' => config('debug')
+        // PDOException covers a refused connection and a missing table or column.
+        'database' => $e instanceof \PDOException,
+        'detail'   => config('debug')
             ? templateHtml('error-detail', ['e' => $e])
             : '<p>The details have been written to the server error log.</p>',
     ]);

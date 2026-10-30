@@ -4,6 +4,7 @@
  *
  * @var string $type   'location' or 'item'.
  * @var array  $labels Each with a title and the URL its code encodes.
+ * @var int    $total  How many there would be without the cap.
  */
 
 pageHeader('Labels' . countBadge(count($labels)), [
@@ -18,6 +19,13 @@ pageHeader('Labels' . countBadge(count($labels)), [
     set <code>'site' =&gt; ['url' =&gt; '...']</code> in <code>config/user.config.php</code> if that is
     not how you reach this machine.
 </p>
+
+<?php if ($total > count($labels)): ?>
+<p class="no-print">
+    Showing the first <?php echo count($labels); ?> of <?php echo $total; ?>. Filter the list first to
+    print the rest.
+</p>
+<?php endif; ?>
 
 <?php if (!$labels): ?>
     <p>Nothing to make labels for.</p>

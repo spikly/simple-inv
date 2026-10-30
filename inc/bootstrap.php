@@ -16,6 +16,7 @@ require __DIR__ . '/template.php';
 require __DIR__ . '/errors.php';
 
 registerErrorHandlers();
+rejectCrossSitePost();
 
 require __DIR__ . '/flash.php';
 require __DIR__ . '/db.php';

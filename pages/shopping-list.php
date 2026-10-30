@@ -12,8 +12,9 @@ foreach ($project ? fetchProjectRequirements($projectId) : [] as $row) {
     $stillToAllocate = max(0, $outstanding - (float)$row['allocated_quantity']);
     $freeElsewhere = max(0, (float)$row['free_elsewhere']);
 
+    // Reservations go oldest first, so an open project short of a part leaves
+    // none of it free; free stock only covers a closed project's needs.
     $row['still_to_allocate'] = $stillToAllocate;
-    $row['from_stock'] = min($stillToAllocate, $freeElsewhere);
     $row['to_buy'] = max(0, $stillToAllocate - $freeElsewhere);
 
     $toBuyTotal += $row['to_buy'];

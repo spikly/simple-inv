@@ -21,8 +21,10 @@ filterField(
 );
 
 // Dropdowns already in use, shown on the mobile toggle while they're hidden.
+// The kind counts only when it has a dropdown of its own below.
+$showKind = ($kind === null && !$inCategory);
 $active = count(array_filter(
-    array_merge(['kind'], array_column(taxonomies(), 'param')),
+    array_merge($showKind ? ['kind'] : [], array_column(taxonomies(), 'param')),
     fn($param) => (string)queryParam($param) !== ''
 ));
 ?>
@@ -31,7 +33,7 @@ $active = count(array_filter(
     </button>
 <?php
 
-if ($kind === null && !$inCategory) {
+if ($showKind) {
     filterField(
         'filter_kind',
         'Type',

@@ -1,0 +1,16 @@
+# Code, read by index.php from disk. Only ajax.php is fetched by the browser.
+<IfModule mod_authz_core.c>
+    Require all denied
+
+    <Files "ajax.php">
+        Require all granted
+    </Files>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+
+    <Files "ajax.php">
+        Allow from all
+    </Files>
+</IfModule>

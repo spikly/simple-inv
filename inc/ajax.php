@@ -4,6 +4,25 @@ header('Content-Type: application/json');
 
 require __DIR__ . '/bootstrap.php';
 
+// The usual error page is HTML, which the script cannot read.
+set_exception_handler(function (\Throwable $e) {
+    error_log('[inventory] ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+
+    ajaxFailure(500, 'Something went wrong on the server.');
+});
+
+/** A request that cannot be answered. Validation failures are not this: they come back as success false. */
+function ajaxFailure(int $status, string $error): void
+{
+    http_response_code($status);
+    echo json_encode(['success' => false, 'error' => $error]);
+    exit;
+}
+
 $request = json_decode(file_get_contents('php://input'), true) ?: [];
 
 /** "add_new_brand" and "item_brand" both resolve to the "brand" taxonomy. */
@@ -29,8 +48,7 @@ switch ($request['requestType'] ?? '') {
         $key = taxonomyFor($request['buttonId'] ?? null, 'add_new_');
 
         if (!$key) {
-            echo json_encode(['error' => 'Invalid request. No button ID provided.']);
-            break;
+            ajaxFailure(400, 'Invalid request. No button ID provided.');
         }
 
         echo json_encode([
@@ -62,6 +80,10 @@ switch ($request['requestType'] ?? '') {
         $key = taxonomyFor($request['dropdownId'] ?? null, 'item_');
         $multiple = !empty($request['multiple']);
 
+        if (!$key) {
+            ajaxFailure(400, 'Unknown dropdown.');
+        }
+
         $newId = $request['newId'] ?? null;
         $selected = $request['selected'] ?? [];
         $selected = is_array($selected) ? $selected : [$selected];
@@ -75,13 +97,7 @@ switch ($request['requestType'] ?? '') {
             return $value !== null && $value !== '';
         });
 
-        $options = [];
-
-        if ($key === 'category') {
-            $options = categoryOptions($requestedType);
-        } elseif ($key) {
-            $options = taxonomyOptions($key);
-        }
+        $options = ($key === 'category') ? categoryOptions($requestedType) : taxonomyOptions($key);
 
         echo json_encode([
             'success'     => true,
@@ -89,6 +105,9 @@ switch ($request['requestType'] ?? '') {
                 . selectOptions($options, $selected),
         ]);
         break;
+
+    default:
+        ajaxFailure(400, 'Unknown request.');
 }
 
 exit;

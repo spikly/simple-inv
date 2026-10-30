@@ -2,7 +2,7 @@
 
 /**
  * Item photos and attachments. Stored under generated names, so nothing a browser
- * sends becomes a path. assets/uploads/.htaccess turns PHP off.
+ * sends becomes a path. assets/uploads/.htaccess refuses scripts as well.
  */
 
 const UPLOAD_MAX_BYTES = 8388608; // 8MB
@@ -372,7 +372,8 @@ function storeItemFile(array $upload): array
     $extension = ITEM_FILE_ALIASES[$extension] ?? $extension;
 
     if (!isset(ITEM_FILE_TYPES[$extension])) {
-        return ['error' => 'A ' . ($extension === '' ? 'file with no extension' : strtoupper($extension) . ' file')
+        // The extension comes from the browser, and messages are drawn as HTML.
+        return ['error' => 'A ' . ($extension === '' ? 'file with no extension' : escapeHtml(strtoupper($extension)) . ' file')
             . ' cannot be attached. Accepted types are ' . itemFileTypeList() . '.'];
     }
 

@@ -94,6 +94,10 @@ if ($item && isset($_POST['edit_item_submit'])) {
                     // This form sets the quantity, so log the difference.
                     recordStockMovement($editId, (float)$_POST['item_quantity'] - $heldBefore, 'edited');
                     reallocateItem($editId);
+                } else {
+                    // A tool is stored as one piece, so a part becoming one is
+                    // logged too, or the history disagrees if it changes back.
+                    recordStockMovement($editId, 1 - $heldBefore, 'edited');
                 }
             });
         } catch (\Throwable $e) {
@@ -115,9 +119,8 @@ if ($item && isset($_POST['edit_item_submit'])) {
         );
     }
 } elseif ($item && isset($_POST['delete_item_submit'])) {
-    deleteItemImage($item['item_image']);
-    deleteItemFiles($editId);
-    dbRun('DELETE FROM inv_items WHERE item_id = :edit_id LIMIT 1', ['edit_id' => $editId]);
+    // The row goes before its files, as for a bulk delete.
+    deleteItems([$editId]);
 
     redirectWith(
         'index.php?page=' . itemTypePage(itemTypeOf($item)),

@@ -1,10 +1,12 @@
 <?php
 
+const LABELS_MAX = 500;
+
 $type = (queryParam('type') === 'item') ? 'item' : 'location';
 $labels = [];
 
 if ($type === 'location') {
-    foreach (taxonomyRows(taxonomy('location')) as $row) {
+    foreach (taxonomyRows(taxonomy('location'), trim((string)queryParam('q'))) as $row) {
         $labels[] = [
             'title' => locationPath($row),
             'url'   => baseUrl() . 'index.php?page=items&location_id=' . $row['loc_id'],
@@ -30,4 +32,9 @@ if ($type === 'location') {
     }
 }
 
-template('page/labels', compact('type', 'labels'));
+// Each code is drawn in PHP, so an unfiltered sheet of a big inventory could
+// run into the time limit.
+$total = count($labels);
+$labels = array_slice($labels, 0, LABELS_MAX);
+
+template('page/labels', compact('type', 'labels', 'total'));

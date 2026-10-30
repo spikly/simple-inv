@@ -26,6 +26,17 @@ const IMPORT_COLUMN_ALIASES = [
     'category' => 'categories',
 ];
 
+/**
+ * A spreadsheet runs a cell starting with one of these as a formula. Export
+ * puts a ' before them, which spreadsheets hide and import takes off again.
+ */
+const CSV_FORMULA_START = '/^[=+\-@\t\r]/';
+
+function csvSafeCell($value)
+{
+    return (is_string($value) && preg_match(CSV_FORMULA_START, $value)) ? "'" . $value : $value;
+}
+
 const IMPORT_TAXONOMY_COLUMNS = [
     'brand'    => 'manufacturer',
     'supplier' => 'supplier',
@@ -207,7 +218,12 @@ function importRow(array $record, array $columns, array $known, int $line): arra
     $value = function (string $column) use ($record, $columns) {
         $index = $columns[$column] ?? null;
 
-        return ($index === null) ? '' : trim((string)($record[$index] ?? ''));
+        $cell = ($index === null) ? '' : trim((string)($record[$index] ?? ''));
+
+        // Undo csvSafeCell().
+        return (str_starts_with($cell, "'") && preg_match(CSV_FORMULA_START, substr($cell, 1)))
+            ? substr($cell, 1)
+            : $cell;
     };
 
     $categories = array_values(array_filter(array_map('trim', explode('|', $value('categories'))), 'strlen'));

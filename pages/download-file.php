@@ -33,6 +33,9 @@ header('Content-Length: ' . filesize($path));
 header('X-Content-Type-Options: nosniff');
 header('Cache-Control: private, max-age=0, must-revalidate');
 
+// Free the session, or every other tab waits while a large file downloads.
+session_write_close();
+
 // Drop output buffering so large files stream rather than sit in memory.
 while (ob_get_level() > 0) {
     ob_end_clean();

@@ -2,7 +2,8 @@
 /**
  * Stands in for the layout, whose output has been discarded.
  *
- * @var string $detail Raw HTML: the trace, or a note about the error log.
+ * @var bool   $database Whether the database raised it.
+ * @var string $detail   Raw HTML: the trace, or a note about the error log.
  */
 ?>
 <!doctype html>
@@ -11,16 +12,21 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Something went wrong</title>
-        <link href="assets/styles/styles.css" rel="stylesheet">
+        <link href="assets/styles/reset.css?<?php echo assetVersion('styles/reset.css'); ?>" rel="stylesheet">
+        <link href="assets/styles/styles.css?<?php echo assetVersion('styles/styles.css'); ?>" rel="stylesheet">
     </head>
     <body>
         <div class="container body">
             <div class="flex-nav"><h2>Something went wrong</h2></div>
+            <?php if ($database): ?>
             <p>
-                The page could not be loaded. This is usually a database problem -
-                check that the settings in <code>config/user.config.php</code> are correct and that
-                the database has been updated with <code>database-updates.sql</code>.
+                The page could not be loaded because of a database problem. Check that the settings in
+                <code>config/user.config.php</code> are correct and that the database has been updated with
+                <code>database-updates.sql</code>.
             </p>
+            <?php else: ?>
+            <p>The page could not be loaded because of an unexpected error.</p>
+            <?php endif; ?>
             <?php echo $detail; ?>
             <p><a href="index.php">Back to the dashboard</a></p>
         </div>

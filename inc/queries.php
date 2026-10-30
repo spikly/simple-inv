@@ -372,18 +372,17 @@ function deleteItemFileRow($file_id): void
  * Dashboard
  */
 
+/** Parts are counted as the Parts listing finds them, which needs a part category. */
 function fetchDashboardTotals(): array
 {
     return dbRow('
         SELECT
-            (SELECT COUNT(*) FROM inv_items i WHERE ' . ITEM_IS_PART . ') AS part_count,
+            (SELECT COUNT(*) FROM inv_items i WHERE ' . ITEM_KIND_FILTER . ') AS part_count,
             (SELECT COUNT(*) FROM inv_items i WHERE ' . ITEM_IS_TOOL . ') AS tool_count,
-            (SELECT COALESCE(SUM(i.item_quantity), 0) FROM inv_items i
-                WHERE ' . ITEM_IS_PART . ') AS total_quantity,
             (SELECT COUNT(*) FROM inv_projects p
                 INNER JOIN inv_project_statuses ps ON ps.project_status_id = p.project_status_id
                 WHERE ps.project_status_name IN (' . openProjectStatusSql() . ')) AS open_project_count
-    ');
+    ', ['item_kind' => 'part']);
 }
 
 /** $mode "low": at or under the reorder level; "over": committed beyond stock. */

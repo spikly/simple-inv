@@ -10,8 +10,8 @@ flagOversizedPost();
 
 $currentPage = 'dashboard';
 
-if (isset($_GET['page'])) {
-    $currentPage = $pages[strtolower($_GET['page'])] ?? '404';
+if (queryParam('page') !== false) {
+    $currentPage = $pages[strtolower(queryParam('page'))] ?? '404';
 }
 
 // Sends its own headers, so it must run before any markup.

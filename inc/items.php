@@ -334,15 +334,6 @@ function describeItemFiles($itemId, array $descriptions): int
     return $changed;
 }
 
-/** Deleting the item takes the rows but not the files, so this runs first. */
-function deleteItemFiles($itemId): void
-{
-    foreach (fetchItemFiles($itemId) as $file) {
-        deleteItemFile($file['file_stored_name']);
-        deleteItemFileRow($file['file_id']);
-    }
-}
-
 /** A file that fails to copy is left out, not recorded pointing at nothing. */
 function copyItemFiles($fromItemId, $toItemId): void
 {

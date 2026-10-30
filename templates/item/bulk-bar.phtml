@@ -22,7 +22,7 @@ $hidden = (!$all && $ticked === 0) ? ' hidden' : '';
         ?></span>
         <button type="button" class="bulk-bar-scope" hidden></button>
     </p>
-    <p class="bulk-bar-action">
+    <p class="bulk-bar-action<?php echo fieldError('bulk_action') ? ' field-invalid' : ''; ?>" data-field="bulk_action">
         <label for="bulk_action" class="visually-hidden">Action</label>
         <select name="bulk_action" id="bulk_action"<?php echo invalidAttributes('bulk_action'); ?>>
             <option value="">Choose an action</option>
@@ -30,7 +30,7 @@ $hidden = (!$all && $ticked === 0) ? ' hidden' : '';
         </select>
 <?php foreach ($fields as $key => [$placeholder, $options]):
     $name = 'bulk_' . $key; ?>
-        <span class="bulk-bar-field" data-action="<?php echo $key; ?>"<?php echo $key === $action ? '' : ' hidden'; ?>>
+        <span class="bulk-bar-field<?php echo fieldError($name) ? ' field-invalid' : ''; ?>" data-field="<?php echo $name; ?>" data-action="<?php echo $key; ?>"<?php echo $key === $action ? '' : ' hidden'; ?>>
             <label for="<?php echo $name; ?>" class="visually-hidden"><?php echo $placeholder; ?></label>
             <select name="<?php echo $name; ?>" id="<?php echo $name; ?>"<?php echo invalidAttributes($name); ?>>
                 <option value=""><?php echo $placeholder; ?></option>

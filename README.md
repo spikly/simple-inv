@@ -53,6 +53,31 @@ Run `database-updates.sql` against your database once:
 mariadb -u YOUR_USER -p YOUR_DATABASE < database-updates.sql
 ```
 
+It is safe to run again: anything already applied is skipped, and every
+project's stock reservations are recalculated from current stock.
+
+The script uses MariaDB's `IF [NOT] EXISTS`. On MySQL, remove those clauses
+and run only the parts your database is missing.
+
+Upgrading from v1.x is not supported by this script, as it does not create the
+project tables that arrived in v2.0.0.
+
+## Web server notes
+
+Only `index.php`, `inc/ajax.php` and `assets/` need to be reachable from a
+browser. On Apache, the `.htaccess` files in `config/`, `inc/`, `pages/`,
+`templates/` and `assets/uploads/` take care of this when `AllowOverride` is
+enabled for the folder. On nginx, add the equivalent rules, for example:
+
+```
+location ~ ^/(config|pages|templates)/ { deny all; }
+location ~ ^/inc/(?!ajax\.php$) { deny all; }
+location ^~ /assets/uploads/ { }
+```
+
+Uploads are limited by PHP's `upload_max_filesize` and `post_max_size` as well
+as by the app itself; the forms show whichever is lowest.
+
 ## Settings
 
 Beyond the database details, `config/user.config.php` takes:
@@ -60,7 +85,7 @@ Beyond the database details, `config/user.config.php` takes:
 ```php
 'site' => [
     'title'    => 'Inventory Tracker',   // shown in the header and browser tab
-    'url'      => 'http://192.168.1.50/inventory/',
+    'url'      => 'http://192.168.1.50/inventory/',   // where QR labels point; empty to guess
     'per_page' => 50,   // rows per page in the listings
 ],
 

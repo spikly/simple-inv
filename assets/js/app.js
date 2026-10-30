@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", function()
                 },
                 (error) => {
                     console.error("Error loading form:", error);
+                    window.alert("That form could not be loaded. Please try again.");
                 }
             );
         });
@@ -62,6 +63,10 @@ document.addEventListener("DOMContentLoaded", function()
 
     document.addEventListener("submit", preventDoubleSubmit);
 
+    document.addEventListener("input", markFormChanged);
+    document.addEventListener("change", markFormChanged);
+    window.addEventListener("beforeunload", warnOfUnsavedChanges);
+
     // Coming back with the browser's Back button can restore a page mid-submit.
     window.addEventListener("pageshow", () => {
         document.querySelectorAll("form[data-submitting]").forEach(form => {
@@ -98,6 +103,37 @@ function checkUploadSize(input)
 }
 
 /**
+ * Notes a POST form whose fields have been used. Left out: the bulk bar, whose
+ * ticks are a selection rather than something to save, and the add-new modal,
+ * which saves by itself. .form is used, as the table's tick boxes join the bar
+ * by their form attribute.
+ */
+function markFormChanged(event)
+{
+    const form = event.target.form;
+
+    // Typing in a dropdown's search box changes nothing.
+    if (!form || event.target.classList.contains("searchable-select__search")
+        || form.id === "bulk-items" || form.closest("#custom-modal")
+        || (form.getAttribute("method") || "").toLowerCase() !== "post") {
+        return;
+    }
+
+    form.dataset.changed = "true";
+}
+
+/** Asks before leaving with changes unsaved, unless a form is being sent. */
+function warnOfUnsavedChanges(event)
+{
+    if (document.querySelector("form[data-submitting]") || !document.querySelector("form[data-changed]")) {
+        return;
+    }
+
+    event.preventDefault();
+    event.returnValue = "";
+}
+
+/**
  * Ignores a POST form's second submit while the first is on its way, so a
  * double-click cannot save twice. The button is left enabled, as a disabled
  * button's name is not sent and the pages look for it. Runs after the forms'
@@ -127,7 +163,8 @@ function clearFieldError(event)
         return;
     }
 
-    const row = event.target.closest(".form-row.field-invalid");
+    // The bulk bar's controls are not in form rows, so mark their own wrapper.
+    const row = event.target.closest(".form-row.field-invalid, .bulk-bar .field-invalid");
 
     if (!row) {
         return;
@@ -205,10 +242,6 @@ function makeSelectAll(box) {
     reflect();
 }
 
-/**
- * The bulk actions bar. Shown once a row is ticked; offers "select all matching"
- * when the whole page is ticked and there are more pages.
- */
 /** On mobile, tuck the dropdowns behind a toggle so only the search shows. */
 function makeCollapsibleFilters(bar) {
     const toggle = bar.querySelector(".filter-toggle");
@@ -222,6 +255,10 @@ function makeCollapsibleFilters(bar) {
     });
 }
 
+/**
+ * The bulk actions bar. Shown once a row is ticked; offers "select all matching"
+ * when the whole page is ticked and there are more pages.
+ */
 function makeBulkBar(form) {
     const rows = Array.from(document.querySelectorAll('input[type="checkbox"][form="' + form.id + '"]'));
     const everything = form.querySelector('input[name="bulk_all"]');
@@ -484,20 +521,39 @@ function showModalWithForm(formHtml, dropdownId)
         modal.innerHTML = `
             <div class="modal-overlay"></div>
             <div class="modal-content">
-                <span class="close-modal">&times;</span>
+                <button type="button" class="close-modal" aria-label="Close">&times;</button>
                 <div id="modal-body"></div>
             </div>
         `;
         document.body.appendChild(modal);
 
+        modal.setAttribute("role", "dialog");
+        modal.setAttribute("aria-modal", "true");
+
         modal.querySelector(".close-modal").addEventListener("click", closeModal);
         modal.querySelector(".modal-overlay").addEventListener("click", closeModal);
+
+        modal.addEventListener("keydown", event => {
+            // An open searchable select handles its own Escape first.
+            if (event.key === "Escape" && !event.defaultPrevented) {
+                closeModal();
+            }
+        });
     }
+
+    // Focus goes back to the "+" that opened it.
+    modal.returnFocus = document.activeElement;
 
     document.getElementById("modal-body").innerHTML = formHtml;
     modal.style.display = "flex";
 
     attachFormSubmitHandler(dropdownId);
+
+    const first = modal.querySelector("#modal-body input:not([type=hidden]), #modal-body select");
+
+    if (first) {
+        first.focus();
+    }
 }
 
 function attachFormSubmitHandler(dropdownId)
@@ -554,6 +610,10 @@ function closeModal()
     let modal = document.getElementById("custom-modal");
     if (modal) {
         modal.style.display = "none";
+
+        if (modal.returnFocus && document.contains(modal.returnFocus)) {
+            modal.returnFocus.focus();
+        }
     }
 }
 

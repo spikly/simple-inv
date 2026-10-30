@@ -47,7 +47,7 @@ endif; ?>
     );
 
     renderTable(
-        ['Item', 'Part No', 'Required', 'Installed', 'Reserved', 'Still To Reserve', 'From Stock', 'To Buy'],
+        ['Item', 'Part No', 'Required', 'Installed', 'Reserved', 'Still To Reserve', 'To Buy'],
         $supplierRows,
         static function ($row) {
             $unit = escapeHtml($row['unit_symbol'] ?? '');
@@ -60,7 +60,6 @@ endif; ?>
                 formatQuantity($row['installed_quantity']) . $unit,
                 formatQuantity($row['allocated_quantity']) . $unit,
                 formatQuantity($row['still_to_allocate']) . $unit,
-                formatQuantity($row['from_stock']) . $unit,
                 $row['to_buy'] > 0
                     ? '<strong class="stock stock-over">' . formatQuantity($row['to_buy']) . $unit . '</strong>'
                     : '-',

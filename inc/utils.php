@@ -23,13 +23,33 @@ function nl2p($string)
     return $p;
 }
 
+/**
+ * Escapes plain $string, making each web address in it a link. Takes the text
+ * unescaped, as an address matched in escaped text can swallow an entity.
+ */
 function text2link($string)
 {
-    return preg_replace(
-        '@(https?://([-\w\.]+[-\w])+(:\d+)?(/([\w/_\.#-]*(\?\S+)?[^\.\s])?)?)@',
-        '<a href="$1" rel="nofollow" target="_blank">$1</a>',
-        strip_tags($string)
-    );
+    $parts = preg_split('@(https?://[^\s<>"\']+)@i', (string)$string, -1, PREG_SPLIT_DELIM_CAPTURE);
+    $html = '';
+
+    foreach ($parts as $index => $part) {
+        // Odd parts are the addresses.
+        if ($index % 2 === 0) {
+            $html .= escapeHtml($part);
+            continue;
+        }
+
+        // Punctuation at the end usually belongs to the sentence.
+        $trail = preg_match('/[.,;:!?)\]]+$/', $part, $match) ? $match[0] : '';
+        $url = substr($part, 0, strlen($part) - strlen($trail));
+
+        $html .= (isWebUrl($url)
+                ? '<a href="' . escapeHtml($url) . '" rel="nofollow noopener" target="_blank">' . escapeHtml($url) . '</a>'
+                : escapeHtml($url))
+            . escapeHtml($trail);
+    }
+
+    return $html;
 }
 
 /** Null passes. The scheme is checked because escaping can't stop javascript: URLs. */
@@ -65,10 +85,12 @@ function utilisationBg($utilisation = 0)
     return 'green';
 }
 
-/** False when not supplied. */
+/** False when not supplied. An array, as from ?q[]=x, counts as not supplied. */
 function queryParam(string $name)
 {
-    return $_GET[$name] ?? false;
+    $value = $_GET[$name] ?? false;
+
+    return is_array($value) ? false : $value;
 }
 
 function queryId(string $name): int
@@ -123,6 +145,37 @@ function baseUrl(): string
     $folder = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
 
     return ($secure ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . $folder . '/';
+}
+
+/**
+ * There is no login, so any page open on the network could otherwise post a
+ * bulk delete here. Browsers name the page a POST came from in Origin (or at
+ * least Referer); one naming another host is refused. A request naming none,
+ * as from an old browser or a script, is let through.
+ */
+function rejectCrossSitePost(): void
+{
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        return;
+    }
+
+    $source = $_SERVER['HTTP_ORIGIN'] ?? ($_SERVER['HTTP_REFERER'] ?? '');
+
+    if ($source === '' || $source === 'null') {
+        return;
+    }
+
+    $from = strtolower((string)parse_url($source, PHP_URL_HOST) . ':' . (parse_url($source, PHP_URL_PORT) ?? ''));
+    $allowed = [];
+
+    foreach ([baseUrl(), 'http://' . ($_SERVER['HTTP_HOST'] ?? '')] as $url) {
+        $allowed[] = strtolower((string)parse_url($url, PHP_URL_HOST) . ':' . (parse_url($url, PHP_URL_PORT) ?? ''));
+    }
+
+    if (!in_array($from, $allowed, true)) {
+        http_response_code(403);
+        exit('This form was sent from another site, so it has been refused.');
+    }
 }
 
 /** Cache buster. $path is relative to assets/. */

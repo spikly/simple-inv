@@ -638,6 +638,9 @@ function taxonomyUsageCounts(array $tax, array $ids): array
     ), 'total', 'id');
 }
 
+/** Every taxonomy's name column is varchar(191). */
+const TAXONOMY_NAME_MAX_LENGTH = 191;
+
 /**
  * Returns ['values' => ...] or ['errors' => ...] keyed by field. Every save
  * (pages, modal, CSV import) comes through here, so validate here.
@@ -645,6 +648,7 @@ function taxonomyUsageCounts(array $tax, array $ids): array
 function taxonomyValues(array $tax, array $input, $id = null): array
 {
     $values = [];
+    $errors = [];
 
     foreach ($tax['fields'] as $column => $field) {
         $value = trim((string)($input[$column] ?? ''));
@@ -655,6 +659,13 @@ function taxonomyValues(array $tax, array $input, $id = null): array
             $options = taxonomyFieldOptions($field, $id);
 
             if (!isset($options[$value])) {
+                // A choice made in a stale tab, eg a parent that has since
+                // become a sub-location, is refused rather than quietly dropped.
+                if ($value !== '') {
+                    $errors[$column] = 'That ' . strtolower($field['label']) . ' choice is no longer available.'
+                        . ' Choose again.';
+                }
+
                 $value = $nullable ? '' : ($field['default'] ?? (string)array_key_first($options));
             }
         }
@@ -663,10 +674,13 @@ function taxonomyValues(array $tax, array $input, $id = null): array
     }
 
     $nameField = taxonomyNameField($tax);
-    $errors = [];
 
     if ($values[$nameField] === '') {
         $errors[$nameField] = $tax['label'] . ' name cannot be empty';
+    } elseif (mb_strlen($values[$nameField]) > TAXONOMY_NAME_MAX_LENGTH) {
+        // The column width; longer would fail the save.
+        $errors[$nameField] = $tax['label'] . ' name cannot be longer than '
+            . TAXONOMY_NAME_MAX_LENGTH . ' characters';
     } elseif (taxonomyNameTaken($tax, $values, $id)) {
         $errors[$nameField] = 'There is already a ' . strtolower($tax['label']) . ' called "'
             . escapeHtml($values[$nameField]) . '"'
@@ -761,8 +775,10 @@ function taxonomyIndexPage(string $key): void
 
     $links = ['Add New ' . $tax['label'] => 'index.php?page=' . $tax['routes']['add']];
 
+    // Labels for what the search shows, not every location.
     if ($key === 'location' && $rows) {
-        $links['Labels'] = 'index.php?page=labels&amp;type=location';
+        $links['Labels'] = 'index.php?page=labels&amp;type=location'
+            . ($search !== '' ? '&amp;q=' . escapeHtml(urlencode($search)) : '');
     }
 
     template('page/taxonomy-index', [
@@ -822,7 +838,10 @@ function taxonomyEditPage(string $key): void
     // A rejected save comes back holding what it tried, not the stored row.
     $posted = null;
 
-    if (isset($_POST['edit_' . $tax['submit'] . '_submit'])) {
+    // Loaded first, so saving or deleting one that has gone cannot claim success.
+    $row = dbRow('SELECT * FROM ' . $tax['table'] . ' WHERE ' . $tax['id'] . ' = :edit_id', ['edit_id' => $editId]);
+
+    if ($row && isset($_POST['edit_' . $tax['submit'] . '_submit'])) {
         $result = taxonomyValues($tax, $_POST, $editId);
 
         $blocked = isset($result['values']) && isset($tax['guard'])
@@ -835,39 +854,34 @@ function taxonomyEditPage(string $key): void
             $formMessage = errorMessage($errors);
             $posted = $_POST;
         } else {
-            dbTransaction(function () use ($tax, $result, $editId) {
-                // Must run before the update, while it can see the old values.
-                if (isset($tax['onSave'])) {
-                    $tax['onSave']($editId, $result['values']);
-                }
+            try {
+                taxonomyUpdate($tax, $editId, $result['values']);
 
-                $assignments = [];
+                redirectWith($editUrl, successMessage($tax['label'] . ' updated!'));
+            } catch (\PDOException $e) {
+                // Eg another save took the name first. As for taxonomyInsert().
+                error_log('[inventory] ' . $e->getMessage());
 
-                foreach (array_keys($result['values']) as $column) {
-                    $assignments[] = $column . ' = :' . $column;
-                }
-
-                dbRun(
-                    'UPDATE ' . $tax['table'] . ' SET ' . implode(', ', $assignments)
-                    . ' WHERE ' . $tax['id'] . ' = :edit_id',
-                    $result['values'] + ['edit_id' => $editId]
-                );
-            });
-
-            redirectWith($editUrl, successMessage($tax['label'] . ' updated!'));
+                $formMessage = errorMessage([taxonomyNameField($tax) => config('debug')
+                    ? escapeHtml($e->getMessage())
+                    : 'That ' . strtolower($tax['label']) . ' could not be saved.']);
+                $posted = $_POST;
+            }
         }
-    } elseif (isset($_POST['delete_' . $tax['submit'] . '_submit'])) {
+    } elseif ($row && isset($_POST['delete_' . $tax['submit'] . '_submit'])) {
         $inUse = taxonomyUsageCount($tax, $editId);
         $blocker = isset($tax['deleteBlocker']) ? $tax['deleteBlocker']($editId) : null;
 
-        if ($inUse > 0) {
+        // The blocker first: a location's count includes its sub-locations'
+        // items, which would otherwise be blamed for the real reason.
+        if ($blocker !== null) {
+            $formMessage = errorMessage($blocker);
+        } elseif ($inUse > 0) {
             $formMessage = errorMessage(
                 $inUse . ' ' . ($inUse === 1 ? 'item still uses' : 'items still use')
                 . ' this ' . strtolower($tax['label']) . ', so it cannot be deleted.'
                 . ' Reassign ' . ($inUse === 1 ? 'it' : 'them') . ' first.'
             );
-        } elseif ($blocker !== null) {
-            $formMessage = errorMessage($blocker);
         } else {
             dbRun(
                 'DELETE FROM ' . $tax['table'] . ' WHERE ' . $tax['id'] . ' = :edit_id LIMIT 1',
@@ -877,8 +891,6 @@ function taxonomyEditPage(string $key): void
             redirectWith($indexUrl, successMessage($tax['label'] . ' deleted!'));
         }
     }
-
-    $row = dbRow('SELECT * FROM ' . $tax['table'] . ' WHERE ' . $tax['id'] . ' = :edit_id', ['edit_id' => $editId]);
 
     template('page/taxonomy-edit', [
         'tax'         => $tax,
@@ -890,4 +902,26 @@ function taxonomyEditPage(string $key): void
         'inUse'       => $row ? taxonomyUsageCount($tax, $editId) : 0,
         'blocker'     => ($row && isset($tax['deleteBlocker'])) ? $tax['deleteBlocker']($editId) : null,
     ]);
+}
+
+/** Saves an edit. onSave runs first, while it can still see the old values. */
+function taxonomyUpdate(array $tax, $editId, array $values): void
+{
+    dbTransaction(function () use ($tax, $values, $editId) {
+        if (isset($tax['onSave'])) {
+            $tax['onSave']($editId, $values);
+        }
+
+        $assignments = [];
+
+        foreach (array_keys($values) as $column) {
+            $assignments[] = $column . ' = :' . $column;
+        }
+
+        dbRun(
+            'UPDATE ' . $tax['table'] . ' SET ' . implode(', ', $assignments)
+            . ' WHERE ' . $tax['id'] . ' = :edit_id',
+            $values + ['edit_id' => $editId]
+        );
+    });
 }

@@ -3,3 +3,15 @@
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
 </IfModule>
+
+# Uploads are stored under generated names with whitelisted extensions, so no
+# script can land here; refuse any anyway.
+<FilesMatch "\.(php\d?|phtml|phar|cgi|pl|py|sh)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
