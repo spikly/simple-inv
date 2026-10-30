@@ -95,21 +95,25 @@ function consumeItemStock($item_id, float $quantity): void
 }
 
 /**
- * Consumes the newly installed quantity, then reallocates the item.
- * Returns ['allocated' => reserved, 'short' => outstanding left uncovered].
+ * Consumes the newly installed quantity, then reallocates the item. Returns
+ * ['allocated' => reserved, 'short' => outstanding left uncovered, 'open' =>
+ * whether the project is open, as a closed one reserves nothing].
  */
 function settleAssemblyItemStock($assembly_item_id, float $installedDelta): array
 {
     $part = dbRow(
-        'SELECT ai.item_id, ai.quantity_required, ai.quantity_installed, a.assembly_name
+        'SELECT ai.item_id, ai.quantity_required, ai.quantity_installed, a.assembly_name,
+                ps.project_status_name IN (' . openProjectStatusSql() . ') AS project_open
          FROM inv_assembly_items ai
          INNER JOIN inv_project_assemblies a ON a.assembly_id = ai.assembly_id
+         INNER JOIN inv_projects p ON p.project_id = a.assembly_project_id
+         INNER JOIN inv_project_statuses ps ON ps.project_status_id = p.project_status_id
          WHERE ai.assembly_item_id = :id',
         ['id' => (int)$assembly_item_id]
     );
 
     if (!$part) {
-        return ['allocated' => 0.0, 'short' => 0.0];
+        return ['allocated' => 0.0, 'short' => 0.0, 'open' => true];
     }
 
     consumeItemStock($part['item_id'], $installedDelta);
@@ -132,5 +136,9 @@ function settleAssemblyItemStock($assembly_item_id, float $installedDelta): arra
 
     $outstanding = max(0, (float)$part['quantity_required'] - (float)$part['quantity_installed']);
 
-    return ['allocated' => $allocated, 'short' => max(0, $outstanding - $allocated)];
+    return [
+        'allocated' => $allocated,
+        'short'     => max(0, $outstanding - $allocated),
+        'open'      => (bool)$part['project_open'],
+    ];
 }

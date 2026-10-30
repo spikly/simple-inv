@@ -10,8 +10,8 @@
 <?php
 formMessage($formMessage);
 
-textField('project_name', 'Project Name', $values['project_name'] ?? '', 'text', ' required');
-textField('project_reference', 'Reference', $values['project_reference'] ?? '');
+textField('project_name', 'Project Name', $values['project_name'] ?? '', 'text', ' required maxlength="255"');
+textField('project_reference', 'Reference', $values['project_reference'] ?? '', 'text', ' maxlength="100"');
 selectField('project_status_id', 'Status', $statuses, $values['project_status_id'] ?? null);
 textareaField('project_description', 'Description', $values['project_description'] ?? '');
 textareaField('project_notes', 'Notes', $values['project_notes'] ?? '');

@@ -64,7 +64,7 @@ if ($loan):
 <?php
         formMessage($formMessage);
 
-    textField('loan_to', 'Signed Out To', $values['loan_to'] ?? '', 'text', ' required');
+    textField('loan_to', 'Signed Out To', $values['loan_to'] ?? '', 'text', ' required maxlength="255"');
     textField('loan_due_at', 'Due Back (optional)', $values['loan_due_at'] ?? '', 'date');
     textareaField('loan_notes', 'Notes (optional)', $values['loan_notes'] ?? '');
     submitButton('sign_out_submit', 'Sign Out');

@@ -14,8 +14,10 @@ $formMessage = takeFlash();
 if (isset($_POST['edit_project_submit'])) {
     $values = $_POST;
 
-    if (trim($_POST['project_name']) === '') {
-        $formMessage = errorMessage(['project_name' => 'Project name cannot be empty']);
+    $errors = validateProject($_POST);
+
+    if ($errors) {
+        $formMessage = errorMessage($errors);
     } else {
         $columns = projectColumns($_POST);
 

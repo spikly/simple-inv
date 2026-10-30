@@ -9,6 +9,25 @@ function openProjectStatusSql(): string
     return implode(', ', array_map(static fn ($status) => db()->quote($status), OPEN_PROJECT_STATUSES));
 }
 
+/** Keyed by field. Lengths are the column widths, so a long value is an error, not a failed save. */
+function validateProject(array $post): array
+{
+    $errors = [];
+    $name = trim((string)($post['project_name'] ?? ''));
+
+    if ($name === '') {
+        $errors['project_name'] = 'Project name cannot be empty';
+    } elseif (mb_strlen($name) > 255) {
+        $errors['project_name'] = 'Project name cannot be longer than 255 characters';
+    }
+
+    if (mb_strlen(trim((string)($post['project_reference'] ?? ''))) > 100) {
+        $errors['project_reference'] = 'Reference cannot be longer than 100 characters';
+    }
+
+    return $errors;
+}
+
 function projectColumns(array $post): array
 {
     return [
@@ -28,6 +47,22 @@ function renderProjectForm(array $values, string $submitName, $formMessage = fal
         'formMessage' => $formMessage,
         'statuses'    => array_column(fetchProjectStatuses(), 'project_status_name', 'project_status_id'),
     ]);
+}
+
+/** Keyed by field; see validateProject(). */
+function validateAssembly(array $post): array
+{
+    $name = trim((string)($post['assembly_name'] ?? ''));
+
+    if ($name === '') {
+        return ['assembly_name' => 'Assembly name cannot be empty'];
+    }
+
+    if (mb_strlen($name) > 255) {
+        return ['assembly_name' => 'Assembly name cannot be longer than 255 characters'];
+    }
+
+    return [];
 }
 
 function assemblyColumns(array $post): array
@@ -95,6 +130,10 @@ function validateAssemblyInstall($item_id, $assembly_item_id, float $installed, 
 /** Appended to a part's success message. */
 function assemblyStockMessage(array $stock): string
 {
+    if (!$stock['open']) {
+        return ' The project is closed, so no stock is reserved for it.';
+    }
+
     $message = ' Reserved ' . formatQuantity($stock['allocated']) . ' from stock';
 
     return $stock['short'] > 0

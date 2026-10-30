@@ -4,9 +4,11 @@ $values = [];
 $formMessage = takeFlash();
 
 if (isset($_POST['add_project'])) {
-    if (trim($_POST['project_name']) === '') {
+    $errors = validateProject($_POST);
+
+    if ($errors) {
         $values = $_POST;
-        $formMessage = errorMessage(['project_name' => 'Project name cannot be empty']);
+        $formMessage = errorMessage($errors);
     } else {
         $projectId = dbInsert(
             'INSERT INTO inv_projects

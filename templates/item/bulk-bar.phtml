@@ -2,6 +2,8 @@
 /**
  * The row tick boxes sit in the table and join this form via form="bulk-items".
  * Hidden until something is ticked; see makeBulkBar() in assets/js/app.js.
+ * Field errors show in the summary above, as the bar has no room for them; a
+ * hidden copy beside each control is what its aria-describedby reads out.
  *
  * @var string $action Chosen action, or ''.
  * @var array  $values Submitted values by field name.
@@ -28,6 +30,9 @@ $hidden = (!$all && $ticked === 0) ? ' hidden' : '';
             <option value="">Choose an action</option>
             <?php echo selectOptions(BULK_ACTIONS, $action); ?>
         </select>
+<?php if (fieldError('bulk_action')): ?>
+        <span class="field-error visually-hidden" id="bulk_action_error"><?php echo fieldError('bulk_action'); ?></span>
+<?php endif; ?>
 <?php foreach ($fields as $key => [$placeholder, $options]):
     $name = 'bulk_' . $key; ?>
         <span class="bulk-bar-field<?php echo fieldError($name) ? ' field-invalid' : ''; ?>" data-field="<?php echo $name; ?>" data-action="<?php echo $key; ?>"<?php echo $key === $action ? '' : ' hidden'; ?>>
@@ -36,6 +41,9 @@ $hidden = (!$all && $ticked === 0) ? ' hidden' : '';
                 <option value=""><?php echo $placeholder; ?></option>
                 <?php echo selectOptions($options, $values[$name] ?? ''); ?>
             </select>
+<?php if (fieldError($name)): ?>
+            <span class="field-error visually-hidden" id="<?php echo $name; ?>_error"><?php echo fieldError($name); ?></span>
+<?php endif; ?>
         </span>
 <?php endforeach; ?>
         <input type="submit" name="bulk_submit" value="Apply"<?php echo $action === 'delete' ? ' class="delete"' : ''; ?>>

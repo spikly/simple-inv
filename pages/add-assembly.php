@@ -12,9 +12,11 @@ $values = [];
 $formMessage = takeFlash();
 
 if (isset($_POST['add_assembly_submit'])) {
-    if (trim($_POST['assembly_name']) === '') {
+    $errors = validateAssembly($_POST);
+
+    if ($errors) {
         $values = $_POST;
-        $formMessage = errorMessage(['assembly_name' => 'Assembly name cannot be empty']);
+        $formMessage = errorMessage($errors);
     } else {
         $assemblyId = dbInsert(
             'INSERT INTO inv_project_assemblies

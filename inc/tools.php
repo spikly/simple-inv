@@ -87,6 +87,9 @@ function toolLoanValues(array $post): array
 
     if ($to === '') {
         $errors['loan_to'] = 'Say who or where the tool is going to.';
+    } elseif (mb_strlen($to) > 255) {
+        // The column width, so this is an error rather than a failed save.
+        $errors['loan_to'] = 'Keep who or where it went to under 255 characters.';
     }
 
     $due = trim((string)($post['loan_due_at'] ?? ''));

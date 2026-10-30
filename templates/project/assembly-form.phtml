@@ -9,7 +9,7 @@
 <?php
 formMessage($formMessage);
 
-textField('assembly_name', 'Assembly Name', $values['assembly_name'] ?? '', 'text', ' required');
+textField('assembly_name', 'Assembly Name', $values['assembly_name'] ?? '', 'text', ' required maxlength="255"');
 textField('assembly_sort_order', 'Sort Order', (int)($values['assembly_sort_order'] ?? 0), 'number');
 textareaField('assembly_description', 'Description', $values['assembly_description'] ?? '');
 textareaField('assembly_notes', 'Notes', $values['assembly_notes'] ?? '');
