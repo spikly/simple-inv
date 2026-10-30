@@ -35,31 +35,38 @@ if (isset($_POST['add_item_submit'])) {
     if ($errors) {
         $formMessage = errorMessage($errors);
     } else {
-        $itemId = dbTransaction(function () use ($photo, $type, $source) {
-            $id = dbInsert(
-                'INSERT INTO inv_items
-                    (item_name, item_part_no, item_colour, item_product_url,
-                     item_quantity, item_min_quantity, item_measurement_unit,
-                     item_brand_id, item_sup_id, item_loc_id, item_status, item_notes, item_image)
-                 VALUES
-                    (:item_name, :item_part_no, :item_colour, :item_product_url,
-                     :item_quantity, :item_min_quantity, :item_measurement_unit,
-                     :item_brand, :item_supplier, :item_location, :item_status, :item_notes, :item_image)',
-                itemColumns($_POST, $photo['name'], $type)
-            );
+        try {
+            $itemId = dbTransaction(function () use ($photo, $type, $source) {
+                $id = dbInsert(
+                    'INSERT INTO inv_items
+                        (item_name, item_part_no, item_colour, item_product_url,
+                         item_quantity, item_min_quantity, item_measurement_unit,
+                         item_brand_id, item_sup_id, item_loc_id, item_status, item_notes, item_image)
+                     VALUES
+                        (:item_name, :item_part_no, :item_colour, :item_product_url,
+                         :item_quantity, :item_min_quantity, :item_measurement_unit,
+                         :item_brand, :item_supplier, :item_location, :item_status, :item_notes, :item_image)',
+                    itemColumns($_POST, $photo['name'], $type)
+                );
 
-            saveItemCategories($id, itemCategoryIds($_POST));
+                saveItemCategories($id, itemCategoryIds($_POST));
 
-            if ($source) {
-                copyItemFiles($source['item_id'], $id);
-            }
+                if ($source) {
+                    copyItemFiles($source['item_id'], $id);
+                }
 
-            if ($type === 'part') {
-                recordStockMovement($id, (float)$_POST['item_quantity'], 'created');
-            }
+                if ($type === 'part') {
+                    recordStockMovement($id, (float)$_POST['item_quantity'], 'created');
+                }
 
-            return $id;
-        });
+                return $id;
+            });
+        } catch (\Throwable $e) {
+            // No row names the stored or copied photo yet.
+            deleteItemImage($photo['name']);
+
+            throw $e;
+        }
 
         redirectWith(
             'index.php?page=view-item&item_id=' . $itemId,

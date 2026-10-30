@@ -29,7 +29,7 @@ if ($inUse > 0):
     sectionHeader('Delete ' . $tax['label']); ?>
 <p>
     This <?php echo strtolower($tax['label']); ?> is used by
-    <a href="index.php?page=items&<?php echo $tax['param'] . '=' . $editId; ?>"><?php
+    <a href="index.php?page=items&<?php echo $tax['param'] . '=' . (int)$editId; ?>"><?php
         echo $inUse . ' ' . ($inUse === 1 ? 'item' : 'items');
     ?></a>. Move <?php echo $inUse === 1 ? 'it' : 'them'; ?> elsewhere before deleting.
 </p>

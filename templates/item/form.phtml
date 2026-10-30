@@ -12,20 +12,23 @@
 formMessage($formMessage);
 ?>
     <input type="hidden" name="item_type" value="<?php echo $type; ?>">
+<?php if (isset($values['item_quantity_loaded'])): ?>
+    <input type="hidden" name="item_quantity_loaded" value="<?php echo (int)$values['item_quantity_loaded']; ?>">
+<?php endif; ?>
 <?php
 textField('item_name', ITEM_TYPES[$type] . ' Name', $values['item_name'] ?? '');
 textField('item_part_no', 'Manufacturers Part Number (optional)', $values['item_part_no'] ?? '');
-textField('item_colour', 'Colour (optional)', $values['item_colour'] ?? '');
+textField('item_colour', 'Colour (optional)', $values['item_colour'] ?? '', 'text', ' maxlength="50"');
 textField(
     'item_product_url',
     'Product Page URL (optional)',
     $values['item_product_url'] ?? '',
     'url',
-    ' placeholder="https://"'
+    ' placeholder="https://" maxlength="255"'
 );
 
 if ($type === 'part') {
-    textField('item_quantity', 'Item Quantity', $values['item_quantity'] ?? 1, 'number', ' min="0"');
+    textField('item_quantity', 'Item Quantity', $values['item_quantity'] ?? 1, 'number', ' min="0" step="1" required');
     textField(
         'item_min_quantity',
         'Reorder Level (0 for no warning)',

@@ -324,9 +324,41 @@ function sortTableByColumn(table, index, headerCell) {
         return value === "" || !isNaN(asNumber(value));
     });
 
+    // formatDate() writes "5 Mar 2025" or "5 Mar 2025 14:30", maybe followed
+    // by a note. Read as a number, that would sort by day of the month.
+    const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+
+    const asDate = value => {
+        const match = value.match(/^(\d{1,2}) ([A-Za-z]{3}) (\d{4})(?: (\d{2}):(\d{2}))?/);
+        const month = match ? months.indexOf(match[2].toLowerCase()) : -1;
+
+        return month === -1
+            ? NaN
+            : new Date(+match[3], month, +match[1], +(match[4] || 0), +(match[5] || 0)).getTime();
+    };
+
+    // Cells without a date, such as "Not returned", hold no digits.
+    const dated = rows.some(row => !isNaN(asDate(cellValue(row))))
+        && rows.every(row => {
+            const value = cellValue(row);
+            return !isNaN(asDate(value)) || !/\d/.test(value);
+        });
+
     rows.sort((a, b) => {
         const first = cellValue(a);
         const second = cellValue(b);
+
+        if (dated) {
+            // Undated cells sort before every date, as blank numbers do.
+            const x = isNaN(asDate(first)) ? -Infinity : asDate(first);
+            const y = isNaN(asDate(second)) ? -Infinity : asDate(second);
+
+            if (x === y) {
+                return 0;
+            }
+
+            return ascending ? (x < y ? -1 : 1) : (x < y ? 1 : -1);
+        }
 
         if (numeric) {
             const x = isNaN(asNumber(first)) ? 0 : asNumber(first);

@@ -73,12 +73,33 @@ function validateItem(array $post, string $type): array
             . strtolower(ITEM_TYPES[$type]) . ' category.';
     }
 
-    if ($type === 'part' && (int)($post['item_min_quantity'] ?? 0) < 0) {
-        $errors['item_min_quantity'] = 'The reorder level cannot be negative';
+    if ($type === 'part') {
+        $quantity = trim((string)($post['item_quantity'] ?? ''));
+
+        if (!ctype_digit($quantity) || (int)$quantity > MAX_ITEM_QUANTITY) {
+            $errors['item_quantity'] = 'Enter the quantity held as a whole number, 0 or more';
+        }
+
+        $minimum = (int)($post['item_min_quantity'] ?? 0);
+
+        if ($minimum < 0) {
+            $errors['item_min_quantity'] = 'The reorder level cannot be negative';
+        } elseif ($minimum > MAX_ITEM_QUANTITY) {
+            $errors['item_min_quantity'] = 'The reorder level is too large';
+        }
     }
 
-    if (!isWebUrl(textOrNull($post, 'item_product_url'))) {
+    $url = textOrNull($post, 'item_product_url');
+
+    if (!isWebUrl($url)) {
         $errors['item_product_url'] = 'The product page must be a web address starting http:// or https://';
+    } elseif (mb_strlen((string)$url) > 255) {
+        $errors['item_product_url'] = 'The product page address cannot be longer than 255 characters';
+    }
+
+    // Column widths, so an overlong value is an error here rather than a failed save.
+    if (mb_strlen((string)textOrNull($post, 'item_colour')) > 50) {
+        $errors['item_colour'] = 'The colour cannot be longer than 50 characters';
     }
 
     return $errors;
@@ -210,7 +231,10 @@ function renderItemPhotoField(?string $image, bool $remove = false): void
     formRow('item_photo', 'Photo (optional)', templateHtml('item/photo-field', compact('image', 'remove')));
 }
 
-/** Returns ['name' => filename|null] or ['error' => message]. */
+/**
+ * Returns ['name' => filename|null] or ['error' => message]. A replaced photo
+ * is left on disk, for the caller to delete once the row no longer names it.
+ */
 function resolveItemPhoto(?string $current, bool $remove, bool $copy = false): array
 {
     $upload = storeItemImage($_FILES['item_photo'] ?? []);
@@ -219,20 +243,11 @@ function resolveItemPhoto(?string $current, bool $remove, bool $copy = false): a
         return $upload;
     }
 
-    // When duplicating, $current belongs to the original and must be left alone.
     if ($upload['name'] !== null) {
-        if (!$copy) {
-            deleteItemImage($current);
-        }
-
         return ['name' => $upload['name']];
     }
 
     if ($remove) {
-        if (!$copy) {
-            deleteItemImage($current);
-        }
-
         return ['name' => null];
     }
 
@@ -456,16 +471,24 @@ function itemFilterSummary(array $applied, array $params, ?string $pinnedKind, ?
 /** Unnamed, so never submitted. */
 const ITEM_SELECT_HEADING = '<input type="checkbox" class="select-all" aria-label="Select every row on this page">';
 
-/** Heading => cell function. $selected is the item ids to show ticked. */
-function itemListingColumns(?string $type, array $selected = []): array
+/**
+ * Heading => cell function. $selected is the item ids to show ticked, or null
+ * for a listing with no bulk actions bar, which gets no tick boxes.
+ */
+function itemListingColumns(?string $type, ?array $selected = []): array
 {
-    $columns = [
+    $columns = [];
+
+    if ($selected !== null) {
         // The bar's form sits outside the table.
-        ITEM_SELECT_HEADING => function (array $item) use ($selected) {
+        $columns[ITEM_SELECT_HEADING] = function (array $item) use ($selected) {
             return '<input type="checkbox" name="item_ids[]" value="' . (int)$item['item_id'] . '"'
                 . ' form="bulk-items" aria-label="Select ' . escapeHtml($item['item_name']) . '"'
                 . (in_array((int)$item['item_id'], $selected, true) ? ' checked' : '') . '>';
-        },
+        };
+    }
+
+    $columns += [
         '' => function (array $item) {
             return itemThumbLink($item);
         },

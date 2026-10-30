@@ -16,7 +16,7 @@ if (trim((string)queryParam('q')) !== '' || $kind !== null || $applied) {
     $results = [
         'items'   => fetchItems($where, $params, $slice, $rank),
         'slice'   => $slice,
-        'columns' => itemListingColumns($kind),
+        'columns' => itemListingColumns($kind, null),
         'badges'  => $badges,
         'noun'    => $noun,
         'links'   => ['Open in ' . $noun => 'index.php?page=' . itemTypePage($kind) . $query],

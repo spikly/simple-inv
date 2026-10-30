@@ -110,7 +110,8 @@ function parseItemCsv(array $upload): array
     while (($record = fgetcsv($handle, 0, ',', '"', '\\')) !== false) {
         $line++;
 
-        if (count(array_filter($record, 'strlen')) === 0) {
+        // A blank line comes back as [null].
+        if (count(array_filter($record, fn ($value) => trim((string)$value) !== '')) === 0) {
             continue;
         }
 
