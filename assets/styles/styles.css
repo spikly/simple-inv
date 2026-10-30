@@ -178,6 +178,10 @@ h2 span span {
     font-weight: 500;
 }
 
+h2 span span a {
+    color: inherit;
+}
+
 h2 span span:first-child {
     margin-left: 12px;
 }

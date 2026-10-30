@@ -310,6 +310,37 @@ function locationName($id): ?string
     return $row ? locationPath($row) : null;
 }
 
+/**
+ * A sub-location's parent links to the parent's listing,
+ * keeping the other filters but starting again from page 1.
+ */
+function locationBreadcrumb($id): string
+{
+    $row = dbRow(
+        'SELECT l.loc_name, l.loc_parent_id, p.loc_name AS loc_parent_name
+         FROM inv_locations l
+         LEFT JOIN inv_locations p ON p.loc_id = l.loc_parent_id
+         WHERE l.loc_id = :id',
+        ['id' => $id]
+    );
+
+    if (!$row) {
+        return 'unknown';
+    }
+
+    if (!isset($row['loc_parent_name'])) {
+        return escapeHtml($row['loc_name']);
+    }
+
+    $params = $_GET;
+    $params['location_id'] = (int)$row['loc_parent_id'];
+    unset($params['p']);
+
+    return '<a href="' . escapeHtml('index.php?' . http_build_query($params)) . '">'
+        . escapeHtml($row['loc_parent_name']) . '</a>'
+        . escapeHtml(LOCATION_PATH_SEPARATOR) . escapeHtml($row['loc_name']);
+}
+
 /** Named in full rather than indented, as the searchable dropdowns reorder matches. */
 function locationOptions(): array
 {

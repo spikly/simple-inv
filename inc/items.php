@@ -426,8 +426,11 @@ function itemFilterSummary(array $applied, array $params, ?string $pinnedKind, ?
         $tax = taxonomy($key);
         $id = (string)$params[$tax['param']];
 
-        $badges[] = '<span>' . $tax['label'] . ': '
-            . escapeHtml(taxonomyName($key, $id) ?? 'unknown') . '</span>';
+        $name = ($key === 'location')
+            ? locationBreadcrumb($id)
+            : escapeHtml(taxonomyName($key, $id) ?? 'unknown');
+
+        $badges[] = '<span>' . $tax['label'] . ': ' . $name . '</span>';
         $query .= '&amp;' . $tax['param'] . '=' . escapeHtml(urlencode($id));
     }
 
